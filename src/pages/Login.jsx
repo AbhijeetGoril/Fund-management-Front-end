@@ -13,8 +13,8 @@ const Login = () => {
     try {
      const user= await signInWithEmailAndPassword(auth,email,password)
      console.log(user)
-      toast.success("Signup successfull!");
-      navigate("/dashboared")
+      toast.success("login successfull!");
+      navigate("/dashboard")
        
     } catch (error) {
         toast.error("Signup failed: " + error.message);
