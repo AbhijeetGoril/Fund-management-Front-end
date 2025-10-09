@@ -1,8 +1,21 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { UserIcon,PlusIcon } from '@heroicons/react/20/solid';
 const AddNewMumber = ({members,setMembers,setShowModal}) => {
   const [newMember, setNewMember] = useState({ name: "", email: "" });
   const [errors,setErrors]=useState({})
+  const showModel=useRef(null)
+  useEffect(()=>{
+    const handleOutSide=(event)=>{
+      if(showModel.current && !showModel.current.contains(event.target)){
+        setShowModal(false)
+      }
+    }
+    document.addEventListener("mousedown",handleOutSide)
+  return () => {
+    document.removeEventListener("mousedown", handleOutSide);
+  };
+  },[])
+
    const validation =()=>{
       const newErrors={}
       if(!newMember.name.trim()){ newErrors.name="Name is required"}
@@ -34,8 +47,8 @@ const AddNewMumber = ({members,setMembers,setShowModal}) => {
   }
   };
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+    <div   className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div ref={showModel} className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
             <h3 className="text-xl font-bold text-gray-800 flex items-center">
               <UserIcon className="h-5 w-5 mr-2 text-blue-500" />
               Add New Member
@@ -46,7 +59,7 @@ const AddNewMumber = ({members,setMembers,setShowModal}) => {
                 <input
                   type="text"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter name"
+                  placeholder="Enter names"
                   value={newMember.name}
                   onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
                 />

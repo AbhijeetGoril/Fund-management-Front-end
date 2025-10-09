@@ -27,7 +27,7 @@ const EventDetail = ({events,members}) => {
 
   // Mark payment as paid
   const markPaymentAsPaid = (eventId, memberId) => {
-    dispatch(fullPayMember({ eventId, memberId }));
+    dispatch(fullPayMember({ eventId, memberId: memberId }));
   };
 
   // Format currency

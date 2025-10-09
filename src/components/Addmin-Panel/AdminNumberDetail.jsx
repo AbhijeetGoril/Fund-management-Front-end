@@ -27,8 +27,16 @@ const AdminNumberDetail = ({
     setSelectedMember(memberId);
     setShowPaymentModal(true);
   };
-  
 
+  const totalPaid = event.payments.reduce((sum, payment) => {
+    const memberPaid = payment.transactions.reduce((acc, t) => acc + t.paidAmount, 0);
+    return sum + memberPaid;
+  }, 0);
+
+  const totalAmount = event.payments.reduce((sum, p) => sum + p.amount, 0);
+  
+  
+  
   const submitPayment = () => {
     if (paymentAmount && selectedMember) {
       handlePartialPaid(event.id, selectedMember, parseFloat(paymentAmount));
@@ -90,15 +98,15 @@ const AdminNumberDetail = ({
                 <th className="p-3 text-sm font-medium text-gray-600">Paid Amount</th>
                 <th className="p-3 text-sm font-medium text-gray-600">Remaining Amount</th>
                 <th className="p-3 text-sm font-medium text-gray-600">Status</th>
-                <th className="p-3 text-sm font-medium text-gray-600">Payment Date</th>
+                <th className="p-3 text-sm font-medium text-gray-600">Last Payment Date</th>
                 <th className="p-3 text-sm font-medium text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
               {event.payments.map((payment) => {
                 const member = members.find((m) => m.id === payment.memberId);
-                const remainingAmount = payment.amount - payment.paidAmount;
-                
+               
+
                 return (
                   <tr
                     key={payment.memberId}
@@ -123,13 +131,13 @@ const AdminNumberDetail = ({
                       {formatCurrency(payment.amount)}
                     </td>
                     <td className="p-3 font-medium text-green-600">
-                      {formatCurrency(payment.paidAmount)}
+                      {formatCurrency(payment.transactions.reduce((sum,p)=>sum+p.paidAmount,0))}
                     </td>
                     <td className="p-3 font-medium text-red-600">
-                      {formatCurrency(remainingAmount)}
+                      {formatCurrency(payment.amount-payment.transactions.reduce((sum,p)=>sum+p.paidAmount,0))}
                     </td>
                     <td className="p-3">
-                      {payment.paidAmount >= payment.amount ? (
+                      {payment.status ==="paid" ? (
                         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full flex items-center w-fit">
                           <CheckCircleIcon className="h-4 w-4 mr-1" /> Paid
                         </span>
@@ -140,7 +148,7 @@ const AdminNumberDetail = ({
                       )}
                     </td>
                     <td className="p-3 text-sm text-gray-600">
-                      {payment.date || "Not paid yet"}
+                      {payment.transactions.length == 0 ? "Not paid yet" : payment.transactions[payment.transactions.length - 1].date}
                     </td>
                     <td className="p-3">
                       <div className="flex space-x-2">
@@ -152,7 +160,7 @@ const AdminNumberDetail = ({
                           <PlusCircleIcon className="h-4 w-4 mr-1" />
                           <span className="text-xs">Record</span>
                         </button>
-                        
+
                         <button
                           onClick={() => handleEditMemberPayment(event.id, payment.memberId)}
                           className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition flex items-center"
@@ -160,7 +168,7 @@ const AdminNumberDetail = ({
                         >
                           <PencilIcon className="h-4 w-4" />
                         </button>
-                        
+
                         {payment.paidAmount < payment.amount && (
                           <button
                             onClick={() => markPaymentAsPaid(event.id, payment.memberId)}
@@ -174,24 +182,19 @@ const AdminNumberDetail = ({
                   </tr>
                 );
               })}
-              
+
               {/* Total Summary Row */}
               <tr className="border-t bg-gray-50 font-medium">
                 <td className="p-3">Total</td>
                 <td className="p-3 text-gray-700">
-                  {formatCurrency(
-                    event.payments.reduce((sum, payment) => sum + payment.amount, 0)
-                  )}
+                  {formatCurrency(totalAmount)}
                 </td>
                 <td className="p-3 text-green-600">
-                  {formatCurrency(
-                    event.payments.reduce((sum, payment) => 
-                      sum + payment.paidAmount, 0)
-                  )}
+                  {formatCurrency(totalPaid)}
                 </td>
                 <td className="p-3 text-red-600">
                   {formatCurrency(
-                    event.payments.reduce((sum, payment) => 
+                    event.payments.reduce((sum, payment) =>
                       sum + (payment.status === "pending" ? payment.amount : 0), 0)
                   )}
                 </td>
@@ -208,15 +211,15 @@ const AdminNumberDetail = ({
           Export Report
         </button>
         <div className="flex space-x-2">
-          <button 
+          <button
             className="text-gray-600 hover:text-gray-800 flex items-center"
             onClick={() => handleEditEvent(event)}
           >
             <PencilIcon className="h-4 w-4 mr-1" />
             Edit Event
           </button>
-          <button 
-            className="text-red-600 hover:text-red-800 flex items-center" 
+          <button
+            className="text-red-600 hover:text-red-800 flex items-center"
             onClick={() => handleDeleteEvent(event.id)}
           >
             <TrashIcon className="h-4 w-4 mr-1" />

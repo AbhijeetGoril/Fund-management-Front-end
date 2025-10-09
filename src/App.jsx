@@ -5,17 +5,20 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Signup from "./pages/SignUp";
 import AdminPanel from "./pages/AdminPanel";
+import Home from "./pages/Home";
 import EventFullDetail from "./components/Addmin-Panel/EventFullDetail";
+import EventDetails from "./pages/EventDetails";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/sign-up" element={<Signup/>} />
+        <Route path="/" element={<Home/> }/>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup/>} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin-panel" element={<AdminPanel />} />
-        <Route path="/event/:id" element={<EventFullDetail />} />
+        <Route path="/events/:eventId" element={<EventDetails />} />
       </Routes>
       <ToastContainer />
     </BrowserRouter>
