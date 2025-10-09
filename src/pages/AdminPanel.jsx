@@ -9,7 +9,8 @@ import {
 } from '@heroicons/react/24/outline';
 import CreateEventForm from '../components/Addmin-Panel/CreateEventForm';
 import EventDetail from '../components/Addmin-Panel/EventDetail';
-import Navbar from '../components/NavBar';
+
+import Navbar from "../components/Navbar";
 import { useSelector } from 'react-redux';
 
 const FundEventPanel = () => {
