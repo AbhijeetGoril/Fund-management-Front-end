@@ -10,7 +10,7 @@ import {
 import CreateEventForm from '../components/Addmin-Panel/CreateEventForm';
 import EventDetail from '../components/Addmin-Panel/EventDetail';
 
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navbar/Navbar";
 import { useSelector } from 'react-redux';
 
 const FundEventPanel = () => {

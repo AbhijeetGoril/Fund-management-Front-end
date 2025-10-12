@@ -23,7 +23,7 @@ import AddNewMember from "../components/DashBorad/AddNewMumber";
 
 import { Loader } from "../components/Loader";
 
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navbar/Navbar";
 
 const dummyEventsArray = {
   1: {

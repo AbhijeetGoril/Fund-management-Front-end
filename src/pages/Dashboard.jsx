@@ -22,7 +22,7 @@ import SummaryCard from "../components/SummaryCard";
 import CreateEventForm from "../components/Addmin-Panel/CreateEventForm"
 import AddNewMember from "../components/DashBorad/AddNewMumber";
 import { Loader } from "../components/Loader";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navbar/Navbar";
 
 const dummyEvents = [
   {
