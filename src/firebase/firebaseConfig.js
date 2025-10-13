@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCYCPyZ2M5J29kHlffBj2EfnHi1sFVFcl0",
   authDomain: "fund-management-77c89.firebaseapp.com",
   projectId: "fund-management-77c89",
-  storageBucket: "fund-management-77c89.appspot.com",  // ✅ fixed typo: .app → .appspot.com
+  storageBucket: "fund-management-77c89.appspot.com",  
   messagingSenderId: "964467705506",
   appId: "1:964467705506:web:cb91e300fac236b1d179fb",
   measurementId: "G-W6CDK5ZHHH"

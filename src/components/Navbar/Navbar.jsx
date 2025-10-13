@@ -5,9 +5,9 @@ import NavLinks from "./NavLink";
 import UserAvatar from "./UserAvatar";
 import ProfileDropdown from "./ProfileDropdown";
 import MobileMenu from "./MobileMenu";
-
+import { auth } from "../../firebase/firebaseConfig";
 const Navbar = ({
-  auth,
+  
   title = "Society Manager",
   homeTo = "/",
   logo = "🏠",
@@ -29,9 +29,10 @@ const Navbar = ({
   // Auth listener
   useEffect(() => {
     if (!auth) return;
+    console.log(auth)
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub && unsub();
-  }, [auth]); // Cleanup to avoid multiple subscriptions [web:54][web:47]
+  }, []); // Cleanup to avoid multiple subscriptions [web:54][web:47]
 
   const closeAll = useCallback(() => {
     setDesktopDropdownOpen(false);
@@ -45,7 +46,7 @@ const Navbar = ({
     } catch (e) {
       console.error("Logout failed:", e?.message);
     }
-  }, [auth, closeAll]);
+  }, [closeAll]);
 
   // Outside click + Escape
   useEffect(() => {
@@ -74,7 +75,7 @@ const Navbar = ({
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [closeAll]); // Common pattern for reusable components [web:41]
-
+  console.log(user)
   return (
     <nav className="bg-white p-4 border-b border-gray-200 shadow-sm sticky top-0 z-50">
       <div className="flex justify-between items-center">
