@@ -1,4 +1,3 @@
-// src/components/common/StatCard.jsx
 export default function StatCard({ label, value, change, trend, icon, gradient = 'from-slate-500 to-slate-600' }) {
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5">

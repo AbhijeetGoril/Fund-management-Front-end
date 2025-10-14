@@ -1,6 +1,6 @@
-// src/utils/ui.js
 export const getStatusGradient = (status) => {
-  switch (status) {
+  const s = (status || '').toLowerCase();
+  switch (s) {
     case 'active': return 'from-green-500 to-emerald-600';
     case 'completed': return 'from-blue-500 to-cyan-600';
     default: return 'from-gray-500 to-gray-600';
@@ -19,6 +19,6 @@ export const getCategoryBadgeColor = (color) => {
 };
 
 export const getEventTypeBadge = (type) =>
-  type === 'society'
+  (type || '') === 'society'
     ? 'bg-blue-100 text-blue-800 border-blue-200'
     : 'bg-amber-100 text-amber-800 border-amber-200';

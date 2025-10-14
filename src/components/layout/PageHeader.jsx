@@ -1,4 +1,3 @@
-// src/components/layout/PageHeader.jsx
 export default function PageHeader({ title, subtitle, leftEmoji = '🏡', right }) {
   return (
     <div className="mb-8">
