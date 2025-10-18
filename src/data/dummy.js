@@ -6,7 +6,7 @@ export const societies = [
     address: "Noida Sector 78",
     totalMembers: 150,
     status: "active",
-    totalCollected: 15000,
+    totalCollected: 31500, // sum of event totals or society-level funds
     events: [
       {
         id: 1,
@@ -23,6 +23,38 @@ export const societies = [
         category: "Cultural",
         color: "blue",
         type: "society"
+      },
+      {
+        id: 9,
+        title: "Spring Clean-up Drive",
+        name: "Cleanliness Campaign",
+        date: "2024-03-30",
+        venue: "Society Premises",
+        totalMembers: 10,
+        paidMembers: 7,
+        totalCollected: 3500,
+        pendingPayments: 3,
+        status: "active",
+        progress: 70,
+        category: "Community",
+        color: "emerald",
+        type: "society"
+      },
+      {
+        id: 10,
+        title: "Diwali Decoration",
+        name: "Festive Lighting",
+        date: "2024-11-01",
+        venue: "Club House",
+        totalMembers: 12,
+        paidMembers: 12,
+        totalCollected: 12000,
+        pendingPayments: 0,
+        status: "completed",
+        progress: 100,
+        category: "Festival",
+        color: "amber",
+        type: "society"
       }
     ]
   },
@@ -32,7 +64,7 @@ export const societies = [
     address: "Gurgaon",
     totalMembers: 200,
     status: "active",
-    totalCollected: 25000,
+    totalCollected: 40200,
     events: [
       {
         id: 2,
@@ -49,6 +81,38 @@ export const societies = [
         category: "Maintenance",
         color: "green",
         type: "society"
+      },
+      {
+        id: 11,
+        title: "Security Camera Upgrade",
+        name: "CCTV Phase II",
+        date: "2024-05-22",
+        venue: "Blocks A–D",
+        totalMembers: 15,
+        paidMembers: 9,
+        totalCollected: 9000,
+        pendingPayments: 6,
+        status: "active",
+        progress: 60,
+        category: "Security",
+        color: "purple",
+        type: "society"
+      },
+      {
+        id: 12,
+        title: "Water Tank Cleaning",
+        name: "Quarterly Cleaning",
+        date: "2024-06-10",
+        venue: "Basement Tanks",
+        totalMembers: 8,
+        paidMembers: 8,
+        totalCollected: 6400,
+        pendingPayments: 0,
+        status: "completed",
+        progress: 100,
+        category: "Maintenance",
+        color: "blue",
+        type: "society"
       }
     ]
   },
@@ -58,7 +122,7 @@ export const societies = [
     address: "Greater Noida West",
     totalMembers: 180,
     status: "active",
-    totalCollected: 18000,
+    totalCollected: 25800,
     events: [
       {
         id: 4,
@@ -75,10 +139,43 @@ export const societies = [
         category: "Security",
         color: "purple",
         type: "society"
+      },
+      {
+        id: 13,
+        title: "Monsoon Drainage",
+        name: "Stormwater Prep",
+        date: "2024-07-05",
+        venue: "Perimeter",
+        totalMembers: 9,
+        paidMembers: 6,
+        totalCollected: 5400,
+        pendingPayments: 3,
+        status: "active",
+        progress: 55,
+        category: "Infrastructure",
+        color: "emerald",
+        type: "society"
+      },
+      {
+        id: 14,
+        title: "Community Tree Plantation",
+        name: "Green Drive",
+        date: "2024-08-15",
+        venue: "Central Park",
+        totalMembers: 14,
+        paidMembers: 14,
+        totalCollected: 9800,
+        pendingPayments: 0,
+        status: "completed",
+        progress: 100,
+        category: "Environment",
+        color: "green",
+        type: "society"
       }
     ]
   }
 ];
+
 
 // Personal events kept separate for the Events tab
 export const personalEvents = [
