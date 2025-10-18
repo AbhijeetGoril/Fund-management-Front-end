@@ -1,65 +1,150 @@
+// SpendsHero.jsx (Enhanced)
 import React from "react";
+import { ChartBarIcon, CurrencyRupeeIcon } from "@heroicons/react/20/solid";
 
 const SpendsHero = ({ event, totalSpent, budgetUsage }) => {
   const formatINR = (n) =>
-    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(
       Number(n || 0)
     );
 
+  const isOverBudget = budgetUsage > 100;
+  const remainingBudget = event.totalBudget - totalSpent;
+
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl shadow-2xl text-white p-8 mb-8">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+    <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-2xl sm:rounded-3xl shadow-2xl text-white p-6 sm:p-8 mb-6 sm:mb-8 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-white/5 rounded-full blur-xl animate-pulse-slow"></div>
+      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-cyan-300/10 rounded-full blur-xl animate-pulse-slow"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/3 rounded-full blur-2xl"></div>
+      
+      <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        {/* Main Content */}
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
-              Spends
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold border border-white/30 flex items-center gap-2">
+              <CurrencyRupeeIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+              Expense Management
             </span>
-            <span className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
-              EVENT #{event.id}
+            <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold border border-white/30">
+              Event #{event.id}
+            </span>
+            <span className={`px-3 py-1.5 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold border ${
+              isOverBudget 
+                ? 'bg-red-500/20 text-red-100 border-red-300/50' 
+                : 'bg-green-500/20 text-green-100 border-green-300/50'
+            }`}>
+              {isOverBudget ? '⚠️ Over Budget' : '✅ On Track'}
             </span>
           </div>
 
-          <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-            {event.name} — Spends
+          {/* Title & Description */}
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 leading-tight">
+            {event.name}
+            <span className="block text-blue-200 text-lg sm:text-xl lg:text-2xl font-light mt-1">
+              Financial Overview & Analytics
+            </span>
           </h1>
 
-          <p className="text-blue-100 text-lg mb-6 max-w-2xl">
-            Review and manage all expenditures with transparent totals, filters, and quick actions.
+          <p className="text-blue-100 text-sm sm:text-base lg:text-lg mb-4 sm:mb-6 max-w-2xl leading-relaxed">
+            Comprehensive expense tracking with real-time budget monitoring, detailed analytics, and actionable insights for better financial management.
           </p>
 
-          <div className="flex flex-wrap gap-6">
-            <div className="text-white/90 font-semibold">
-              Total: {formatINR(totalSpent)}
+          {/* Quick Stats */}
+          <div className="flex flex-wrap gap-4 sm:gap-6">
+            <div className="flex items-center gap-2 bg-white/10 px-4 py-3 rounded-xl backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-200">
+              <CurrencyRupeeIcon className="h-5 w-5 text-green-300" />
+              <div>
+                <p className="text-xs text-blue-200">Total Spent</p>
+                <p className="font-bold text-white text-sm sm:text-base">{formatINR(totalSpent)}</p>
+              </div>
             </div>
-            <div className="text-white/90 font-semibold">
-              Target: {formatINR(event.totalBudget)}
+            <div className="flex items-center gap-2 bg-white/10 px-4 py-3 rounded-xl backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-200">
+              <ChartBarIcon className="h-5 w-5 text-cyan-300" />
+              <div>
+                <p className="text-xs text-blue-200">Budget Target</p>
+                <p className="font-bold text-white text-sm sm:text-base">{formatINR(event.totalBudget)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-white/10 px-4 py-3 rounded-xl backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-200">
+              <div className={`h-5 w-5 rounded-full flex items-center justify-center ${
+                isOverBudget ? 'bg-red-400' : 'bg-green-400'
+              }`}>
+                <div className="h-2 w-2 bg-white rounded-full"></div>
+              </div>
+              <div>
+                <p className="text-xs text-blue-200">Remaining</p>
+                <p className={`font-bold text-sm sm:text-base ${
+                  remainingBudget < 0 ? 'text-red-300' : 'text-green-300'
+                }`}>
+                  {formatINR(remainingBudget)}
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 min-w-80">
-          <h3 className="text-lg font-semibold mb-4">Budget Progress</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span>Spent</span>
-              <span className="font-bold">{formatINR(totalSpent)}</span>
+        {/* Budget Progress Card */}
+        <div className="bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/30 w-full lg:w-auto lg:min-w-80 hover:bg-white/25 transition-all duration-300">
+          <h3 className="text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isOverBudget ? 'bg-red-400 animate-pulse' : 'bg-green-400'}`}></div>
+            Budget Progress
+            <span className="text-xs bg-white/20 px-2 py-1 rounded-full ml-auto">
+              {Math.round(budgetUsage)}%
+            </span>
+          </h3>
+          
+          <div className="space-y-4">
+            {/* Progress Bars */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-blue-100">Spent</span>
+                <span className="font-bold">{formatINR(totalSpent)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-blue-100">Target</span>
+                <span className="font-bold">{formatINR(event.totalBudget)}</span>
+              </div>
+              
+              {/* Main Progress Bar */}
+              <div className="w-full bg-white/30 rounded-full h-3 overflow-hidden">
+                <div
+                  className={`h-3 rounded-full transition-all duration-1000 ease-out ${
+                    isOverBudget 
+                      ? 'bg-gradient-to-r from-red-400 to-pink-400' 
+                      : 'bg-gradient-to-r from-green-400 to-cyan-400'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.max(0, Math.round(budgetUsage)))}%` }}
+                />
+              </div>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>Target</span>
-              <span className="font-bold">{formatINR(event.totalBudget)}</span>
+
+            {/* Status & Metrics */}
+            <div className={`text-center text-sm font-bold ${
+              isOverBudget ? 'text-red-200' : 'text-green-200'
+            }`}>
+              {Math.round(budgetUsage)}% {isOverBudget ? 'Over Budget' : 'of Target'}
             </div>
-            <div className="w-full bg-white/30 rounded-full h-3 overflow-hidden">
-              <div
-                className="h-3 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r from-white to-indigo-200"
-                style={{ width: `${Math.min(100, Math.max(0, Math.round(budgetUsage)))}%` }}
-              />
-            </div>
-            <div className="text-center text-sm font-semibold">
-              {Math.round(budgetUsage)}% of target
+
+            {/* Additional Metrics */}
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/20">
+              <div className="text-center">
+                <p className="text-xs text-blue-200">Daily Avg</p>
+                <p className="text-sm font-semibold">{formatINR(totalSpent / 30)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-blue-200">Remaining Days</p>
+                <p className="text-sm font-semibold">15 days</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Bottom Gradient */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
     </div>
   );
 };

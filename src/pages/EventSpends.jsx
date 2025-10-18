@@ -1,9 +1,9 @@
+// EventSpends.jsx (Complete Enhanced Version)
 import React, { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeftIcon,
-  CurrencyRupeeIcon,
-  ChartBarIcon,
+  PlusIcon,
 } from "@heroicons/react/20/solid";
 import Navbar from "../components/Navbar/Navbar";
 import { Loader } from "../components/Loader";
@@ -61,6 +61,7 @@ const EventSpends = () => {
     return () => clearTimeout(t);
   }, [eventId]);
 
+  // Calculate statistics
   const totalSpent = useMemo(
     () => (event?.spends || []).reduce((sum, s) => sum + s.amount, 0),
     [event]
@@ -75,11 +76,14 @@ const EventSpends = () => {
       acc[s.status] = (acc[s.status] || 0) + 1;
       return acc;
     }, {}) || {};
+  
   const completedSpends = statusCounts.completed || 0;
   const pendingSpends = statusCounts.pending || 0;
+  const cancelledSpends = statusCounts.cancelled || 0;
 
   const categories = [...new Set(event?.spends.map((s) => s.category) || [])];
 
+  // Filter and sort spends
   const filteredSpends = useMemo(() => {
     if (!event) return [];
     const q = searchTerm.trim().toLowerCase();
@@ -93,39 +97,50 @@ const EventSpends = () => {
       const matchesStatus = filterStatus === "all" || spend.status === filterStatus;
       return matchesSearch && matchesCategory && matchesStatus;
     });
+    
+    // Sort spends
     filtered.sort((a, b) => {
       let aVal, bVal;
       if (sortBy === "amount") {
-        aVal = a.amount; bVal = b.amount;
+        aVal = a.amount; 
+        bVal = b.amount;
       } else if (sortBy === "date") {
-        aVal = new Date(a.date); bVal = new Date(b.date);
+        aVal = new Date(a.date); 
+        bVal = new Date(b.date);
       } else if (sortBy === "description") {
-        aVal = a.description.toLowerCase(); bVal = b.description.toLowerCase();
+        aVal = a.description.toLowerCase(); 
+        bVal = b.description.toLowerCase();
       } else {
-        aVal = a[sortBy]; bVal = b[sortBy];
+        aVal = a[sortBy]; 
+        bVal = b[sortBy];
       }
       return sortOrder === "asc" ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
     });
     return filtered;
   }, [event, searchTerm, filterCategory, filterStatus, sortBy, sortOrder]);
 
+  // Modal handlers
   const openAdd = () => {
     setEditingSpend(null);
     setAddEditOpen(true);
   };
+
   const openEdit = (spend) => {
     setEditingSpend(spend);
     setAddEditOpen(true);
   };
+
   const onSubmitAddEdit = (payload) => {
     if (!event) return;
     if (editingSpend) {
+      // Edit existing spend
       const updated = event.spends.map((s) =>
         s.id === editingSpend.id ? { ...s, ...payload } : s
       );
       setEvent({ ...event, spends: updated });
       setEditingSpend(null);
     } else {
+      // Add new spend
       const nextId = Math.max(...event.spends.map((s) => s.id)) + 1;
       const newSpend = {
         id: nextId,
@@ -137,6 +152,7 @@ const EventSpends = () => {
     }
     setAddEditOpen(false);
   };
+
   const handleDeleteSpend = (id) => {
     if (!event) return;
     if (window.confirm("Are you sure you want to delete this spend?")) {
@@ -176,36 +192,39 @@ const EventSpends = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <Navbar />
 
-      {/* Background blobs to mirror EventDetails */}
+      {/* Enhanced Background */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-32 w-80 h-80 bg-blue-200 rounded-full blur-3xl opacity-20"></div>
+        <div className="absolute -top-40 -right-32 w-80 h-80 bg-green-200 rounded-full blur-3xl opacity-20"></div>
         <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-purple-200 rounded-full blur-3xl opacity-20"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-100 rounded-full blur-3xl opacity-10"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header actions */}
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={() => navigate(`/events/${event.id}`)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl shadow-lg border border-white/50 hover:shadow-xl"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-            Back to Event
-          </button>
-
-          <div className="flex gap-3">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6">
+        {/* Enhanced Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center gap-3">
             <button
-              onClick={openAdd}
-              className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 hover:shadow-xl hover:bg-white transition-all duration-200 text-gray-700"
+              onClick={() => navigate(`/events/${event.id}`)}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-all duration-200 bg-white/90 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-lg border border-white/50 hover:shadow-xl hover:scale-105 active:scale-95"
             >
-              <CurrencyRupeeIcon className="h-5 w-5 text-indigo-600" />
-              <span className="font-semibold">Add Spend</span>
+              <ArrowLeftIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-sm sm:text-base">Back to Event</span>
             </button>
           </div>
+
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg w-full sm:w-auto justify-center"
+          >
+            <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="text-sm sm:text-base">Add Spend</span>
+          </button>
         </div>
 
+        {/* Hero Section */}
         <SpendsHero event={event} totalSpent={totalSpent} budgetUsage={budgetUsage} />
 
+        {/* Statistics Cards */}
         <SpendsStats
           totalSpent={totalSpent}
           remainingBudget={remainingBudget}
@@ -215,6 +234,7 @@ const EventSpends = () => {
           totalCount={event.spends.length}
         />
 
+        {/* Filters Section */}
         <SpendsFilters
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
@@ -229,8 +249,11 @@ const EventSpends = () => {
           setSortOrder={setSortOrder}
           total={event.spends.length}
           showing={filteredSpends.length}
+          completed={completedSpends}
+          pending={pendingSpends}
         />
 
+        {/* Main Table */}
         <SpendsTable
           items={filteredSpends}
           sortBy={sortBy}
@@ -238,17 +261,19 @@ const EventSpends = () => {
           setSortBy={setSortBy}
           setSortOrder={setSortOrder}
           onView={(s) => setViewSpend(s)}
-          onEdit={(s) => setEditingSpend(s) || setAddEditOpen(true)}
+          onEdit={openEdit}
           onDelete={handleDeleteSpend}
         />
 
-        <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
+        {/* Footer */}
+        <div className="mt-6 sm:mt-8 text-center">
+          <p className="text-gray-500 text-xs sm:text-sm">
             © {new Date().getFullYear()} Society Management System. All rights reserved.
           </p>
         </div>
       </div>
 
+      {/* Modals */}
       <AddOrEditModal
         open={addEditOpen}
         onClose={() => {
@@ -258,14 +283,11 @@ const EventSpends = () => {
         onSubmit={onSubmitAddEdit}
         initial={editingSpend}
       />
+      
       <ViewModal
         spend={viewSpend}
         onClose={() => setViewSpend(null)}
-        onEdit={(s) => {
-          setViewSpend(null);
-          setEditingSpend(s);
-          setAddEditOpen(true);
-        }}
+        onEdit={openEdit}
       />
     </div>
   );
