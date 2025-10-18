@@ -79,7 +79,7 @@ export default function SocietyDetails() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header with icon + name and right-aligned controls */}
-        {showModal && <CreateEventForm setShowModal={setShowModal} />}
+        
         <PageHeader
           title={society.name}
           subtitle={society.address}
@@ -173,7 +173,7 @@ export default function SocietyDetails() {
       </div>
 
       {/* Optional: modal hook */}
-      {/* {showModal && <CreateEventForm setShowModal={setShowModal} presetSocietyId={society.id} />} */}
+      {showModal && <CreateEventForm setShowModal={setShowModal} presetSocietyId={society.id} />}
     </div>
   );
 }

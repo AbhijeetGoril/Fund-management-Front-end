@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import EventFullDetail from "./components/Addmin-Panel/EventFullDetail";
 import EventDetails from "./pages/EventDetails";
 import SocietyDetails from "./pages/SocietyDetails";
+import EventSpends from "./pages/EventSpends";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/admin-panel" element={<AdminPanel />} />
         <Route path="/events/:eventId" element={<EventDetails />} />
         <Route path="/society/:id" element={<SocietyDetails />} />
+        <Route path="/events/:eventId/spends" element={<EventSpends />} />
       </Routes>
       <ToastContainer />
     </BrowserRouter>
