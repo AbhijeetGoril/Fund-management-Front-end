@@ -21,33 +21,33 @@ const Testimonials = () => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-br from-blue-50/50 to-purple-50/50">
+    <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-base-content mb-6">
             Trusted by Society Leaders
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-base-content/70 max-w-2xl mx-auto">
             Join 500+ societies that have transformed their financial management
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((testimonial, index) => (
-            <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div key={index} className="bg-base-100 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-12 h-12 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center text-primary-content font-bold text-lg">
                   {testimonial.avatar}
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
-                  <p className="text-gray-600 text-sm">{testimonial.role}</p>
+                  <h4 className="font-bold text-base-content">{testimonial.name}</h4>
+                  <p className="text-base-content/70 text-sm">{testimonial.role}</p>
                 </div>
               </div>
-              <p className="text-gray-700 leading-relaxed italic">
+              <p className="text-base-content/80 leading-relaxed italic">
                 "{testimonial.content}"
               </p>
-              <div className="flex text-yellow-400 mt-4">
+              <div className="flex text-warning mt-4">
                 {"★".repeat(5)}
               </div>
             </div>

@@ -121,10 +121,10 @@ const HeroSection = ({ stats, totalFunds }) => {
 
               {/* System Status */}
               {/* ✅ CORRECT: success/20 for light background */}
-              <div className="mt-6 p-3 bg-success/20 rounded-xl flex items-center gap-3">
-                <div className="w-3 h-3 bg-success rounded-full animate-pulse"></div>
-                <p className="text-success-content text-sm font-medium">All systems operational</p>
-              </div>
+             <div className="mt-6 p-3 bg-success/20 rounded-xl flex items-center gap-3">
+  <div className="w-3 h-3 bg-success rounded-full animate-pulse"></div>
+  <p className="text-success text-sm font-medium">All systems operational</p>
+</div>
             </div>
 
             {/* Floating Shapes */}
