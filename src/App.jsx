@@ -9,11 +9,13 @@ import Home from "./pages/Home";
 import EventDetails from "./pages/EventDetails";
 import SocietyDetails from "./pages/SocietyDetails";
 import EventSpends from "./pages/EventSpends";
+import { useSelector } from "react-redux";
 
 function App() {
+  const theme = useSelector((state) => state.theme.theme);
   return (
     <BrowserRouter>
-      <div className="h-screen" data-theme="bumblebee">
+      <div className="h-screen" data-theme={theme}>
          <Routes>
         <Route path="/" element={<Home/> }/>
         <Route path="/login" element={<Login />} />

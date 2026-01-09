@@ -3,7 +3,7 @@ import AdminNumberDetail from "./AdminNumberDetail";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 import { useDispatch} from "react-redux";
-import { deleteEvent,updatePaidAmount,fullPayMember} from "../../redux/eventsSlice";
+import { deleteEvent,updatePaidAmount,fullPayMember} from "../../redux/slices/eventsSlice";
 
 const EventDetail = ({events,members}) => {
   const [selectedEvent, setSelectedEvent] = useState(null);

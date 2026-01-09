@@ -5,9 +5,10 @@ import NavLinks from "./NavLink";
 import UserAvatar from "./UserAvatar";
 import ProfileDropdown from "./ProfileDropdown";
 import MobileMenu from "./MobileMenu";
+import ThemeSelector from "./ThemeSeletor"; // Add this import
 import { auth } from "../../firebase/firebaseConfig";
+
 const Navbar = ({
-  
   title = "Society Manager",
   homeTo = "/",
   logo = "🏠",
@@ -29,10 +30,10 @@ const Navbar = ({
   // Auth listener
   useEffect(() => {
     if (!auth) return;
-    console.log(auth)
+    console.log(auth);
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub && unsub();
-  }, []); // Cleanup to avoid multiple subscriptions [web:54][web:47]
+  }, []);
 
   const closeAll = useCallback(() => {
     setDesktopDropdownOpen(false);
@@ -74,16 +75,21 @@ const Navbar = ({
       document.removeEventListener("touchstart", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [closeAll]); // Common pattern for reusable components [web:41]
-  console.log(user)
+  }, [closeAll]);
+
+  console.log(user);
+
   return (
-    <nav className="bg-white p-4 border-b border-gray-200 shadow-sm sticky top-0 z-50">
+    <nav className="bg-base-100 p-4 border-b border-base-300 shadow-sm sticky top-0 z-50">
       <div className="flex justify-between items-center">
         <Logo homeTo={homeTo} logo={logo} title={title} onClick={closeAll} />
 
         {/* Desktop */}
-        <div className="hidden md:flex items-center space-x-8">
+        <div className="hidden md:flex items-center space-x-6">
           <NavLinks links={links} />
+
+          {/* Add ThemeSelector here */}
+          <ThemeSelector />
 
           {user ? (
             <div className="relative">
@@ -92,8 +98,8 @@ const Navbar = ({
                 onClick={() => setDesktopDropdownOpen((s) => !s)}
                 className={`flex items-center space-x-2 p-1 rounded-full border-2 transition-all duration-200 ${
                   desktopDropdownOpen
-                    ? "border-blue-500 ring-2 ring-blue-100"
-                    : "border-transparent hover:border-gray-300"
+                    ? "border-primary ring-2 ring-primary/20"
+                    : "border-transparent hover:border-base-300"
                 }`}
                 aria-haspopup="menu"
                 aria-expanded={desktopDropdownOpen}
@@ -113,13 +119,13 @@ const Navbar = ({
             <div className="flex items-center space-x-4">
               <a
                 href="/login"
-                className="px-4 py-2 text-gray-600 hover:text-blue-600 font-medium transition-colors"
+                className="px-4 py-2 text-base-content/70 hover:text-primary font-medium transition-colors"
               >
                 Login
               </a>
               <a
                 href="/signup"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
+                className="px-4 py-2 bg-primary text-primary-content rounded-lg hover:bg-primary/90 font-medium transition-colors shadow-sm"
               >
                 Sign Up
               </a>
@@ -129,11 +135,16 @@ const Navbar = ({
 
         {/* Mobile controls */}
         <div className="flex items-center space-x-3 md:hidden">
+          {/* Add ThemeSelector for mobile - simplified version */}
+          <div className="mr-2">
+            <ThemeSelector />
+          </div>
+
           {user && (
             <button
               ref={desktopButtonRef}
               onClick={() => setDesktopDropdownOpen((s) => !s)}
-              className="flex items-center space-x-2 p-1 rounded-full border-2 border-transparent hover:border-gray-300 transition-all duration-200"
+              className="flex items-center space-x-2 p-1 rounded-full border-2 border-transparent hover:border-base-300 transition-all duration-200"
               aria-haspopup="menu"
               aria-expanded={desktopDropdownOpen}
             >
@@ -143,15 +154,19 @@ const Navbar = ({
           <button
             ref={mobileButtonRef}
             onClick={() => setMobileMenuOpen((s) => !s)}
-            className="p-2 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors"
+            className="p-2 rounded-lg text-base-content hover:text-primary hover:bg-base-200 transition-colors"
             aria-haspopup="menu"
             aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <span className="text-2xl">✕</span> : <span className="text-2xl">☰</span>}
+            {mobileMenuOpen ? (
+              <span className="text-2xl">✕</span>
+            ) : (
+              <span className="text-2xl">☰</span>
+            )}
           </button>
         </div>
       </div>
-          
+
       <MobileMenu
         ref={mobileMenuRef}
         open={mobileMenuOpen}

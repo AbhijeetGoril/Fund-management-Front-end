@@ -7,7 +7,7 @@ import {
   UserGroupIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
-import { addEvent } from "../../redux/eventsSlice";
+import { addEvent } from "../../redux/slices/eventsSlice";
 import { useDispatch } from 'react-redux';
 
 const CreateEventForm = ({ setShowModal, members = [] }) => {
