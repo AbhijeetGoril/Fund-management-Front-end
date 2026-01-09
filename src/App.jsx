@@ -6,7 +6,6 @@ import "react-toastify/dist/ReactToastify.css";
 import Signup from "./pages/SignUp";
 import AdminPanel from "./pages/AdminPanel";
 import Home from "./pages/Home";
-import EventFullDetail from "./components/Addmin-Panel/EventFullDetail";
 import EventDetails from "./pages/EventDetails";
 import SocietyDetails from "./pages/SocietyDetails";
 import EventSpends from "./pages/EventSpends";
@@ -14,7 +13,8 @@ import EventSpends from "./pages/EventSpends";
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <div className="h-screen" data-theme="bumblebee">
+         <Routes>
         <Route path="/" element={<Home/> }/>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup/>} />
@@ -24,6 +24,8 @@ function App() {
         <Route path="/society/:id" element={<SocietyDetails />} />
         <Route path="/events/:eventId/spends" element={<EventSpends />} />
       </Routes>
+      </div>
+     
       <ToastContainer />
     </BrowserRouter>
   );
