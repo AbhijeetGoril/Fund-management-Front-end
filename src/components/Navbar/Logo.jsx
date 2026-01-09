@@ -6,10 +6,13 @@ const Logo = ({ homeTo = "/", logo = "🏠", title = "Society Manager", onClick 
     className="flex items-center hover:opacity-80 transition-opacity group"
     onClick={onClick}
   >
-    <div className="bg-blue-100 text-blue-700 p-2 rounded-lg mr-3 group-hover:bg-blue-200 transition-colors">
+    {/* Using DaisyUI theme-aware classes */}
+    <div className="bg-primary/20 text-primary p-2 rounded-lg mr-3 group-hover:bg-primary/30 transition-colors">
       <div className="w-6 h-6 flex items-center justify-center">{logo}</div>
     </div>
-    <h1 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
+    
+    {/* Theme-aware text color */}
+    <h1 className="text-xl font-bold text-base-content group-hover:text-primary transition-colors">
       {title}
     </h1>
   </Link>
