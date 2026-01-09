@@ -6,22 +6,23 @@ const ProfileDropdown = React.forwardRef(function ProfileDropdown(
   { open, user, onLogout, onClose },
   ref
 ) {
+  if (!open) return null;
+
   return (
     <div
       ref={ref}
-      className={`absolute right-0 mt-3 w-64 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50 transition transform duration-150 origin-top-right ${
-        open ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"
-      }`}
-      role="menu"
+      className="absolute right-0 mt-3 w-64 bg-base-100 border border-base-300 rounded-box shadow-lg z-50"
     >
-      <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div className="flex items-center space-x-3">
-          <UserAvatar user={user} size="lg" />
-          <div className="flex-1 min-w-0">
-            <p className="text-gray-800 font-semibold truncate">
-              {user?.displayName || "No Name"}
+      <div className="p-4 border-b border-base-300">
+        <div className="flex items-center gap-3">
+          <UserAvatar user={user} size="md" />
+          <div>
+            <p className="font-bold text-base-content">
+              {user?.displayName || "User"}
             </p>
-            <p className="text-gray-500 text-sm truncate">{user?.email}</p>
+            <p className="text-sm text-base-content/60">
+              {user?.email}
+            </p>
           </div>
         </div>
       </div>
@@ -30,25 +31,22 @@ const ProfileDropdown = React.forwardRef(function ProfileDropdown(
         <Link
           to="/profile"
           onClick={onClose}
-          className="flex items-center space-x-3 w-full px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-          role="menuitem"
+          className="flex items-center gap-3 px-3 py-2 hover:bg-base-200 rounded-lg"
         >
           <span>👤</span>
-          <span>My Profile</span>
+          <span>Profile</span>
         </Link>
         <Link
           to="/settings"
           onClick={onClose}
-          className="flex items-center space-x-3 w-full px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-          role="menuitem"
+          className="flex items-center gap-3 px-3 py-2 hover:bg-base-200 rounded-lg"
         >
           <span>⚙️</span>
           <span>Settings</span>
         </Link>
         <button
           onClick={onLogout}
-          className="flex items-center space-x-3 w-full px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-2 border-t border-gray-100 pt-3"
-          role="menuitem"
+          className="flex items-center gap-3 px-3 py-2 text-error hover:bg-error/10 rounded-lg w-full mt-2 border-t border-base-300 pt-2"
         >
           <span>🚪</span>
           <span>Sign Out</span>
