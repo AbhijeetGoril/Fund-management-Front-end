@@ -84,6 +84,7 @@ const Navbar = ({
         {/* Desktop */}
         <div className="hidden md:flex items-center space-x-8">
           <NavLinks links={links} />
+
           {user ? (
             <div className="relative">
               <button
@@ -150,7 +151,7 @@ const Navbar = ({
           </button>
         </div>
       </div>
-
+          
       <MobileMenu
         ref={mobileMenuRef}
         open={mobileMenuOpen}
