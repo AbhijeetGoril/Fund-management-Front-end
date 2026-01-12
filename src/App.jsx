@@ -10,9 +10,11 @@ import EventDetails from "./pages/EventDetails";
 import SocietyDetails from "./pages/SocietyDetails";
 import EventSpends from "./pages/EventSpends";
 import { useSelector } from "react-redux";
+import { getToken } from "./utils/getToken";
 
 function App() {
   const theme = useSelector((state) => state.theme.theme);
+  console.log(getToken())
   return (
     <BrowserRouter>
       <div className="h-screen" data-theme={theme}>

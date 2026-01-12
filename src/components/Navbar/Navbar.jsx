@@ -30,7 +30,7 @@ const Navbar = ({
   // Auth listener
   useEffect(() => {
     if (!auth) return;
-    console.log(auth);
+    
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub && unsub();
   }, []);
@@ -77,7 +77,6 @@ const Navbar = ({
     };
   }, [closeAll]);
 
-  console.log(user);
 
   return (
     <nav className="bg-base-100 p-4 border-b border-base-300 shadow-sm sticky top-0 z-50">
