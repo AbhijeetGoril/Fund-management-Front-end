@@ -26,7 +26,7 @@ const Navbar = ({
   const desktopButtonRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const mobileButtonRef = useRef(null);
-
+ 
   // Auth listener
   useEffect(() => {
     if (!auth) return;

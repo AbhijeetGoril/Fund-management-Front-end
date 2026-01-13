@@ -13,8 +13,13 @@ import { useSelector } from "react-redux";
 import { getToken } from "./utils/getToken";
 
 function App() {
+  const  token=async()=>{
+    const token = await getToken();
+    console.log("TOKEN:", token);
+  }
+  token()
   const theme = useSelector((state) => state.theme.theme);
-  console.log(getToken())
+  
   return (
     <BrowserRouter>
       <div className="h-screen" data-theme={theme}>
