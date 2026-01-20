@@ -1,6 +1,6 @@
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import React, { useState } from 'react';
-import { auth } from '../firebase/firebaseConfig';
+import { auth } from '../../firebase/firebaseConfig';
 import { toast } from 'react-toastify';
 import { useNavigate, Link } from 'react-router-dom';
 

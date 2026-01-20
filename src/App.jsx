@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
+import Login from "./pages/auth/Login";
 import Dashboard from "./pages/Dashboard"; // You can create this page next
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Signup from "./pages/SignUp";
+import Signup from "./pages/auth/SignUp";
 import AdminPanel from "./pages/AdminPanel";
 import Home from "./pages/Home";
 import EventDetails from "./pages/EventDetails";
