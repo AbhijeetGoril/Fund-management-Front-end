@@ -1,9 +1,7 @@
-// hooks/useAuthMutations.js
 import { useMutation } from "@tanstack/react-query";
-import { axiosInstance } from "../lib/axois";
+import { axiosInstance } from "../lib/axios";
 
 export const useAuthMutations = () => {
-  // Send OTP mutation
   const sendOtpMutation = useMutation({
     mutationFn: async (email) => {
       const response = await axiosInstance.post("/auth/send-otp", { email });
@@ -11,7 +9,6 @@ export const useAuthMutations = () => {
     },
   });
 
-  // Verify OTP mutation
   const verifyOtpMutation = useMutation({
     mutationFn: async ({ email, otp }) => {
       const response = await axiosInstance.post("/auth/verify-otp", { email, otp });
@@ -19,10 +16,9 @@ export const useAuthMutations = () => {
     },
   });
 
-  // Set Password mutation
-  const setPasswordMutation = useMutation({
+  const createUserMutation = useMutation({
     mutationFn: async ({ signupToken, ...userData }) => {
-      const response = await axiosInstance.post("/auth/set-password", userData, {
+      const response = await axiosInstance.post("/auth/signup", userData, {
         headers: {
           Authorization: `Bearer ${signupToken}`,
         },
@@ -34,6 +30,6 @@ export const useAuthMutations = () => {
   return {
     sendOtpMutation,
     verifyOtpMutation,
-    setPasswordMutation,
+    createUserMutation,
   };
 };
