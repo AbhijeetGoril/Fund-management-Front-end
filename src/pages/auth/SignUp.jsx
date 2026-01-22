@@ -1,9 +1,17 @@
+// components/SignUp.jsx
 import { ShipWheelIcon, Mail, Key, Lock, User, AlertCircle, AlertTriangle, X } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuthMutations } from "../../hooks/useAuthMutations";
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const {
+    sendOtpMutation,
+    verifyOtpMutation,
+    setPasswordMutation,
+  } = useAuthMutations();
+
   const [signupData, setSignupData] = useState({
     fullName: "",
     password: "",
@@ -14,16 +22,17 @@ const SignUp = () => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [signupToken, setSignupToken] = useState("");
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState({
-    sendingOtp: false,
-    verifyingOtp: false,
-    settingPassword: false,
-    googleSignup: false
-  });
   const [resendTimer, setResendTimer] = useState(0);
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   
   const otpRefs = useRef([]);
+
+  // Derived loading states from mutations
+  const loading = {
+    sendingOtp: sendOtpMutation.isPending,
+    verifyingOtp: verifyOtpMutation.isPending,
+    settingPassword: setPasswordMutation.isPending,
+  };
 
   useEffect(() => {
     // Initialize refs array
@@ -46,6 +55,57 @@ const SignUp = () => {
     }
   }, [otpSent, otpVerified]);
 
+  // Handle mutation errors
+  useEffect(() => {
+    if (sendOtpMutation.error) {
+      handleMutationError(sendOtpMutation.error, 'email');
+    }
+    if (verifyOtpMutation.error) {
+      handleMutationError(verifyOtpMutation.error, 'otp');
+    }
+    if (setPasswordMutation.error) {
+      handleMutationError(setPasswordMutation.error, 'submit');
+    }
+  }, [sendOtpMutation.error, verifyOtpMutation.error, setPasswordMutation.error]);
+
+  const handleMutationError = (error, field) => {
+    const errorMessage = error.response?.data?.message || error.message || "An error occurred";
+    
+    if (errorMessage.includes("already verified")) {
+      setErrors({ 
+        email: "Email already verified. Please login.",
+      });
+    } else if (errorMessage.includes("not found") || errorMessage.includes("expired")) {
+      setErrors({ [field]: "OTP not found or expired. Please request a new one." });
+    } else if (errorMessage.includes("Invalid OTP")) {
+      setErrors({ [field]: "Invalid OTP. Please check and try again." });
+    } else if (errorMessage.includes("token expired")) {
+      setErrors({ 
+        submit: "Session expired. Please restart the signup process.",
+        email: "Session expired. Please restart."
+      });
+      setOtpSent(false);
+      setOtpVerified(false);
+      setSignupToken("");
+    } else if (errorMessage.includes("Email not verified")) {
+      setErrors({ 
+        submit: "Email not verified. Please verify your email first.",
+        otp: "Email verification required"
+      });
+      setOtpVerified(false);
+    } else if (errorMessage.includes("User not found")) {
+      setErrors({ 
+        submit: "User not found. Please restart the signup process.",
+        email: "Please restart signup"
+      });
+      setOtpSent(false);
+      setOtpVerified(false);
+      setSignupToken("");
+    } else {
+      setErrors({ [field]: errorMessage });
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!signupData.fullName.trim()) newErrors.fullName = "Full name is required";
@@ -61,14 +121,12 @@ const SignUp = () => {
   };
 
   const handleOtpChange = (index, value) => {
-    // Allow only digits
     if (value && !/^\d$/.test(value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Clear OTP error when user starts typing
     if (errors.otp) {
       setErrors((prev) => ({ ...prev, otp: "" }));
     }
@@ -76,14 +134,12 @@ const SignUp = () => {
       setErrors((prev) => ({ ...prev, submit: "" }));
     }
 
-    // Auto-focus next input
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
-    // Handle backspace
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       otpRefs.current[index - 1]?.focus();
     }
@@ -102,13 +158,12 @@ const SignUp = () => {
       });
       setOtp(newOtp);
       
-      // Focus the last input
       const lastFilledIndex = Math.min(digits.length - 1, 5);
       otpRefs.current[lastFilledIndex]?.focus();
     }
   };
 
-  // Send OTP
+  // Send OTP using React Query mutation
   const handleSendOtp = async (e) => {
     e?.preventDefault();
     const emailError = !signupData.email.trim() ? "Email is required" : 
@@ -119,40 +174,21 @@ const SignUp = () => {
       return;
     }
 
-    setLoading(prev => ({ ...prev, sendingOtp: true }));
     setErrors({});
 
-    try {
-      const res = await fetch("http://localhost:3000/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: signupData.email }),
-      });
-
-      const data = await res.json();
-      
-      if (res.ok) {
+    sendOtpMutation.mutate(signupData.email, {
+      onSuccess: (data) => {
         setOtpSent(true);
-        setResendTimer(60); // Set 60 seconds timer for resend
-        setOtp(["", "", "", "", "", ""]); // Reset OTP
-        // Don't open popup here, useEffect will handle it
-      } else {
-        if (data.message.includes("already verified")) {
-          setErrors({ 
-            email: "Email already verified. Please login.",
-          });
-        } else {
-          setErrors({ submit: data.message });
-        }
+        setResendTimer(60);
+        setOtp(["", "", "", "", "", ""]);
+      },
+      onError: (error) => {
+        // Error handled in useEffect
       }
-    } catch (error) {
-      setErrors({ submit: "Network error. Please check your connection." });
-    } finally {
-      setLoading(prev => ({ ...prev, sendingOtp: false }));
-    }
+    });
   };
 
-  // Verify OTP
+  // Verify OTP using React Query mutation
   const handleVerifyOtp = async (e) => {
     e?.preventDefault();
     const otpString = otp.join("");
@@ -166,42 +202,24 @@ const SignUp = () => {
       return;
     }
 
-    setLoading(prev => ({ ...prev, verifyingOtp: true }));
     setErrors({});
 
-    try {
-      const res = await fetch("http://localhost:3000/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: signupData.email, 
-          otp: otpString 
-        }),
-      });
-
-      const data = await res.json();
-      
-      if (res.ok) {
-        setSignupToken(data.signupToken);
-        setOtpVerified(true);
-        setShowOtpPopup(false); // Close popup on successful verification
-      } else {
-        if (data.message.includes("not found") || data.message.includes("expired")) {
-          setErrors({ otp: "OTP not found or expired. Please request a new one." });
-        } else if (data.message.includes("Invalid OTP")) {
-          setErrors({ otp: "Invalid OTP. Please check and try again." });
-        } else {
-          setErrors({ submit: data.message });
+    verifyOtpMutation.mutate(
+      { email: signupData.email, otp: otpString },
+      {
+        onSuccess: (data) => {
+          setSignupToken(data.signupToken);
+          setOtpVerified(true);
+          setShowOtpPopup(false);
+        },
+        onError: (error) => {
+          // Error handled in useEffect
         }
       }
-    } catch (error) {
-      setErrors({ submit: "Failed to verify OTP. Please try again." });
-    } finally {
-      setLoading(prev => ({ ...prev, verifyingOtp: false }));
-    }
+    );
   };
 
-  // Complete Signup
+  // Complete Signup using React Query mutation
   const handleSignUp = async (e) => {
     e.preventDefault();
     
@@ -216,59 +234,22 @@ const SignUp = () => {
       return;
     }
 
-    setLoading(prev => ({ ...prev, settingPassword: true }));
     setErrors({});
 
-    try {
-      const res = await fetch("http://localhost:3000/api/auth/set-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${signupToken}`,
+    setPasswordMutation.mutate(
+      { 
+        ...signupData,
+        signupToken 
+      },
+      {
+        onSuccess: (data) => {
+          navigate("/login");
         },
-        body: JSON.stringify({ 
-          fullName: signupData.fullName,
-          password: signupData.password,
-          email: signupData.email
-        }),
-      });
-
-      const data = await res.json();
-      
-      if (res.ok) {
-        navigate("/login");
-      } else {
-        if (res.status === 401 && data.message.includes("token expired")) {
-          setErrors({ 
-            submit: "Session expired. Please restart the signup process.",
-            email: "Session expired. Please restart."
-          });
-          setOtpSent(false);
-          setOtpVerified(false);
-          setSignupToken("");
-        } else if (res.status === 403 && data.message.includes("Email not verified")) {
-          setErrors({ 
-            submit: "Email not verified. Please verify your email first.",
-            otp: "Email verification required"
-          });
-          setOtpVerified(false);
-        } else if (res.status === 404 && data.message.includes("User not found")) {
-          setErrors({ 
-            submit: "User not found. Please restart the signup process.",
-            email: "Please restart signup"
-          });
-          setOtpSent(false);
-          setOtpVerified(false);
-          setSignupToken("");
-        } else {
-          setErrors({ submit: data.message });
+        onError: (error) => {
+          // Error handled in useEffect
         }
       }
-    } catch (error) {
-      setErrors({ submit: "Network error. Please try again." });
-    } finally {
-      setLoading(prev => ({ ...prev, settingPassword: false }));
-    }
+    );
   };
 
   const handleChange = (e) => {
@@ -291,29 +272,15 @@ const SignUp = () => {
     setOtp(["", "", "", "", "", ""]);
     setErrors({});
     setResendTimer(60);
-    // Call send OTP function
-    setLoading(prev => ({ ...prev, sendingOtp: true }));
     
-    fetch("http://localhost:3000/api/auth/send-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: signupData.email }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          // Reset focus to first OTP box
-          otpRefs.current[0]?.focus();
-        } else {
-          setErrors({ otp: "Failed to resend OTP. Please try again." });
-        }
-      })
-      .catch(() => {
-        setErrors({ otp: "Network error. Please try again." });
-      })
-      .finally(() => {
-        setLoading(prev => ({ ...prev, sendingOtp: false }));
-      });
+    sendOtpMutation.mutate(signupData.email, {
+      onSuccess: () => {
+        otpRefs.current[0]?.focus();
+      },
+      onError: (error) => {
+        setErrors({ otp: error.response?.data?.message || "Failed to resend OTP" });
+      }
+    });
   };
 
   const closeOtpPopup = () => {
@@ -633,4 +600,4 @@ const SignUp = () => {
   );
 };
 
-export default SignUp; 
+export default SignUp;
