@@ -1,4 +1,3 @@
-// components/SignUp.jsx
 import { ShipWheelIcon, Mail, Key, Lock, User, AlertCircle, AlertTriangle, X } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -9,7 +8,7 @@ const SignUp = () => {
   const {
     sendOtpMutation,
     verifyOtpMutation,
-    setPasswordMutation,
+    signupMutation,
   } = useAuthMutations();
 
   const [signupData, setSignupData] = useState({
@@ -27,15 +26,14 @@ const SignUp = () => {
   
   const otpRefs = useRef([]);
 
-  // Derived loading states from mutations
+  // Loading states from mutations
   const loading = {
     sendingOtp: sendOtpMutation.isPending,
     verifyingOtp: verifyOtpMutation.isPending,
-    settingPassword: setPasswordMutation.isPending,
+    signingUp: signupMutation.isPending,
   };
 
   useEffect(() => {
-    // Initialize refs array
     otpRefs.current = otpRefs.current.slice(0, 6);
   }, []);
 
@@ -63,10 +61,10 @@ const SignUp = () => {
     if (verifyOtpMutation.error) {
       handleMutationError(verifyOtpMutation.error, 'otp');
     }
-    if (setPasswordMutation.error) {
-      handleMutationError(setPasswordMutation.error, 'submit');
+    if (signupMutation.error) {
+      handleMutationError(signupMutation.error, 'submit');
     }
-  }, [sendOtpMutation.error, verifyOtpMutation.error, setPasswordMutation.error]);
+  }, [sendOtpMutation.error, verifyOtpMutation.error, signupMutation.error]);
 
   const handleMutationError = (error, field) => {
     const errorMessage = error.response?.data?.message || error.message || "An error occurred";
@@ -163,7 +161,7 @@ const SignUp = () => {
     }
   };
 
-  // Send OTP using React Query mutation
+  // Send OTP
   const handleSendOtp = async (e) => {
     e?.preventDefault();
     const emailError = !signupData.email.trim() ? "Email is required" : 
@@ -177,18 +175,15 @@ const SignUp = () => {
     setErrors({});
 
     sendOtpMutation.mutate(signupData.email, {
-      onSuccess: (data) => {
+      onSuccess: () => {
         setOtpSent(true);
         setResendTimer(60);
         setOtp(["", "", "", "", "", ""]);
       },
-      onError: (error) => {
-        // Error handled in useEffect
-      }
     });
   };
 
-  // Verify OTP using React Query mutation
+  // Verify OTP
   const handleVerifyOtp = async (e) => {
     e?.preventDefault();
     const otpString = otp.join("");
@@ -212,14 +207,11 @@ const SignUp = () => {
           setOtpVerified(true);
           setShowOtpPopup(false);
         },
-        onError: (error) => {
-          // Error handled in useEffect
-        }
       }
     );
   };
 
-  // Complete Signup using React Query mutation
+  // Complete Signup
   const handleSignUp = async (e) => {
     e.preventDefault();
     
@@ -236,18 +228,15 @@ const SignUp = () => {
 
     setErrors({});
 
-    setPasswordMutation.mutate(
+    signupMutation.mutate(
       { 
         ...signupData,
         signupToken 
       },
       {
-        onSuccess: (data) => {
+        onSuccess: () => {
           navigate("/login");
         },
-        onError: (error) => {
-          // Error handled in useEffect
-        }
       }
     );
   };
@@ -296,7 +285,6 @@ const SignUp = () => {
       {showOtpPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="relative w-full max-w-md bg-base-100 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in duration-300">
-            {/* Close Button */}
             <button
               onClick={closeOtpPopup}
               className="absolute right-4 top-4 btn btn-circle btn-ghost btn-sm"
@@ -304,7 +292,6 @@ const SignUp = () => {
               <X className="w-5 h-5" />
             </button>
 
-            {/* Popup Header */}
             <div className="text-center mb-6">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                 <Key className="w-8 h-8 text-primary" />
@@ -317,7 +304,6 @@ const SignUp = () => {
               </p>
             </div>
 
-            {/* OTP Input Boxes */}
             <div className="mb-6">
               <div className="flex justify-center gap-2 mb-6">
                 {otp.map((digit, index) => (
@@ -341,14 +327,12 @@ const SignUp = () => {
                 ))}
               </div>
 
-              {/* OTP Error Message */}
               {errors.otp && (
                 <div className="text-center mb-4">
                   <span className="label-text-alt text-error">{errors.otp}</span>
                 </div>
               )}
 
-              {/* Verify Button */}
               <button
                 onClick={handleVerifyOtp}
                 className={`btn btn-primary w-full ${loading.verifyingOtp ? "loading" : ""}`}
@@ -358,11 +342,8 @@ const SignUp = () => {
               </button>
             </div>
 
-            {/* Resend OTP Section */}
             <div className="text-center">
-              <p className="text-sm opacity-70 mb-3">
-                Didn't receive the code?
-              </p>
+              <p className="text-sm opacity-70 mb-3">Didn't receive the code?</p>
               <button
                 onClick={resendOtp}
                 className={`btn btn-ghost btn-sm ${
@@ -383,11 +364,8 @@ const SignUp = () => {
               </button>
             </div>
 
-            {/* Popup Footer */}
             <div className="mt-6 pt-4 border-t border-base-300">
-              <p className="text-xs opacity-50 text-center">
-                The OTP will expire in 10 minutes
-              </p>
+              <p className="text-xs opacity-50 text-center">The OTP will expire in 10 minutes</p>
             </div>
           </div>
         </div>
@@ -396,7 +374,6 @@ const SignUp = () => {
       {/* Main Signup Form */}
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-base-100 via-base-100 to-base-200">
         <div className="border border-primary/20 flex w-full max-w-5xl mx-auto bg-base-100 rounded-2xl shadow-2xl overflow-hidden">
-          {/* Left side form */}
           <div className="w-full lg:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col">
             <div className="mb-8 flex items-center justify-start gap-3">
               <ShipWheelIcon className="w-10 h-10 text-primary" />
@@ -413,7 +390,6 @@ const SignUp = () => {
                 </p>
               </div>
 
-              {/* Full Name */}
               <div className="form-control w-full">
                 <label className="label mb-1">
                   <span className="label-text font-medium">Full Name</span>
@@ -438,19 +414,14 @@ const SignUp = () => {
                 )}
               </div>
 
-              {/* Email with OTP */}
               <div className="form-control w-full">
                 <label className="label mb-1">
                   <span className="label-text font-medium">Email</span>
                   {otpSent && !otpVerified && (
-                    <span className="label-text-alt text-blue-500 font-medium">
-                      ✓ OTP Sent
-                    </span>
+                    <span className="label-text-alt text-blue-500 font-medium">✓ OTP Sent</span>
                   )}
                   {otpVerified && (
-                    <span className="label-text-alt text-green-500 font-medium">
-                      ✓ Verified
-                    </span>
+                    <span className="label-text-alt text-green-500 font-medium">✓ Verified</span>
                   )}
                 </label>
                 <div className="flex flex-col sm:flex-row gap-3 mb-2">
@@ -479,7 +450,6 @@ const SignUp = () => {
                   )}
                 </div>
                 
-                {/* OTP Status Display */}
                 {otpSent && !otpVerified && (
                   <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <p className="text-sm text-blue-700">
@@ -501,7 +471,6 @@ const SignUp = () => {
                 )}
               </div>
 
-              {/* Password */}
               <div className="form-control w-full">
                 <label className="label mb-1">
                   <span className="label-text font-medium">Password</span>
@@ -528,7 +497,6 @@ const SignUp = () => {
                 </div>
               </div>
 
-              {/* Terms */}
               <div className="form-control mt-4">
                 <label className="label cursor-pointer justify-start gap-3 p-0">
                   <input 
@@ -543,16 +511,14 @@ const SignUp = () => {
                 </label>
               </div>
 
-              {/* Submit Button */}
               <button 
                 type="submit" 
-                className={`btn btn-primary w-full h-12 min-h-12 mt-2 ${loading.settingPassword ? "loading" : ""}`} 
-                disabled={loading.settingPassword || !otpVerified}
+                className={`btn btn-primary w-full h-12 min-h-12 mt-2 ${loading.signingUp ? "loading" : ""}`} 
+                disabled={loading.signingUp || !otpVerified}
               >
-                {loading.settingPassword ? "Creating Account..." : "Create Account"}
+                {loading.signingUp ? "Creating Account..." : "Create Account"}
               </button>
 
-              {/* Error Message */}
               {errors.submit && (
                 <div className={`alert mt-4 ${errors.submit.includes("expired") || errors.submit.includes("restart") ? 'alert-error' : 'alert-warning'}`}>
                   {errors.submit.includes("expired") || errors.submit.includes("restart") ? (
@@ -564,7 +530,6 @@ const SignUp = () => {
                 </div>
               )}
 
-              {/* Login Link */}
               <div className="text-center pt-6">
                 <span className="text-sm opacity-70">
                   Already have an account?{" "}
@@ -574,7 +539,6 @@ const SignUp = () => {
             </form>
           </div>
 
-          {/* Right side Image */}
           <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-primary/10 via-primary/5 to-secondary/10 p-8">
             <div className="text-center max-w-md mx-auto">
               <img 
