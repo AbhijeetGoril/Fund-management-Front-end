@@ -1,12 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { signOut, onAuthStateChanged } from "firebase/auth";
 import Logo from "./Logo";
 import NavLinks from "./NavLink";
 import UserAvatar from "./UserAvatar";
 import ProfileDropdown from "./ProfileDropdown";
 import MobileMenu from "./MobileMenu";
-import ThemeSelector from "./ThemeSeletor"; // Add this import
-import { auth } from "../../firebase/firebaseConfig";
+import ThemeSelector from "./ThemeSeletor";
+import { axiosInstance } from "../../lib/axois";
 
 const Navbar = ({
   title = "Society Manager",
@@ -18,6 +17,7 @@ const Navbar = ({
   ],
 }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [desktopDropdownOpen, setDesktopDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -26,14 +26,28 @@ const Navbar = ({
   const desktopButtonRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const mobileButtonRef = useRef(null);
- 
-  // Auth listener
-  useEffect(() => {
-    if (!auth) return;
-    
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsub && unsub();
+
+  // Fetch current user from backend
+  const fetchCurrentUser = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get("/auth/me");
+      if (response.data.success) {
+        setUser(response.data.user);
+      }
+    } catch (error) {
+      // If 401 (not logged in), user stays null
+      if (error.response?.status !== 401) {
+        console.error("Error fetching user:", error);
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Auth listener - check on mount
+  useEffect(() => {
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
 
   const closeAll = useCallback(() => {
     setDesktopDropdownOpen(false);
@@ -42,10 +56,13 @@ const Navbar = ({
 
   const onLogout = useCallback(async () => {
     try {
-      await signOut(auth);
+      await axiosInstance.post("/auth/logout");
+      setUser(null);
       closeAll();
-    } catch (e) {
-      console.error("Logout failed:", e?.message);
+      // Optional: Redirect to login page after logout
+      // window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout failed:", error);
     }
   }, [closeAll]);
 
@@ -77,6 +94,19 @@ const Navbar = ({
     };
   }, [closeAll]);
 
+  // Show loading state
+  if (loading) {
+    return (
+      <nav className="bg-base-100 p-4 border-b border-base-300 shadow-sm sticky top-0 z-50">
+        <div className="flex justify-between items-center">
+          <Logo homeTo={homeTo} logo={logo} title={title} />
+          <div className="flex items-center space-x-4">
+            <div className="animate-pulse h-10 w-20 bg-base-300 rounded"></div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="bg-base-100 p-4 border-b border-base-300 shadow-sm sticky top-0 z-50">
@@ -87,7 +117,7 @@ const Navbar = ({
         <div className="hidden md:flex items-center space-x-6">
           <NavLinks links={links} />
 
-          {/* Add ThemeSelector here */}
+          {/* Theme Selector */}
           <ThemeSelector />
 
           {user ? (
@@ -103,13 +133,24 @@ const Navbar = ({
                 aria-haspopup="menu"
                 aria-expanded={desktopDropdownOpen}
               >
-                <UserAvatar user={user} size="md" />
+                <UserAvatar 
+                  user={{
+                    photoURL: user.profilePicture,
+                    displayName: user.name || user.email,
+                    email: user.email,
+                  }} 
+                  size="md" 
+                />
               </button>
 
               <ProfileDropdown
                 ref={desktopDropdownRef}
                 open={desktopDropdownOpen}
-                user={user}
+                user={{
+                  ...user,
+                  displayName: user.name || user.email,
+                  photoURL: user.profilePicture,
+                }}
                 onLogout={onLogout}
                 onClose={() => setDesktopDropdownOpen(false)}
               />
@@ -134,7 +175,7 @@ const Navbar = ({
 
         {/* Mobile controls */}
         <div className="flex items-center space-x-3 md:hidden">
-          {/* Add ThemeSelector for mobile - simplified version */}
+          {/* Theme Selector for mobile */}
           <div className="mr-2">
             <ThemeSelector />
           </div>
@@ -147,7 +188,13 @@ const Navbar = ({
               aria-haspopup="menu"
               aria-expanded={desktopDropdownOpen}
             >
-              <UserAvatar user={user} size="sm" />
+              <UserAvatar 
+                user={{
+                  photoURL: user.profilePicture,
+                  displayName: user.name || user.email,
+                }} 
+                size="sm" 
+              />
             </button>
           )}
           <button
@@ -169,7 +216,11 @@ const Navbar = ({
       <MobileMenu
         ref={mobileMenuRef}
         open={mobileMenuOpen}
-        user={user}
+        user={user ? {
+          ...user,
+          displayName: user.name || user.email,
+          photoURL: user.profilePicture,
+        } : null}
         links={links}
         onClose={() => setMobileMenuOpen(false)}
         onLogout={onLogout}
