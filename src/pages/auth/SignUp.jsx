@@ -29,12 +29,12 @@ const SignUp = () => {
   
   const otpRefs = useRef([]);
 
-  // Loading states from mutations - using isLoading for React Query v4
+  // Loading states from mutations
   const loading = {
-    sendingOtp: sendOtp.isLoading || sendOtp.isPending || false,
-    verifyingOtp: verifyOtp.isLoading || verifyOtp.isPending || false,
-    signingUp: signup.isLoading || signup.isPending || false,
-    googleSignup: googleSignup.isLoading || googleSignup.isPending || false,
+    sendingOtp: sendOtp.isPending,
+    verifyingOtp: verifyOtp.isPending,
+    signingUp: signup.isPending,
+    googleSignup: googleSignup.isPending,
   };
 
   useEffect(() => {
@@ -74,15 +74,24 @@ const SignUp = () => {
   }, [sendOtp.error, verifyOtp.error, signup.error, googleSignup.error]);
 
   const handleMutationError = (error, field) => {
-    const errorMessage = error.response?.data?.message || error.message || "An error occurred";
+    let errorMessage = "An error occurred";
     
-    if (errorMessage.includes("already verified")) {
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    // Handle specific error messages
+    if (errorMessage.includes("already verified") || errorMessage.includes("already exists")) {
       setErrors({ 
-        email: "Email already verified. Please login.",
+        email: "Email already exists. Please login or use a different email.",
       });
     } else if (errorMessage.includes("not found") || errorMessage.includes("expired")) {
       setErrors({ [field]: "OTP not found or expired. Please request a new one." });
-    } else if (errorMessage.includes("Invalid OTP")) {
+    } else if (errorMessage.includes("Invalid OTP") || errorMessage.includes("invalid")) {
       setErrors({ [field]: "Invalid OTP. Please check and try again." });
     } else if (errorMessage.includes("token expired")) {
       setErrors({ 
@@ -111,46 +120,41 @@ const SignUp = () => {
         google: errorMessage || "Google signup failed. Please try again."
       });
     } else {
-      setErrors({ [field]: errorMessage });
+      // For 400 Bad Request, show more specific message
+      if (error.response?.status === 400) {
+        setErrors({ 
+          [field]: errorMessage || "Invalid request. Please check your input and try again."
+        });
+      } else {
+        setErrors({ [field]: errorMessage });
+      }
     }
   };
 
   // Firebase Google Signup Handler
   const handleGoogleSignup = async () => {
-    // Clear any existing errors
     setErrors({});
 
     try {
-      // Initialize Google provider
       const provider = new GoogleAuthProvider();
-      
-      // Optional: Add scopes if needed
       provider.addScope('email');
       provider.addScope('profile');
       
-      // Sign in with popup
       const result = await signInWithPopup(auth, provider);
-      
-      // Get the Firebase ID token
       const idToken = await result.user.getIdToken();
       
-      // Send token to your backend for registration/login
       googleSignup.mutate(idToken, {
         onSuccess: (data) => {
-          // Redirect to dashboard on successful registration/login
           navigate("/dashboard");
         },
         onError: (error) => {
-          setErrors({ 
-            google: error.response?.data?.message || "Google signup failed" 
-          });
+          handleMutationError(error, 'google');
         }
       });
       
     } catch (error) {
       console.error("Google signup error:", error);
       
-      // Handle specific Firebase errors
       if (error.code === 'auth/popup-closed-by-user') {
         setErrors({ google: "Google signup was cancelled." });
       } else if (error.code === 'auth/popup-blocked') {
@@ -171,7 +175,6 @@ const SignUp = () => {
     }
   };
 
-  // Rest of your existing functions remain the same...
   const validateForm = () => {
     const newErrors = {};
     if (!signupData.fullName.trim()) newErrors.fullName = "Full name is required";
@@ -248,6 +251,9 @@ const SignUp = () => {
         setResendTimer(60);
         setOtp(["", "", "", "", "", ""]);
       },
+      onError: (error) => {
+        handleMutationError(error, 'email');
+      }
     });
   };
 
@@ -271,10 +277,13 @@ const SignUp = () => {
       { email: signupData.email, otp: otpString },
       {
         onSuccess: (data) => {
-          setSignupToken(data.signupToken);
+          setSignupToken(data.signupToken || data.token);
           setOtpVerified(true);
           setShowOtpPopup(false);
         },
+        onError: (error) => {
+          handleMutationError(error, 'otp');
+        }
       }
     );
   };
@@ -305,6 +314,9 @@ const SignUp = () => {
         onSuccess: () => {
           navigate("/login");
         },
+        onError: (error) => {
+          handleMutationError(error, 'submit');
+        }
       }
     );
   };
@@ -335,7 +347,7 @@ const SignUp = () => {
         otpRefs.current[0]?.focus();
       },
       onError: (error) => {
-        setErrors({ otp: error.response?.data?.message || "Failed to resend OTP" });
+        handleMutationError(error, 'otp');
       }
     });
   };
@@ -352,23 +364,23 @@ const SignUp = () => {
       {/* OTP Verification Popup */}
       {showOtpPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-md bg-base-100 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in duration-300">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in duration-300 border border-gray-200">
             <button
               onClick={closeOtpPopup}
-              className="absolute right-4 top-4 btn btn-circle btn-ghost btn-sm"
+              className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-gray-500" />
             </button>
 
             <div className="text-center mb-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                <Key className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-sm border border-blue-200">
+                <Key className="w-8 h-8 text-blue-600" />
               </div>
-              <h3 className="text-xl font-bold">Verify Your Email</h3>
-              <p className="text-sm opacity-70 mt-2">
+              <h3 className="text-xl font-bold text-gray-900">Verify Your Email</h3>
+              <p className="text-sm text-gray-600 mt-2">
                 Enter the 6-digit code sent to
                 <br />
-                <span className="font-medium text-primary">{signupData.email}</span>
+                <span className="font-semibold text-blue-600">{signupData.email}</span>
               </p>
             </div>
 
@@ -386,9 +398,10 @@ const SignUp = () => {
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
                     onPaste={handlePaste}
-                    className={`input input-bordered w-14 h-14 text-center text-2xl font-bold transition-all ${
-                      errors.otp ? 'input-error' : ''
-                    } ${digit ? 'border-primary ring-2 ring-primary/20' : ''}`}
+                    className={`w-14 h-14 text-center text-2xl font-bold rounded-lg transition-all border-2
+                      ${errors.otp ? 'border-red-500 bg-red-50' : 'border-gray-300'} 
+                      ${digit ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'}
+                      focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none`}
                     disabled={loading.verifyingOtp}
                     autoFocus={index === 0}
                   />
@@ -397,31 +410,42 @@ const SignUp = () => {
 
               {errors.otp && (
                 <div className="text-center mb-4">
-                  <span className="label-text-alt text-error">{errors.otp}</span>
+                  <span className="text-sm text-red-600 flex items-center justify-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.otp}
+                  </span>
                 </div>
               )}
 
               <button
                 onClick={handleVerifyOtp}
-                className={`btn btn-primary w-full ${loading.verifyingOtp ? "loading" : ""}`}
+                className={`w-full h-11 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center
+                  ${loading.verifyingOtp ? "opacity-70 cursor-not-allowed" : ""}
+                  ${otp.join("").length !== 6 ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={loading.verifyingOtp || otp.join("").length !== 6}
               >
-                {loading.verifyingOtp ? "Verifying..." : "Verify OTP"}
+                {loading.verifyingOtp ? (
+                  <>
+                    <div className="loading loading-spinner loading-sm mr-2"></div>
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify OTP"
+                )}
               </button>
             </div>
 
             <div className="text-center">
-              <p className="text-sm opacity-70 mb-3">Didn't receive the code?</p>
+              <p className="text-sm text-gray-600 mb-3">Didn't receive the code?</p>
               <button
                 onClick={resendOtp}
-                className={`btn btn-ghost btn-sm ${
-                  resendTimer > 0 || loading.sendingOtp ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`text-blue-600 font-medium text-sm hover:text-blue-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50
+                  ${resendTimer > 0 || loading.sendingOtp ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={resendTimer > 0 || loading.sendingOtp}
               >
                 {loading.sendingOtp ? (
                   <>
-                    <span className="loading loading-spinner loading-xs"></span>
+                    <div className="loading loading-spinner loading-xs mr-2"></div>
                     Sending...
                   </>
                 ) : resendTimer > 0 ? (
@@ -432,192 +456,273 @@ const SignUp = () => {
               </button>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-base-300">
-              <p className="text-xs opacity-50 text-center">The OTP will expire in 10 minutes</p>
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500 text-center">The OTP will expire in 10 minutes</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Main Signup Form */}
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-base-100 via-base-100 to-base-200">
-        <div className="border border-primary/20 flex w-full max-w-5xl mx-auto bg-base-100 rounded-2xl shadow-2xl overflow-hidden">
-          <div className="w-full lg:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col">
-            <div className="mb-8 flex items-center justify-start gap-3">
-              <ShipWheelIcon className="w-10 h-10 text-primary" />
-              <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
-                Society Fund
-              </span>
-            </div>
-
-            <form onSubmit={handleSignUp} className="w-full space-y-6">
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold">Create an Account</h2>
-                <p className="text-sm opacity-70 mt-2">
-                  Join Society Fund Management and start managing your funds securely
+      <div className="h-screen overflow-hidden flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 via-white to-gray-50">
+        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="flex flex-col lg:flex-row">
+            {/* Left side form */}
+            <div className="w-full lg:w-1/2 p-7">
+              {/* Header Section */}
+              <div className="mb-8">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <ShipWheelIcon className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Society Fund</h1>
+                    <p className="text-sm text-gray-500">Secure Fund Management</p>
+                  </div>
+                </div>
+                
+                <h2 className="text-xl font-bold text-gray-900 mt-6">Create Account</h2>
+                <p className="text-gray-600 text-sm mt-1">
+                  Join thousands of society members managing funds securely
                 </p>
               </div>
 
-              <div className="form-control w-full">
-                <label className="label mb-1">
-                  <span className="label-text font-medium">Full Name</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    name="fullName"
-                    placeholder="John Doe"
-                    className={`input input-bordered w-full pl-10 h-12 ${errors.fullName ? 'input-error' : ''}`}
-                    value={signupData.fullName}
-                    onChange={handleChange}
-                    required
-                    disabled={otpVerified}
-                  />
-                </div>
-                {errors.fullName && (
-                  <div className="mt-1">
-                    <span className="label-text-alt text-error">{errors.fullName}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="form-control w-full">
-                <label className="label mb-1">
-                  <span className="label-text font-medium">Email</span>
-                  {otpSent && !otpVerified && (
-                    <span className="label-text-alt text-blue-500 font-medium">✓ OTP Sent</span>
-                  )}
-                  {otpVerified && (
-                    <span className="label-text-alt text-green-500 font-medium">✓ Verified</span>
-                  )}
-                </label>
-                <div className="flex flex-col sm:flex-row gap-3 mb-2">
-                  <div className="relative flex-1">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              {/* Form */}
+              <form onSubmit={handleSignUp} className="space-y-5">
+                {/* Full Name Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="w-5 h-5 text-gray-400" />
+                    </div>
                     <input
-                      type="email"
-                      name="email"
-                      placeholder="example@gmail.com"
-                      className={`input input-bordered w-full pl-10 h-12 ${errors.email ? 'input-error' : ''}`}
-                      value={signupData.email}
+                      type="text"
+                      name="fullName"
+                      placeholder="Enter your full name"
+                      className={`w-full pl-10 pr-4 h-11 rounded-lg border ${errors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'} 
+                        focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all`}
+                      value={signupData.fullName}
                       onChange={handleChange}
                       required
-                      disabled={otpSent}
+                      disabled={otpVerified}
                     />
                   </div>
-                  {!otpVerified && (
-                    <button
-                      type="button"
-                      onClick={handleSendOtp}
-                      className={`btn h-12 min-h-12 ${otpSent ? 'btn-outline' : 'btn-primary'} ${loading.sendingOtp ? "loading" : ""}`}
-                      disabled={loading.sendingOtp || otpSent}
-                    >
-                      {loading.sendingOtp ? "Sending..." : otpSent ? "Sent" : "Send OTP"}
-                    </button>
+                  {errors.fullName && (
+                    <div className="mt-1 flex items-center gap-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.fullName}
+                    </div>
                   )}
                 </div>
-                
-                {otpSent && !otpVerified && (
-                  <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-700">
-                      <strong>OTP sent!</strong> Check your email for the verification code.
-                      <button 
-                        onClick={() => setShowOtpPopup(true)}
-                        className="link link-primary ml-2"
+
+                {/* Email Field */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Email Address
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {loading.sendingOtp && (
+                        <div className="flex items-center gap-1">
+                          <div className="loading loading-spinner loading-xs text-blue-600"></div>
+                          <span className="text-xs text-blue-600 font-medium">Sending...</span>
+                        </div>
+                      )}
+                      {otpSent && !otpVerified && !loading.sendingOtp && (
+                        <span className="badge badge-sm badge-info gap-1 bg-blue-100 text-blue-800 border-blue-200">
+                          <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                          OTP Sent
+                        </span>
+                      )}
+                      {otpVerified && (
+                        <span className="badge badge-sm badge-success gap-1 bg-green-100 text-green-800 border-green-200">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Verified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className={`w-5 h-5 ${loading.sendingOtp ? 'text-blue-600 animate-pulse' : 'text-gray-400'}`} />
+                      </div>
+                      <input
+                        type="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        className={`w-full pl-10 pr-4 h-11 rounded-lg border ${errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'} 
+                          ${loading.sendingOtp ? 'border-blue-300' : ''}
+                          focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all`}
+                        value={signupData.email}
+                        onChange={handleChange}
+                        required
+                        disabled={otpSent || loading.sendingOtp}
+                      />
+                    </div>
+                    
+                    {!otpVerified && (
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        className={`h-11 px-4 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center justify-center
+                          ${otpSent 
+                            ? 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200' 
+                            : 'bg-blue-600 text-white hover:bg-blue-700'}
+                          ${loading.sendingOtp ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        disabled={loading.sendingOtp || otpSent}
                       >
-                        Enter OTP here
+                        {loading.sendingOtp ? (
+                          <>
+                            <div className="loading loading-spinner loading-sm mr-2"></div>
+                            Sending...
+                          </>
+                        ) : otpSent ? (
+                          "Sent ✓"
+                        ) : (
+                          "Send OTP"
+                        )}
                       </button>
-                    </p>
+                    )}
                   </div>
-                )}
-                
-                {errors.email && (
-                  <div className="mt-1">
-                    <span className="label-text-alt text-error">{errors.email}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="form-control w-full">
-                <label className="label mb-1">
-                  <span className="label-text font-medium">Password</span>
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="password"
-                    name="password"
-                    placeholder="••••••••"
-                    className={`input input-bordered w-full pl-10 h-12 ${errors.password ? 'input-error' : ''}`}
-                    value={signupData.password}
-                    onChange={handleChange}
-                    required
-                    minLength={6}
-                    disabled={!otpVerified}
-                  />
-                </div>
-                <div className="mt-1">
-                  <span className="label-text-alt opacity-70">Minimum 6 characters</span>
-                  {errors.password && (
-                    <span className="label-text-alt text-error ml-3">{errors.password}</span>
+                  
+                  {otpSent && !otpVerified && !loading.sendingOtp && (
+                    <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 bg-blue-100 rounded-full">
+                          <Mail className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-blue-800">
+                            <span className="font-semibold">OTP sent!</span> Check your email.
+                            <button 
+                              onClick={() => setShowOtpPopup(true)}
+                              className="text-blue-600 font-semibold ml-1 hover:underline"
+                            >
+                              Click to enter OTP
+                            </button>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {errors.email && (
+                    <div className="mt-1 flex items-center gap-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.email}
+                    </div>
                   )}
                 </div>
-              </div>
 
-              <div className="form-control mt-4">
-                <label className="label cursor-pointer justify-start gap-3 p-0">
+                {/* Password Field */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Password
+                    </label>
+                    <span className="text-sm text-gray-500">Min. 6 characters</span>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="password"
+                      name="password"
+                      placeholder="Create a strong password"
+                      className={`w-full pl-10 pr-4 h-11 rounded-lg border ${errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'} 
+                        focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all`}
+                      value={signupData.password}
+                      onChange={handleChange}
+                      required
+                      minLength={6}
+                      disabled={!otpVerified}
+                    />
+                  </div>
+                  {errors.password && (
+                    <div className="mt-1 flex items-center gap-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.password}
+                    </div>
+                  )}
+                </div>
+
+                {/* Terms Checkbox */}
+                <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
                   <input 
                     type="checkbox" 
-                    className="checkbox checkbox-sm checkbox-primary" 
+                    id="terms"
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
                     required 
                     disabled={!otpVerified}
                   />
-                  <span className="label-text text-sm">
-                    I agree to the <a href="#" className="link link-primary">Terms</a> and <a href="#" className="link link-primary">Privacy Policy</a>
-                  </span>
-                </label>
-              </div>
+                  <label htmlFor="terms" className="text-sm text-gray-700 cursor-pointer">
+                    I agree to the <a href="#" className="text-blue-600 font-medium hover:underline">Terms</a> and{" "}
+                    <a href="#" className="text-blue-600 font-medium hover:underline">Privacy Policy</a>
+                  </label>
+                </div>
 
-              <button 
-                type="submit" 
-                className={`btn btn-primary w-full h-12 min-h-12 mt-2 ${loading.signingUp ? "loading" : ""}`} 
-                disabled={loading.signingUp || !otpVerified}
-              >
-                {loading.signingUp ? "Creating Account..." : "Create Account"}
-              </button>
-
-              {errors.submit && (
-                <div className={`alert mt-4 ${errors.submit.includes("expired") || errors.submit.includes("restart") ? 'alert-error' : 'alert-warning'}`}>
-                  {errors.submit.includes("expired") || errors.submit.includes("restart") ? (
-                    <AlertCircle className="h-5 w-5 stroke-current flex-shrink-0" />
+                {/* Submit Button */}
+                <button 
+                  type="submit" 
+                  className={`w-full h-11 bg-blue-600 text-white font-medium rounded-lg transition-all flex items-center justify-center
+                    ${loading.signingUp ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'}
+                    ${!otpVerified ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                  disabled={loading.signingUp || !otpVerified}
+                >
+                  {loading.signingUp ? (
+                    <>
+                      <div className="loading loading-spinner loading-sm mr-2"></div>
+                      Creating Account...
+                    </>
                   ) : (
-                    <AlertTriangle className="h-5 w-5 stroke-current flex-shrink-0" />
+                    "Create Account"
                   )}
-                  <span className="text-sm">{errors.submit}</span>
-                </div>
-              )}
+                </button>
 
-              {/* Moved Google Signup Section to Bottom */}
-              <div className="pt-4 border-t border-base-300">
-                <div className="relative flex items-center justify-center mb-4">
-                  <div className="flex-grow border-t border-base-300"></div>
-                  <span className="mx-4 text-sm text-base-content/70">Or sign up with</span>
-                  <div className="flex-grow border-t border-base-300"></div>
+                {errors.submit && (
+                  <div className={`p-3 rounded-lg border ${errors.submit.includes("expired") || errors.submit.includes("restart") ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'}`}>
+                    <div className="flex items-center gap-2">
+                      {errors.submit.includes("expired") || errors.submit.includes("restart") ? (
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                      )}
+                      <span className="text-sm font-medium text-gray-800">{errors.submit}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Divider */}
+                <div className="relative pt-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-3 bg-white text-gray-500 font-medium">Or continue with</span>
+                  </div>
                 </div>
 
+                {/* Google Signup Button */}
                 <button
                   type="button"
                   onClick={handleGoogleSignup}
-                  className={`w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm ${
-                    loading.googleSignup ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
+                  className={`w-full flex items-center justify-center gap-3 h-11 px-4 bg-white text-gray-800 border border-gray-300 
+                    rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200
+                    ${loading.googleSignup ? 'opacity-70 cursor-not-allowed' : ''}`}
                   disabled={loading.googleSignup}
                 >
                   {loading.googleSignup ? (
                     <>
                       <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin"></div>
-                      <span>Signing up with Google...</span>
+                      <span className="font-medium">Signing up...</span>
                     </>
                   ) : (
                     <>
@@ -627,47 +732,75 @@ const SignUp = () => {
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                       </svg>
-                      <span>Sign up with Google</span>
+                      <span className="font-medium">Sign up with Google</span>
                     </>
                   )}
                 </button>
 
                 {errors.google && (
-                  <div className="alert alert-error mt-4">
-                    <AlertCircle className="h-5 w-5" />
-                    <span>{errors.google}</span>
+                  <div className="p-3 rounded-lg border border-red-200 bg-red-50">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <span className="text-sm font-medium text-gray-800">{errors.google}</span>
+                    </div>
                   </div>
                 )}
-              </div>
 
-              <div className="text-center pt-4">
-                <span className="text-sm opacity-70">
-                  Already have an account?{" "}
-                  <Link to="/login" className="link link-primary font-semibold">Sign In</Link>
-                </span>
-              </div>
-            </form>
-          </div>
+                {/* Login Link */}
+                <div className="text-center pt-4">
+                  <p className="text-sm text-gray-600">
+                    Already have an account?{" "}
+                    <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+                      Sign In
+                    </Link>
+                  </p>
+                </div>
+              </form>
+            </div>
 
-          <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-primary/10 via-primary/5 to-secondary/10 p-8">
-            <div className="text-center max-w-md mx-auto">
-              <img 
-                src="/House_searching-pana.png" 
-                alt="Financial management illustration" 
-                className="w-full max-w-md object-contain mb-6 mx-auto" 
-              />
-              <h3 className="text-2xl font-bold mb-4">Secure Fund Management</h3>
-              <p className="text-base opacity-80 mb-6">
-                Join thousands of society members who are efficiently managing their funds with our secure platform.
-              </p>
-              <div className="mt-8 p-4 bg-primary/5 rounded-lg border border-primary/10">
-                <p className="text-sm opacity-80 text-left">
-                  <strong className="text-primary">Note:</strong> After entering email, click "Send OTP" to receive verification code. 
-                  Verify OTP before setting your password.
-                  <br />
-                  <br />
-                  <strong className="text-primary">Quick signup:</strong> Use Google for instant access.
+            {/* Right side */}
+            <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-7">
+              <div className="text-center max-w-xs mx-auto">
+                <div className="mb-6">
+                  <img 
+                    src="/House_searching-pana.png" 
+                    alt="Financial management illustration" 
+                    className="w-full max-w-[220px] mx-auto object-contain" 
+                  />
+                </div>
+                
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Secure Fund Management</h3>
+                <p className="text-gray-600 text-sm mb-5">
+                  Join thousands of society members efficiently managing their funds securely.
                 </p>
+                
+                <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Key className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-semibold text-gray-900 text-sm mb-1">Secure Verification</h4>
+                      <p className="text-xs text-gray-600">
+                        OTP verification ensures account security
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-semibold text-gray-900 text-sm mb-1">Quick Signup</h4>
+                      <p className="text-xs text-gray-600">
+                        Google signup for instant access
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
