@@ -1,9 +1,10 @@
+// hooks/useAuthMutations.js
 import { useMutation } from "@tanstack/react-query";
 import { axiosInstance } from "../lib/axois";
 
 export const useAuthMutations = () => {
   // Send OTP mutation
-  const sendOtpMutation = useMutation({
+  const sendOtp = useMutation({
     mutationFn: async (email) => {
       const response = await axiosInstance.post("/auth/send-otp", { email });
       return response.data;
@@ -11,7 +12,7 @@ export const useAuthMutations = () => {
   });
 
   // Verify OTP mutation
-  const verifyOtpMutation = useMutation({
+  const verifyOtp = useMutation({
     mutationFn: async ({ email, otp }) => {
       const response = await axiosInstance.post("/auth/verify-otp", { 
         email, 
@@ -22,7 +23,8 @@ export const useAuthMutations = () => {
   });
 
   // Signup mutation
-  const signupMutation = useMutation({
+  
+  const signup = useMutation({
     mutationFn: async ({ signupToken, ...userData }) => {
       const response = await axiosInstance.post("/users/signup", 
         { 
@@ -39,9 +41,29 @@ export const useAuthMutations = () => {
     },
   });
 
+  // Google auth mutation
+  const googleSignup = useMutation({
+    mutationFn: async (googleToken) => {
+      const response = await axiosInstance.post("/auth/google", {}, {
+        headers: {
+          Authorization: `Bearer ${googleToken}`,
+        },
+      });
+      return response.data;
+    },
+  });
+
   return {
-    sendOtpMutation,
-    verifyOtpMutation,
-    signupMutation,
+    sendOtp,
+    verifyOtp,
+    signup,
+    googleSignup,
+    // For backward compatibility
+    sendOtpMutation: sendOtp,
+    verifyOtpMutation: verifyOtp,
+    signupMutation: signup,
+    googleSignupMutation: googleSignup,
   };
 };
+
+

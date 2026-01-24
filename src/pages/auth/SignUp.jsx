@@ -2,13 +2,16 @@ import { ShipWheelIcon, Mail, Key, Lock, User, AlertCircle, AlertTriangle, X } f
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthMutations } from "../../hooks/useAuthMutations";
+import { auth } from "../../firebase/firebaseConfig";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const {
-    sendOtpMutation,
-    verifyOtpMutation,
-    signupMutation,
+    sendOtp,
+    verifyOtp,
+    signup,
+    googleSignup,
   } = useAuthMutations();
 
   const [signupData, setSignupData] = useState({
@@ -26,11 +29,12 @@ const SignUp = () => {
   
   const otpRefs = useRef([]);
 
-  // Loading states from mutations
+  // Loading states from mutations - using isLoading for React Query v4
   const loading = {
-    sendingOtp: sendOtpMutation.isPending,
-    verifyingOtp: verifyOtpMutation.isPending,
-    signingUp: signupMutation.isPending,
+    sendingOtp: sendOtp.isLoading || sendOtp.isPending || false,
+    verifyingOtp: verifyOtp.isLoading || verifyOtp.isPending || false,
+    signingUp: signup.isLoading || signup.isPending || false,
+    googleSignup: googleSignup.isLoading || googleSignup.isPending || false,
   };
 
   useEffect(() => {
@@ -55,16 +59,19 @@ const SignUp = () => {
 
   // Handle mutation errors
   useEffect(() => {
-    if (sendOtpMutation.error) {
-      handleMutationError(sendOtpMutation.error, 'email');
+    if (sendOtp.error) {
+      handleMutationError(sendOtp.error, 'email');
     }
-    if (verifyOtpMutation.error) {
-      handleMutationError(verifyOtpMutation.error, 'otp');
+    if (verifyOtp.error) {
+      handleMutationError(verifyOtp.error, 'otp');
     }
-    if (signupMutation.error) {
-      handleMutationError(signupMutation.error, 'submit');
+    if (signup.error) {
+      handleMutationError(signup.error, 'submit');
     }
-  }, [sendOtpMutation.error, verifyOtpMutation.error, signupMutation.error]);
+    if (googleSignup.error) {
+      handleMutationError(googleSignup.error, 'google');
+    }
+  }, [sendOtp.error, verifyOtp.error, signup.error, googleSignup.error]);
 
   const handleMutationError = (error, field) => {
     const errorMessage = error.response?.data?.message || error.message || "An error occurred";
@@ -99,11 +106,72 @@ const SignUp = () => {
       setOtpSent(false);
       setOtpVerified(false);
       setSignupToken("");
+    } else if (field === 'google') {
+      setErrors({ 
+        google: errorMessage || "Google signup failed. Please try again."
+      });
     } else {
       setErrors({ [field]: errorMessage });
     }
   };
 
+  // Firebase Google Signup Handler
+  const handleGoogleSignup = async () => {
+    // Clear any existing errors
+    setErrors({});
+
+    try {
+      // Initialize Google provider
+      const provider = new GoogleAuthProvider();
+      
+      // Optional: Add scopes if needed
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      // Sign in with popup
+      const result = await signInWithPopup(auth, provider);
+      
+      // Get the Firebase ID token
+      const idToken = await result.user.getIdToken();
+      
+      // Send token to your backend for registration/login
+      googleSignup.mutate(idToken, {
+        onSuccess: (data) => {
+          // Redirect to dashboard on successful registration/login
+          navigate("/dashboard");
+        },
+        onError: (error) => {
+          setErrors({ 
+            google: error.response?.data?.message || "Google signup failed" 
+          });
+        }
+      });
+      
+    } catch (error) {
+      console.error("Google signup error:", error);
+      
+      // Handle specific Firebase errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        setErrors({ google: "Google signup was cancelled." });
+      } else if (error.code === 'auth/popup-blocked') {
+        setErrors({ 
+          google: "Popup was blocked by your browser. Please allow popups for this site." 
+        });
+      } else if (error.code === 'auth/network-request-failed') {
+        setErrors({ google: "Network error. Please check your connection." });
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setErrors({ 
+          google: "This domain is not authorized for Google sign-in. Please contact support." 
+        });
+      } else {
+        setErrors({ 
+          google: error.message || "Google signup failed. Please try again." 
+        });
+      }
+    }
+  };
+
+  // Rest of your existing functions remain the same...
   const validateForm = () => {
     const newErrors = {};
     if (!signupData.fullName.trim()) newErrors.fullName = "Full name is required";
@@ -174,7 +242,7 @@ const SignUp = () => {
 
     setErrors({});
 
-    sendOtpMutation.mutate(signupData.email, {
+    sendOtp.mutate(signupData.email, {
       onSuccess: () => {
         setOtpSent(true);
         setResendTimer(60);
@@ -199,7 +267,7 @@ const SignUp = () => {
 
     setErrors({});
 
-    verifyOtpMutation.mutate(
+    verifyOtp.mutate(
       { email: signupData.email, otp: otpString },
       {
         onSuccess: (data) => {
@@ -228,7 +296,7 @@ const SignUp = () => {
 
     setErrors({});
 
-    signupMutation.mutate(
+    signup.mutate(
       { 
         ...signupData,
         signupToken 
@@ -262,7 +330,7 @@ const SignUp = () => {
     setErrors({});
     setResendTimer(60);
     
-    sendOtpMutation.mutate(signupData.email, {
+    sendOtp.mutate(signupData.email, {
       onSuccess: () => {
         otpRefs.current[0]?.focus();
       },
@@ -530,7 +598,49 @@ const SignUp = () => {
                 </div>
               )}
 
-              <div className="text-center pt-6">
+              {/* Moved Google Signup Section to Bottom */}
+              <div className="pt-4 border-t border-base-300">
+                <div className="relative flex items-center justify-center mb-4">
+                  <div className="flex-grow border-t border-base-300"></div>
+                  <span className="mx-4 text-sm text-base-content/70">Or sign up with</span>
+                  <div className="flex-grow border-t border-base-300"></div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleSignup}
+                  className={`w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm ${
+                    loading.googleSignup ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
+                  disabled={loading.googleSignup}
+                >
+                  {loading.googleSignup ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin"></div>
+                      <span>Signing up with Google...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                      <span>Sign up with Google</span>
+                    </>
+                  )}
+                </button>
+
+                {errors.google && (
+                  <div className="alert alert-error mt-4">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>{errors.google}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-center pt-4">
                 <span className="text-sm opacity-70">
                   Already have an account?{" "}
                   <Link to="/login" className="link link-primary font-semibold">Sign In</Link>
@@ -554,6 +664,9 @@ const SignUp = () => {
                 <p className="text-sm opacity-80 text-left">
                   <strong className="text-primary">Note:</strong> After entering email, click "Send OTP" to receive verification code. 
                   Verify OTP before setting your password.
+                  <br />
+                  <br />
+                  <strong className="text-primary">Quick signup:</strong> Use Google for instant access.
                 </p>
               </div>
             </div>
