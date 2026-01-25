@@ -146,47 +146,46 @@ const Login = () => {
 
   return (
     <>
-      {/* Main Login Form - EXACT SAME AS SIGNUP */}
-      <div className="h-screen overflow-hidden flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 via-white to-gray-50">
-        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+      {/* Main Login Form - Using DaisyUI classes */}
+      <div className="h-screen overflow-hidden flex items-center justify-center p-4 bg-gradient-to-br from-base-100 via-base-50 to-base-100">
+        <div className="w-full max-w-5xl bg-base-100 rounded-2xl shadow-xl border border-base-300 overflow-hidden">
           <div className="flex flex-col lg:flex-row">
-            {/* Left side form - EXACT SAME AS SIGNUP */}
+            {/* Left side form */}
             <div className="w-full lg:w-1/2 p-7">
-              {/* Header Section - EXACT SAME AS SIGNUP */}
+              {/* Header Section */}
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <ShipWheelIcon className="w-8 h-8 text-blue-600" />
+                  <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg">
+                    <ShipWheelIcon className="w-8 h-8 text-primary" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Society Fund</h1>
-                    <p className="text-sm text-gray-500">Secure Fund Management</p>
+                    <h1 className="text-2xl font-bold text-base-content">Society Fund</h1>
+                    <p className="text-sm text-base-content/70">Secure Fund Management</p>
                   </div>
                 </div>
                 
-                <h2 className="text-xl font-bold text-gray-900 mt-6">Welcome Back</h2>
-                <p className="text-gray-600 text-sm mt-1">
+                <h2 className="text-xl font-bold text-base-content mt-6">Welcome Back</h2>
+                <p className="text-base-content/70 text-sm mt-1">
                   Sign in to manage your society funds securely
                 </p>
               </div>
 
-              {/* Form - EXACT SAME SPACING AS SIGNUP */}
+              {/* Form */}
               <form onSubmit={handleLogin} className="space-y-5">
-                {/* Email Field - EXACT SAME AS SIGNUP */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
+                {/* Email Field */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium text-base-content">Email Address</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="w-5 h-5 text-gray-400" />
+                      <Mail className="w-5 h-5 text-base-content/40" />
                     </div>
                     <input
                       type="email"
                       name="email"
                       placeholder="you@example.com"
-                      className={`w-full pl-10 pr-4 h-11 rounded-lg border ${errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'} 
-                        focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all`}
+                      className={`input input-bordered w-full pl-11 h-11 ${errors.email ? 'input-error' : ''}`}
                       value={loginData.email}
                       onChange={handleChange}
                       required
@@ -194,33 +193,32 @@ const Login = () => {
                     />
                   </div>
                   {errors.email && (
-                    <div className="mt-1 flex items-center gap-1 text-red-600 text-sm">
+                    <div className="mt-2 flex items-center gap-1 text-error text-sm">
                       <AlertCircle className="w-4 h-4" />
                       {errors.email}
                     </div>
                   )}
                 </div>
 
-                {/* Password Field - EXACT SAME AS SIGNUP */}
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Password
+                {/* Password Field */}
+                <div className="form-control">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="label">
+                      <span className="label-text font-medium text-base-content">Password</span>
                     </label>
-                    <Link to="/forgot-password" className="text-sm text-blue-600 font-medium hover:underline">
+                    <Link to="/forgot-password" className="label-text-alt link link-primary font-medium">
                       Forgot Password?
                     </Link>
                   </div>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="w-5 h-5 text-gray-400" />
+                      <Lock className="w-5 h-5 text-base-content/40" />
                     </div>
                     <input
                       type="password"
                       name="password"
                       placeholder="Enter your password"
-                      className={`w-full pl-10 pr-4 h-11 rounded-lg border ${errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'} 
-                        focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all`}
+                      className={`input input-bordered w-full pl-11 h-11 ${errors.password ? 'input-error' : ''}`}
                       value={loginData.password}
                       onChange={handleChange}
                       required
@@ -228,107 +226,80 @@ const Login = () => {
                     />
                   </div>
                   {errors.password && (
-                    <div className="mt-1 flex items-center gap-1 text-red-600 text-sm">
+                    <div className="mt-2 flex items-center gap-1 text-error text-sm">
                       <AlertCircle className="w-4 h-4" />
                       {errors.password}
                     </div>
                   )}
                 </div>
 
-                {/* Remember Me Checkbox - SAME HEIGHT AS TERMS IN SIGNUP */}
-                <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                  <input 
-                    type="checkbox" 
-                    id="remember"
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
-                    disabled={loginMutation.isPending}
-                  />
-                  <label htmlFor="remember" className="text-sm text-gray-700 cursor-pointer">
-                    Remember me
+                {/* Remember Me Checkbox */}
+                <div className="form-control">
+                  <label className="label cursor-pointer justify-start gap-3 hover:bg-base-200 p-2 rounded-lg transition-colors">
+                    <input 
+                      type="checkbox" 
+                      className="checkbox checkbox-primary" 
+                      disabled={loginMutation.isPending}
+                    />
+                    <span className="label-text text-base-content">
+                      Remember me
+                    </span>
                   </label>
                 </div>
 
-                {/* Submit Button - EXACT SAME AS SIGNUP */}
+                {/* Submit Button */}
                 <button 
                   type="submit" 
-                  className={`w-full h-11 bg-blue-600 text-white font-medium rounded-lg transition-all flex items-center justify-center
-                    ${loginMutation.isPending ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'}`} 
+                  className={`btn btn-primary w-full h-11 ${loginMutation.isPending ? 'loading' : ''}`} 
                   disabled={loginMutation.isPending}
                 >
-                  {loginMutation.isPending ? (
-                    <>
-                      <div className="loading loading-spinner loading-sm mr-2"></div>
-                      Signing in...
-                    </>
-                  ) : (
-                    "Sign In"
-                  )}
+                  {loginMutation.isPending ? "Signing in..." : "Sign In"}
                 </button>
 
                 {errors.submit && (
-                  <div className={`p-3 rounded-lg border ${errors.submit.includes("expired") || errors.submit.includes("restart") ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'}`}>
-                    <div className="flex items-center gap-2">
-                      {errors.submit.includes("expired") || errors.submit.includes("restart") ? (
-                        <AlertCircle className="w-5 h-5 text-red-600" />
-                      ) : (
-                        <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                      )}
-                      <span className="text-sm font-medium text-gray-800">{errors.submit}</span>
-                    </div>
+                  <div className={`alert ${errors.submit.includes("expired") || errors.submit.includes("restart") ? 'alert-error' : 'alert-warning'} shadow-sm`}>
+                    {errors.submit.includes("expired") || errors.submit.includes("restart") ? (
+                      <AlertCircle className="h-4 w-4" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4" />
+                    )}
+                    <span className="text-sm font-medium">{errors.submit}</span>
                   </div>
                 )}
 
-                {/* Divider - EXACT SAME AS SIGNUP */}
-                <div className="relative pt-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-3 bg-white text-gray-500 font-medium">Or continue with</span>
-                  </div>
-                </div>
+                {/* Divider */}
+                <div className="divider text-base-content/50">Or continue with</div>
 
-                {/* Google Login Button - EXACT SAME AS SIGNUP */}
+                {/* Google Login Button */}
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className={`w-full flex items-center justify-center gap-3 h-11 px-4 bg-white text-gray-800 border border-gray-300 
-                    rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200
-                    ${googleLoginMutation.isPending ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  className={`btn btn-outline w-full h-11 ${googleLoginMutation.isPending ? 'loading' : ''}`}
                   disabled={googleLoginMutation.isPending}
                 >
-                  {googleLoginMutation.isPending ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin"></div>
-                      <span className="font-medium">Signing in...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                      </svg>
-                      <span className="font-medium">Sign in with Google</span>
-                    </>
+                  {!googleLoginMutation.isPending && (
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
                   )}
+                  {googleLoginMutation.isPending ? "Signing in..." : "Sign in with Google"}
                 </button>
 
                 {errors.google && (
-                  <div className="p-3 rounded-lg border border-red-200 bg-red-50">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                      <span className="text-sm font-medium text-gray-800">{errors.google}</span>
-                    </div>
+                  <div className="alert alert-error shadow-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">{errors.google}</span>
                   </div>
                 )}
 
-                {/* Signup Link - EXACT SAME AS SIGNUP LOGIN LINK */}
+                {/* Signup Link */}
                 <div className="text-center pt-4">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-base-content/70">
                     Don't have an account?{" "}
-                    <Link to="/signup" className="text-blue-600 font-semibold hover:underline">
+                    <Link to="/signup" className="link link-primary font-semibold">
                       Sign Up
                     </Link>
                   </p>
@@ -336,8 +307,8 @@ const Login = () => {
               </form>
             </div>
 
-            {/* Right side - EXACT SAME AS SIGNUP */}
-            <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-7">
+            {/* Right side */}
+            <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-primary/10 via-primary/5 to-secondary/5 p-7">
               <div className="text-center max-w-xs mx-auto">
                 <div className="mb-6">
                   <img 
@@ -347,33 +318,33 @@ const Login = () => {
                   />
                 </div>
                 
-                <h3 className="text-lg font-bold text-gray-900 mb-3">Welcome Back!</h3>
-                <p className="text-gray-600 text-sm mb-5">
+                <h3 className="text-lg font-bold text-base-content mb-3">Welcome Back!</h3>
+                <p className="text-base-content/70 text-sm mb-5">
                   Sign in to access your society fund dashboard and manage finances securely.
                 </p>
                 
-                <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <div className="p-4 bg-base-100/50 backdrop-blur-sm rounded-lg border border-base-200">
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
                     </div>
                     <div className="text-left">
-                      <h4 className="font-semibold text-gray-900 text-sm mb-1">Secure Access</h4>
-                      <p className="text-xs text-gray-600">
+                      <h4 className="font-semibold text-base-content text-sm mb-1">Secure Access</h4>
+                      <p className="text-xs text-base-content/70">
                         Your data is protected with industry-standard security
                       </p>
                     </div>
                   </div>
                   
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <User className="w-5 h-5 text-purple-600" />
+                    <div className="p-2 bg-secondary/10 rounded-lg">
+                      <User className="w-5 h-5 text-secondary" />
                     </div>
                     <div className="text-left">
-                      <h4 className="font-semibold text-gray-900 text-sm mb-1">Quick Login</h4>
-                      <p className="text-xs text-gray-600">
+                      <h4 className="font-semibold text-base-content text-sm mb-1">Quick Login</h4>
+                      <p className="text-xs text-base-content/70">
                         Google login for instant access to your account
                       </p>
                     </div>
