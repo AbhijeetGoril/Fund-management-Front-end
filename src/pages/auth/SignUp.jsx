@@ -525,12 +525,12 @@ const SignUp = () => {
                       Email Address
                     </label>
                     <div className="flex items-center gap-2">
-                      {loading.sendingOtp && (
+                      {/* {loading.sendingOtp && (
                         <div className="flex items-center gap-1">
                           <div className="loading loading-spinner loading-xs text-blue-600"></div>
                           <span className="text-xs text-blue-600 font-medium">Sending...</span>
                         </div>
-                      )}
+                      )} */}
                       {otpSent && !otpVerified && !loading.sendingOtp && (
                         <span className="badge badge-sm badge-info gap-1 bg-blue-100 text-blue-800 border-blue-200">
                           <div className="w-2 h-2 rounded-full bg-blue-600"></div>
