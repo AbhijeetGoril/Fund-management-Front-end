@@ -1,11 +1,10 @@
 import { ShipWheelIcon, Mail, Lock, User, AlertCircle, AlertTriangle } from "lucide-react";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
 import { auth } from "../../firebase/firebaseConfig";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { toast } from "react-toastify";
-import { axiosInstance } from "../../lib/axois";
+import { useLoginMutation, useGoogleLoginMutation } from "../../hooks/useAuthMutations";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -15,64 +14,9 @@ const Login = () => {
   });
   const [errors, setErrors] = useState({});
 
-  // React Query mutations
-  const loginMutation = useMutation({
-    mutationFn: (loginData) => axiosInstance.post('/auth/login', loginData),
-    onSuccess: (data) => {
-      toast.success("Login successful!");
-      navigate("/dashboard");
-    },
-    onError: (error) => {
-      console.error("Login error:", error);
-      const errorMessage = error.response?.data?.message || error.message;
-      
-      if (errorMessage.includes("Invalid credentials") || errorMessage.includes("Invalid email or password")) {
-        setErrors({ 
-          email: "Invalid email or password",
-          password: "Invalid email or password" 
-        });
-      } else if (errorMessage.includes("User not found")) {
-        setErrors({ email: "No account found with this email" });
-      } else if (errorMessage.includes("required") || errorMessage.includes("missing")) {
-        setErrors({ submit: "Email and password are required" });
-      } else {
-        setErrors({ submit: errorMessage });
-      }
-      toast.error(errorMessage || "Login failed!");
-    }
-  });
-
-  const googleLoginMutation = useMutation({
-    mutationFn: (idToken) => axiosInstance.post('/auth/google', { },{
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      }),
-    onSuccess: (data) => {
-      toast.success("Login successful!");
-      navigate("/dashboard");
-    },
-    onError: (error) => {
-      console.error("Google login error:", error);
-      
-      if (error.code === 'auth/popup-closed-by-user') {
-        setErrors({ google: "Google login was cancelled." });
-      } else if (error.code === 'auth/popup-blocked') {
-        setErrors({ 
-          google: "Popup was blocked by your browser. Please allow popups for this site." 
-        });
-      } else if (error.code === 'auth/network-request-failed') {
-        setErrors({ google: "Network error. Please check your connection." });
-      } else if (error.response?.data?.message) {
-        setErrors({ google: error.response.data.message });
-      } else {
-        setErrors({ 
-          google: error.message || "Google login failed. Please try again." 
-        });
-      }
-      toast.error("Google login failed!");
-    }
-  });
+  // Use the custom hooks for mutations
+  const loginMutation = useLoginMutation();
+  const googleLoginMutation = useGoogleLoginMutation();
 
   const validateForm = () => {
     const newErrors = {};
@@ -105,7 +49,20 @@ const Login = () => {
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
       
-      googleLoginMutation.mutate(idToken);
+      googleLoginMutation.mutate(idToken, {
+        onSuccess: (data) => {
+          navigate("/dashboard");
+        },
+        onError: (error) => {
+          const errorData = error;
+          if (errorData.fieldErrors) {
+            setErrors(errorData.fieldErrors);
+          }
+          if (errorData.generalError) {
+            toast.error(errorData.generalError);
+          }
+        }
+      });
       
     } catch (error) {
       console.error("Google signup error:", error);
@@ -141,7 +98,21 @@ const Login = () => {
     }
 
     setErrors({});
-    loginMutation.mutate(loginData);
+    
+    loginMutation.mutate(loginData, {
+      onSuccess: (data) => {
+        navigate("/dashboard");
+      },
+      onError: (error) => {
+        const errorData = error;
+        if (errorData.fieldErrors) {
+          setErrors(errorData.fieldErrors);
+        }
+        if (errorData.generalError) {
+          toast.error(errorData.generalError);
+        }
+      }
+    });
   };
 
   return (
