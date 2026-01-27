@@ -1,49 +1,76 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShipWheelIcon, Mail, Lock, ArrowLeft, AlertCircle, AlertTriangle, CheckCircle, Key, Clock, X } from "lucide-react";
+import { ShipWheelIcon, Mail, Lock, ArrowLeft, AlertCircle, AlertTriangle, CheckCircle, Key, X } from "lucide-react";
 import { useForgotPasswordMutation, useVerifyResetOtpMutation, useResetPasswordMutation } from '../../hooks/useAuthMutations';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  
+  const [signupData, setSignupData] = useState({
+    email: "",
+  });
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
-  const [otpSentTime, setOtpSentTime] = useState(null);
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [errors, setErrors] = useState({});
   
-  const { register, handleSubmit, formState: { errors: formErrors }, watch, reset } = useForm();
+  const { register, handleSubmit, formState: { errors: formErrors }, watch } = useForm();
   const otpRefs = useRef([]);
-  
+
   const forgotPasswordMutation = useForgotPasswordMutation();
   const verifyResetOtpMutation = useVerifyResetOtpMutation();
   const resetPasswordMutation = useResetPasswordMutation();
 
+  // Loading states from mutations
+  const loading = {
+    sendingOtp: forgotPasswordMutation.isPending,
+    verifyingOtp: verifyResetOtpMutation.isPending,
+    resettingPassword: resetPasswordMutation.isPending,
+  };
+
+  useEffect(() => {
+    otpRefs.current = otpRefs.current.slice(0, 6);
+  }, []);
+
+  useEffect(() => {
+    let timer;
+    if (resendTimer > 0) {
+      timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [resendTimer]);
+
+  useEffect(() => {
+    if (otpSent && !otpVerified) {
+      setShowOtpPopup(true);
+    }
+  }, [otpSent, otpVerified]);
+
   // Handle mutation errors
   useEffect(() => {
     if (forgotPasswordMutation.error) {
-      handleMutationError(forgotPasswordMutation.error, 'email', 'forgot');
+      handleMutationError(forgotPasswordMutation.error, 'email');
     }
     if (verifyResetOtpMutation.error) {
-      handleMutationError(verifyResetOtpMutation.error, 'otp', 'verify');
+      handleMutationError(verifyResetOtpMutation.error, 'otp');
     }
     if (resetPasswordMutation.error) {
-      handleMutationError(resetPasswordMutation.error, 'password', 'reset');
+      handleMutationError(resetPasswordMutation.error, 'password');
     }
   }, [forgotPasswordMutation.error, verifyResetOtpMutation.error, resetPasswordMutation.error]);
 
-  const handleMutationError = (error, field, type) => {
+  const handleMutationError = (error, field) => {
     let errorMessage = "An error occurred";
     
-    // Extract error message
-    if (error.fieldErrors?.[field]) {
-      errorMessage = error.fieldErrors[field];
-    } else if (error.generalError) {
-      errorMessage = error.generalError;
-    } else if (error.response?.data?.message) {
+    if (error.response?.data?.message) {
       errorMessage = error.response.data.message;
+    } else if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -56,56 +83,43 @@ const ForgotPassword = () => {
     } else if (errorMessage.includes("Email is required")) {
       setErrors({ email: "Please enter your email address." });
     } else if (errorMessage.includes("OTP expired")) {
-      setErrors({ 
-        otp: "OTP has expired. Please request a new one.",
-        timer: "expired"
-      });
-      setResendTimer(0);
-    } else if (errorMessage.includes("Invalid OTP")) {
-      setErrors({ otp: "Invalid OTP. Please check and try again." });
+      setErrors({ [field]: "OTP has expired. Please request a new one." });
+    } else if (errorMessage.includes("Invalid OTP") || errorMessage.includes("invalid")) {
+      setErrors({ [field]: "Invalid OTP. Please check and try again." });
     } else if (errorMessage.includes("OTP not found")) {
-      setErrors({ otp: "OTP not found or already used. Please request a new one." });
-    } else if (errorMessage.includes("Email and OTP are required")) {
-      setErrors({ 
-        email: "Email is required",
-        otp: "OTP is required" 
-      });
+      setErrors({ [field]: "OTP not found or already used. Please request a new one." });
     } else if (errorMessage.includes("Reset session expired") || errorMessage.includes("TokenExpiredError")) {
       setErrors({ 
         password: "Reset session expired. Please start the process again.",
-        session: "expired"
+        email: "Session expired. Please restart."
       });
-      resetAll();
+      setOtpSent(false);
+      setOtpVerified(false);
     } else if (errorMessage.includes("must be at least 6 characters")) {
       setErrors({ password: "Password must be at least 6 characters." });
     } else if (errorMessage.includes("Invalid reset token")) {
       setErrors({ 
         password: "Invalid reset session. Please start again.",
-        session: "invalid"
       });
-      resetAll();
+      setOtpSent(false);
+      setOtpVerified(false);
     } else {
       setErrors({ [field]: errorMessage });
     }
   };
 
-  // Timer for resend OTP
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
+  const validateForm = () => {
+    const newErrors = {};
+    if (!signupData.email.trim()) newErrors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupData.email)) newErrors.email = "Invalid email";
+    
+    const otpString = otp.join("");
+    if (!otpString && otpSent) newErrors.otp = "OTP is required";
+    if (otpString && otpString.length !== 6) newErrors.otp = "OTP must be 6 digits";
+    return newErrors;
+  };
 
-  // Focus first OTP input when popup opens
-  useEffect(() => {
-    if (showOtpPopup) {
-      setTimeout(() => {
-        otpRefs.current[0]?.focus();
-      }, 100);
-    }
-  }, [showOtpPopup]);
-
+  // EXACT OTP functions from SignUp
   const handleOtpChange = (index, value) => {
     if (value && !/^\d$/.test(value)) return;
 
@@ -115,6 +129,9 @@ const ForgotPassword = () => {
 
     if (errors.otp) {
       setErrors((prev) => ({ ...prev, otp: "" }));
+    }
+    if (errors.submit) {
+      setErrors((prev) => ({ ...prev, submit: "" }));
     }
 
     if (value && index < 5) {
@@ -146,20 +163,34 @@ const ForgotPassword = () => {
     }
   };
 
-  const handleEmailSubmit = async (data) => {
-    setErrors({});
+  // Send OTP - EXACTLY like SignUp
+  const handleSendOtp = async (e) => {
+    e?.preventDefault();
+    const emailError = !signupData.email.trim() ? "Email is required" : 
+                       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupData.email) ? "Invalid email" : "";
     
-    const result = await forgotPasswordMutation.mutateAsync(data.email);
-    if (!result?.fieldErrors) {
-      setEmail(data.email);
-      setOtpSentTime(new Date());
-      setResendTimer(60);
-      setShowOtpPopup(true);
-      setStep(2);
+    if (emailError) {
+      setErrors({ email: emailError });
+      return;
     }
+
+    setErrors({});
+
+    forgotPasswordMutation.mutate(signupData.email, {
+      onSuccess: () => {
+        setOtpSent(true);
+        setResendTimer(60);
+        setOtp(["", "", "", "", "", ""]);
+      },
+      onError: (error) => {
+        handleMutationError(error, 'email');
+      }
+    });
   };
-  
-  const handleOtpSubmit = async () => {
+
+  // Verify OTP - EXACTLY like SignUp
+  const handleVerifyOtp = async (e) => {
+    e?.preventDefault();
     const otpString = otp.join("");
     
     if (!otpString) {
@@ -173,166 +204,192 @@ const ForgotPassword = () => {
 
     setErrors({});
 
-    const result = await verifyResetOtpMutation.mutateAsync({
-      email,
-      otp: otpString
-    });
-    
-    if (!result?.fieldErrors) {
-      setShowOtpPopup(false);
-      setStep(3);
-    }
+    verifyResetOtpMutation.mutate(
+      { email: signupData.email, otp: otpString },
+      {
+        onSuccess: () => {
+          setOtpVerified(true);
+          setShowOtpPopup(false);
+        },
+        onError: (error) => {
+          handleMutationError(error, 'otp');
+        }
+      }
+    );
   };
-  
-  const handlePasswordSubmit = async (data) => {
-    const result = await resetPasswordMutation.mutateAsync(data.password);
-    if (!result?.fieldErrors) {
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+
+  // Complete Password Reset
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    
+    const formErrors = validateForm();
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return;
+    }
+
+    if (!otpVerified) {
+      setErrors({ submit: "Please verify your OTP first" });
+      return;
+    }
+
+    setErrors({});
+
+    const formData = new FormData(e.target);
+    const newPassword = formData.get('password');
+
+    resetPasswordMutation.mutate(newPassword, {
+      onSuccess: () => {
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      },
+      onError: (error) => {
+        handleMutationError(error, 'password');
+      }
+    });
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setSignupData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+    if (errors.submit) {
+      setErrors((prev) => ({ ...prev, submit: "" }));
     }
   };
 
-  const handleResendOtp = async () => {
+  const resendOtp = () => {
     if (resendTimer > 0) return;
     
+    setOtp(["", "", "", "", "", ""]);
     setErrors({});
-    setOtp(['', '', '', '', '', '']);
+    setResendTimer(60);
     
-    const result = await forgotPasswordMutation.mutateAsync(email);
-    if (!result?.fieldErrors) {
-      setOtpSentTime(new Date());
-      setResendTimer(60);
-      otpRefs.current[0]?.focus();
-    }
+    forgotPasswordMutation.mutate(signupData.email, {
+      onSuccess: () => {
+        otpRefs.current[0]?.focus();
+      },
+      onError: (error) => {
+        handleMutationError(error, 'otp');
+      }
+    });
   };
 
-  const resetAll = () => {
-    setStep(1);
-    setEmail('');
-    setOtp(['', '', '', '', '', '']);
+  const closeOtpPopup = () => {
     setShowOtpPopup(false);
+    setOtpSent(false);
+    setOtp(["", "", "", "", "", ""]);
     setErrors({});
-    reset();
   };
 
   const goBack = () => {
-    if (step === 1) {
+    if (!otpSent && !otpVerified) {
       navigate('/login');
-    } else if (step === 2 && showOtpPopup) {
+    } else if (showOtpPopup) {
       setShowOtpPopup(false);
     } else {
-      setStep(step - 1);
+      setOtpSent(false);
+      setOtpVerified(false);
       setErrors({});
     }
   };
 
-  // OTP Popup Component
-  const OtpPopup = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md bg-base-100 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in duration-300 border border-base-300">
-        <button
-          onClick={() => {
-            setShowOtpPopup(false);
-            setErrors({});
-          }}
-          className="absolute right-4 top-4 btn btn-circle btn-ghost btn-sm hover:bg-base-300 transition-colors"
-        >
-          <X className="w-5 h-5 text-base-content/70" />
-        </button>
-
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-sm border border-primary/20">
-            <Key className="w-8 h-8 text-primary" />
-          </div>
-          <h3 className="text-xl font-bold text-base-content">Reset Password OTP</h3>
-          <p className="text-sm text-base-content/70 mt-2">
-            Enter the 6-digit code sent to
-            <br />
-            <span className="font-semibold text-primary">{email}</span>
-          </p>
-        </div>
-
-        <div className="mb-6">
-          <div className="flex justify-center gap-2 mb-6">
-            {otp.map((digit, index) => (
-              <input
-                key={index}
-                ref={(el) => (otpRefs.current[index] = el)}
-                type="text"
-                inputMode="numeric"
-                pattern="\d*"
-                maxLength="1"
-                value={digit}
-                onChange={(e) => handleOtpChange(index, e.target.value)}
-                onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                onPaste={handlePaste}
-                className={`w-14 h-14 text-center text-2xl font-bold rounded-lg transition-all border-2
-                  ${errors.otp ? 'border-error bg-error/10' : 'border-base-300'} 
-                  ${digit ? 'border-primary bg-primary/10' : 'hover:border-base-400'}
-                  focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none`}
-                disabled={verifyResetOtpMutation.isPending}
-                autoFocus={index === 0}
-              />
-            ))}
-          </div>
-
-          {errors.otp && (
-            <div className={`text-center mb-4 p-3 rounded-lg ${
-              errors.otp.includes('expired') ? 'bg-error/10 border border-error/20' : 'bg-warning/10 border border-warning/20'
-            }`}>
-              <span className={`text-sm flex items-center justify-center gap-1 ${
-                errors.otp.includes('expired') ? 'text-error' : 'text-warning'
-              }`}>
-                <AlertCircle className="w-4 h-4" />
-                {errors.otp}
-              </span>
-            </div>
-          )}
-
-          <button
-            onClick={handleOtpSubmit}
-            className={`btn btn-primary w-full h-11 ${verifyResetOtpMutation.isPending ? 'loading' : ''}
-              ${otp.join("").length !== 6 ? 'btn-disabled' : ''}`}
-            disabled={verifyResetOtpMutation.isPending || otp.join("").length !== 6}
-          >
-            {verifyResetOtpMutation.isPending ? "Verifying..." : "Verify & Continue"}
-          </button>
-        </div>
-
-        <div className="text-center">
-          <p className="text-sm text-base-content/70 mb-3">Didn't receive the code?</p>
-          <button
-            onClick={handleResendOtp}
-            className={`btn btn-ghost btn-sm ${forgotPasswordMutation.isPending ? 'loading' : ''}
-              ${resendTimer > 0 ? 'btn-disabled' : ''}`}
-            disabled={resendTimer > 0 || forgotPasswordMutation.isPending}
-          >
-            {forgotPasswordMutation.isPending ? "Sending..." : 
-             resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 
-             "Resend OTP"}
-          </button>
-        </div>
-
-        <div className="mt-6 pt-4 border-t border-base-300">
-          <div className="flex items-center justify-center gap-2 text-sm text-base-content/50">
-            <Clock className="w-4 h-4" />
-            <span>OTP valid for 5 minutes</span>
-          </div>
-          {otpSentTime && (
-            <p className="text-xs text-base-content/40 text-center mt-2">
-              Sent at {otpSentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  const step = otpVerified ? 3 : otpSent ? 2 : 1;
 
   return (
     <>
-      {/* OTP Verification Popup */}
-      {showOtpPopup && <OtpPopup />}
+      {/* OTP Verification Popup - EXACTLY like SignUp */}
+      {showOtpPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-md bg-base-100 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in duration-300 border border-base-300">
+            <button
+              onClick={closeOtpPopup}
+              className="absolute right-4 top-4 btn btn-circle btn-ghost btn-sm hover:bg-base-300 transition-colors"
+            >
+              <X className="w-5 h-5 text-base-content/70" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-sm border border-primary/20">
+                <Key className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold text-base-content">Reset Password OTP</h3>
+              <p className="text-sm text-base-content/70 mt-2">
+                Enter the 6-digit code sent to
+                <br />
+                <span className="font-semibold text-primary">{signupData.email}</span>
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex justify-center gap-2 mb-6">
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => (otpRefs.current[index] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    maxLength="1"
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    onPaste={handlePaste}
+                    className={`w-14 h-14 text-center text-2xl font-bold rounded-lg transition-all border-2
+                      ${errors.otp ? 'border-error bg-error/10' : 'border-base-300'} 
+                      ${digit ? 'border-primary bg-primary/10' : 'hover:border-base-400'}
+                      focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none`}
+                    disabled={loading.verifyingOtp}
+                    autoFocus={index === 0}
+                  />
+                ))}
+              </div>
+
+              {errors.otp && (
+                <div className="text-center mb-4">
+                  <span className="text-sm text-error flex items-center justify-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.otp}
+                  </span>
+                </div>
+              )}
+
+              <button
+                onClick={handleVerifyOtp}
+                className={`btn btn-primary w-full h-11 ${loading.verifyingOtp ? 'loading' : ''}
+                  ${otp.join("").length !== 6 ? 'btn-disabled' : ''}`}
+                disabled={loading.verifyingOtp || otp.join("").length !== 6}
+              >
+                {loading.verifyingOtp ? "Verifying..." : "Verify OTP"}
+              </button>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-base-content/70 mb-3">Didn't receive the code?</p>
+              <button
+                onClick={resendOtp}
+                className={`btn btn-ghost btn-sm ${loading.sendingOtp ? 'loading' : ''}
+                  ${resendTimer > 0 ? 'btn-disabled' : ''}`}
+                disabled={resendTimer > 0 || loading.sendingOtp}
+              >
+                {loading.sendingOtp ? "Sending..." : 
+                 resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 
+                 "Resend OTP"}
+              </button>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-base-300">
+              <p className="text-xs text-base-content/50 text-center">The OTP will expire in 5 minutes</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Forgot Password Form */}
       <div className="h-screen overflow-hidden flex items-center justify-center p-4 bg-gradient-to-br from-base-100 via-base-50 to-base-100">
@@ -354,7 +411,6 @@ const ForgotPassword = () => {
                 <button
                   onClick={goBack}
                   className="btn btn-ghost btn-sm btn-circle hover:bg-base-300 transition-colors"
-                  type="button"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
@@ -392,50 +448,91 @@ const ForgotPassword = () => {
               </div>
             </div>
 
-            {/* Step 1: Email Input */}
+            {/* Step 1: Email Input - EXACTLY like SignUp */}
             {step === 1 && (
-              <form onSubmit={handleSubmit(handleEmailSubmit)} className="space-y-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleSendOtp(e); }} className="space-y-6">
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium text-base-content">Email Address</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className={`w-5 h-5 ${
-                        forgotPasswordMutation.isPending ? 'text-primary animate-pulse' : 'text-base-content/40'
-                      }`} />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="label">
+                      <span className="label-text font-medium text-base-content">Email Address</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {otpSent && !otpVerified && !loading.sendingOtp && (
+                        <span className="badge badge-info gap-1">
+                          <div className="w-2 h-2 rounded-full bg-base-100"></div>
+                          OTP Sent
+                        </span>
+                      )}
+                      {otpVerified && (
+                        <span className="badge badge-success gap-1">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Verified
+                        </span>
+                      )}
                     </div>
-                    <input
-                      type="email"
-                      {...register('email', { 
-                        required: 'Email is required',
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: 'Invalid email address'
-                        }
-                      })}
-                      placeholder="you@example.com"
-                      className={`input input-bordered w-full pl-11 h-11 ${
-                        errors.email || formErrors.email ? 'input-error' : ''
-                      }`}
-                      disabled={forgotPasswordMutation.isPending}
-                    />
                   </div>
-                  {(errors.email || formErrors.email) && (
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className={`w-5 h-5 ${
+                          loading.sendingOtp ? 'text-primary animate-pulse' : 'text-base-content/40'
+                        }`} />
+                      </div>
+                      <input
+                        type="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        className={`input input-bordered w-full pl-11 h-11 ${errors.email ? 'input-error' : ''}`}
+                        value={signupData.email}
+                        onChange={handleChange}
+                        required
+                        disabled={otpSent || loading.sendingOtp}
+                        autoFocus
+                      />
+                    </div>
+                    
+                    {!otpVerified && (
+                      <button
+                        type="submit"
+                        className={`btn h-11 ${otpSent ? 'btn-outline' : 'btn-primary'} ${loading.sendingOtp ? 'loading' : ''}`}
+                        disabled={loading.sendingOtp || otpSent}
+                      >
+                        {loading.sendingOtp ? "Sending..." : otpSent ? "Sent ✓" : "Send OTP"}
+                      </button>
+                    )}
+                  </div>
+                  
+                  {otpSent && !otpVerified && !loading.sendingOtp && (
+                    <div className="mt-3 p-3 bg-info/10 rounded-lg border border-info/20">
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 bg-info/20 rounded-full">
+                          <Mail className="w-4 h-4 text-info" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-info-content">
+                            <span className="font-semibold">OTP sent!</span> Check your email.
+                            <button 
+                              onClick={() => setShowOtpPopup(true)}
+                              className="link link-info font-semibold ml-1"
+                            >
+                              Click to enter OTP
+                            </button>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {errors.email && (
                     <div className="mt-2 flex items-center gap-1 text-error text-sm">
                       <AlertCircle className="w-4 h-4" />
-                      {errors.email || formErrors.email?.message}
+                      {errors.email}
                     </div>
                   )}
                 </div>
-
-                <button 
-                  type="submit" 
-                  className={`btn btn-primary w-full h-11 ${forgotPasswordMutation.isPending ? 'loading' : ''}`}
-                  disabled={forgotPasswordMutation.isPending}
-                >
-                  {forgotPasswordMutation.isPending ? 'Sending OTP...' : 'Send Reset OTP'}
-                </button>
               </form>
             )}
 
@@ -449,7 +546,7 @@ const ForgotPassword = () => {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm text-info-content">
-                        <span className="font-semibold">OTP sent to {email}</span>
+                        <span className="font-semibold">OTP sent to {signupData.email}</span>
                         <br />
                         Check your email for the 6-digit verification code.
                       </p>
@@ -466,12 +563,12 @@ const ForgotPassword = () => {
                   </button>
                   
                   <button
-                    onClick={handleResendOtp}
-                    className={`btn btn-ghost btn-sm mt-4 ${forgotPasswordMutation.isPending ? 'loading' : ''}
+                    onClick={resendOtp}
+                    className={`btn btn-ghost btn-sm mt-4 ${loading.sendingOtp ? 'loading' : ''}
                       ${resendTimer > 0 ? 'btn-disabled' : ''}`}
-                    disabled={resendTimer > 0 || forgotPasswordMutation.isPending}
+                    disabled={resendTimer > 0 || loading.sendingOtp}
                   >
-                    {forgotPasswordMutation.isPending ? "Sending..." : 
+                    {loading.sendingOtp ? "Sending..." : 
                      resendTimer > 0 ? `Resend in ${resendTimer}s` : 
                      "Resend OTP"}
                   </button>
@@ -481,7 +578,7 @@ const ForgotPassword = () => {
 
             {/* Step 3: New Password */}
             {step === 3 && (
-              <form onSubmit={handleSubmit(handlePasswordSubmit)} className="space-y-6">
+              <form onSubmit={handleResetPassword} className="space-y-6">
                 <div className="space-y-5">
                   <div className="form-control">
                     <label className="label">
@@ -493,24 +590,19 @@ const ForgotPassword = () => {
                       </div>
                       <input
                         type="password"
-                        {...register('password', { 
-                          required: 'Password is required',
-                          minLength: {
-                            value: 6,
-                            message: 'Password must be at least 6 characters'
-                          }
-                        })}
+                        name="password"
                         placeholder="Enter new password"
-                        className={`input input-bordered w-full pl-11 h-11 ${
-                          errors.password || formErrors.password ? 'input-error' : ''
-                        }`}
-                        disabled={resetPasswordMutation.isPending}
+                        className={`input input-bordered w-full pl-11 h-11 ${errors.password ? 'input-error' : ''}`}
+                        required
+                        minLength={6}
+                        disabled={loading.resettingPassword}
+                        autoFocus
                       />
                     </div>
-                    {(errors.password || formErrors.password) && (
+                    {errors.password && (
                       <div className="mt-2 flex items-center gap-1 text-error text-sm">
                         <AlertCircle className="w-4 h-4" />
-                        {errors.password || formErrors.password?.message}
+                        {errors.password}
                       </div>
                     )}
                   </div>
@@ -525,69 +617,35 @@ const ForgotPassword = () => {
                       </div>
                       <input
                         type="password"
-                        {...register('confirmPassword', { 
-                          required: 'Please confirm your password',
-                          validate: value => 
-                            value === watch('password') || 'Passwords do not match'
-                        })}
+                        name="confirmPassword"
                         placeholder="Confirm new password"
-                        className={`input input-bordered w-full pl-11 h-11 ${
-                          errors.confirmPassword || formErrors.confirmPassword ? 'input-error' : ''
-                        }`}
-                        disabled={resetPasswordMutation.isPending}
+                        className={`input input-bordered w-full pl-11 h-11 ${errors.confirmPassword ? 'input-error' : ''}`}
+                        required
+                        disabled={loading.resettingPassword}
                       />
                     </div>
-                    {(errors.confirmPassword || formErrors.confirmPassword) && (
+                    {errors.confirmPassword && (
                       <div className="mt-2 flex items-center gap-1 text-error text-sm">
                         <AlertCircle className="w-4 h-4" />
-                        {errors.confirmPassword || formErrors.confirmPassword?.message}
+                        {errors.confirmPassword}
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Password Requirements */}
-                <div className="p-4 bg-base-200/50 rounded-lg border border-base-300">
-                  <h4 className="font-semibold text-base-content text-sm mb-2">Password Requirements:</h4>
-                  <ul className="text-xs text-base-content/70 space-y-1">
-                    <li className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        watch('password')?.length >= 6 ? 'bg-success' : 'bg-base-300'
-                      }`} />
-                      At least 6 characters long
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        watch('password') && watch('confirmPassword') && 
-                        watch('password') === watch('confirmPassword') ? 'bg-success' : 'bg-base-300'
-                      }`} />
-                      Passwords must match
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Session expired warning */}
-                {(errors.session === 'expired' || errors.session === 'invalid') && (
-                  <div className="alert alert-error shadow-sm">
+                {errors.submit && (
+                  <div className={`alert alert-error shadow-sm`}>
                     <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      {errors.password}
-                      <button 
-                        onClick={resetAll}
-                        className="link link-primary font-semibold ml-2"
-                      >
-                        Click here to restart
-                      </button>
-                    </span>
+                    <span className="text-sm font-medium">{errors.submit}</span>
                   </div>
                 )}
 
                 <button 
                   type="submit" 
-                  className={`btn btn-primary w-full h-11 ${resetPasswordMutation.isPending ? 'loading' : ''}`}
-                  disabled={resetPasswordMutation.isPending}
+                  className={`btn btn-primary w-full h-11 ${loading.resettingPassword ? 'loading' : ''}`}
+                  disabled={loading.resettingPassword}
                 >
-                  {resetPasswordMutation.isPending ? 'Updating...' : 'Reset Password'}
+                  {loading.resettingPassword ? 'Resetting Password...' : 'Reset Password'}
                 </button>
               </form>
             )}
@@ -609,40 +667,6 @@ const ForgotPassword = () => {
               </div>
             )}
 
-            {/* General Error Messages */}
-            {(errors.generalError || 
-              forgotPasswordMutation.error?.generalError || 
-              verifyResetOtpMutation.error?.generalError || 
-              resetPasswordMutation.error?.generalError) && (
-              <div className={`mt-6 alert shadow-sm ${
-                errors.generalError?.includes('expired') ||
-                forgotPasswordMutation.error?.generalError?.includes('expired') ||
-                verifyResetOtpMutation.error?.generalError?.includes('expired') ||
-                resetPasswordMutation.error?.generalError?.includes('expired') ||
-                errors.generalError?.includes('restart') ||
-                resetPasswordMutation.error?.generalError?.includes('restart')
-                  ? 'alert-error'
-                  : 'alert-warning'
-              }`}>
-                {errors.generalError?.includes('expired') ||
-                 forgotPasswordMutation.error?.generalError?.includes('expired') ||
-                 verifyResetOtpMutation.error?.generalError?.includes('expired') ||
-                 resetPasswordMutation.error?.generalError?.includes('expired') ||
-                 errors.generalError?.includes('restart') ||
-                 resetPasswordMutation.error?.generalError?.includes('restart') ? (
-                  <AlertCircle className="h-4 w-4" />
-                ) : (
-                  <AlertTriangle className="h-4 w-4" />
-                )}
-                <span className="text-sm font-medium">
-                  {errors.generalError ||
-                   forgotPasswordMutation.error?.generalError ||
-                   verifyResetOtpMutation.error?.generalError ||
-                   resetPasswordMutation.error?.generalError}
-                </span>
-              </div>
-            )}
-
             {/* Navigation Links */}
             <div className="mt-8 pt-6 border-t border-base-300">
               <div className="text-center">
@@ -652,11 +676,6 @@ const ForgotPassword = () => {
                     Back to Login
                   </Link>
                 </p>
-                {step === 1 && (
-                  <p className="text-sm text-base-content/50 mt-2">
-                    Need help? Contact support at support@societyfund.com
-                  </p>
-                )}
               </div>
             </div>
           </div>
