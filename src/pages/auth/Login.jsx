@@ -13,6 +13,7 @@ const Login = () => {
     password: "",
   });
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use the custom hooks for mutations
   const loginMutation = useLoginMutation();
@@ -32,8 +33,60 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
+    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+    if (errors.submit) {
+      setErrors((prev) => ({ ...prev, submit: "" }));
+    }
+    if (errors.google) {
+      setErrors((prev) => ({ ...prev, google: "" }));
+    }
+  };
+
+  // Enhanced error handler for login
+  const handleLoginError = (error) => {
+    setIsSubmitting(false);
+    let errorMessage = "An error occurred";
+    
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    // Handle specific error messages
+    if (errorMessage.includes("Invalid credentials") || errorMessage.includes("Invalid email or password")) {
+      setErrors({ 
+        email: "Invalid email or password",
+        password: "Invalid email or password" 
+      });
+    } else if (errorMessage.includes("User not found")) {
+      setErrors({ 
+        email: "No account found with this email. Please sign up first.",
+      });
+    } else if (errorMessage.includes("required") || errorMessage.includes("missing")) {
+      setErrors({ 
+        email: "Email is required",
+        password: "Password is required"
+      });
+    } else if (errorMessage.includes("account locked") || errorMessage.includes("suspended")) {
+      setErrors({ 
+        submit: "Your account is temporarily locked. Please contact support.",
+      });
+    } else if (errorMessage.includes("too many attempts")) {
+      setErrors({ 
+        submit: "Too many failed attempts. Please try again later.",
+      });
+    } else if (errorMessage.includes("network")) {
+      setErrors({ 
+        submit: "Network error. Please check your connection.",
+      });
+    } else {
+      setErrors({ submit: errorMessage });
     }
   };
 
@@ -49,40 +102,36 @@ const Login = () => {
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
       
-      googleLoginMutation.mutate(idToken, {
-        onSuccess: (data) => {
-          navigate("/dashboard");
-        },
-        onError: (error) => {
-          const errorData = error;
-          if (errorData.fieldErrors) {
-            setErrors(errorData.fieldErrors);
-          }
-          if (errorData.generalError) {
-            toast.error(errorData.generalError);
-          }
-        }
-      });
+      setIsSubmitting(true);
+      
+      const response = await googleLoginMutation.mutateAsync(idToken);
+      navigate("/dashboard");
       
     } catch (error) {
-      console.error("Google signup error:", error);
+      setIsSubmitting(false);
       
       if (error.code === 'auth/popup-closed-by-user') {
         setErrors({ google: "Google login was cancelled." });
-        toast.error("Google login was cancelled.");
       } else if (error.code === 'auth/popup-blocked') {
         setErrors({ 
           google: "Popup was blocked by your browser. Please allow popups for this site." 
         });
-        toast.error("Popup blocked. Please allow popups for this site.");
       } else if (error.code === 'auth/network-request-failed') {
         setErrors({ google: "Network error. Please check your connection." });
-        toast.error("Network error. Please check your connection.");
-      } else {
+      } else if (error.code === 'auth/unauthorized-domain') {
         setErrors({ 
-          google: error.message || "Google login failed. Please try again." 
+          google: "This domain is not authorized for Google sign-in. Please contact support." 
         });
-        toast.error("Google login failed!");
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        setErrors({ 
+          google: "An account already exists with the same email address but different sign-in credentials." 
+        });
+      } else if (error.code === 'auth/operation-not-allowed') {
+        setErrors({ 
+          google: "Google sign-in is not enabled. Please contact support." 
+        });
+      } else {
+        setErrors({ google: error.message || "Google login failed. Please try again." });
       }
     }
   };
@@ -91,33 +140,31 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     
+    // Clear previous errors
+    setErrors({});
+    
+    // Validate form
     const formErrors = validateForm();
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       return;
     }
 
-    setErrors({});
+    setIsSubmitting(true);
     
-    loginMutation.mutate(loginData, {
-      onSuccess: (data) => {
-        navigate("/dashboard");
-      },
-      onError: (error) => {
-        const errorData = error;
-        if (errorData.fieldErrors) {
-          setErrors(errorData.fieldErrors);
-        }
-        if (errorData.generalError) {
-          toast.error(errorData.generalError);
-        }
-      }
-    });
+    try {
+      const response = await loginMutation.mutateAsync(loginData);
+      navigate("/dashboard");
+    } catch (error) {
+      handleLoginError(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <>
-      {/* Main Login Form - Using DaisyUI classes */}
+      {/* Main Login Form */}
       <div className="h-screen overflow-hidden flex items-center justify-center p-4 bg-gradient-to-br from-base-100 via-base-50 to-base-100">
         <div className="w-full max-w-5xl bg-base-100 rounded-2xl shadow-xl border border-base-300 overflow-hidden">
           <div className="flex flex-col lg:flex-row">
@@ -150,7 +197,9 @@ const Login = () => {
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="w-5 h-5 text-base-content/40" />
+                      <Mail className={`w-5 h-5 ${
+                        isSubmitting ? 'text-primary animate-pulse' : 'text-base-content/40'
+                      }`} />
                     </div>
                     <input
                       type="email"
@@ -160,7 +209,8 @@ const Login = () => {
                       value={loginData.email}
                       onChange={handleChange}
                       required
-                      disabled={loginMutation.isPending}
+                      disabled={isSubmitting}
+                      autoFocus
                     />
                   </div>
                   {errors.email && (
@@ -193,7 +243,7 @@ const Login = () => {
                       value={loginData.password}
                       onChange={handleChange}
                       required
-                      disabled={loginMutation.isPending}
+                      disabled={isSubmitting}
                     />
                   </div>
                   {errors.password && (
@@ -210,7 +260,7 @@ const Login = () => {
                     <input 
                       type="checkbox" 
                       className="checkbox checkbox-primary" 
-                      disabled={loginMutation.isPending}
+                      disabled={isSubmitting}
                     />
                     <span className="label-text text-base-content">
                       Remember me
@@ -221,15 +271,16 @@ const Login = () => {
                 {/* Submit Button */}
                 <button 
                   type="submit" 
-                  className={`btn btn-primary w-full h-11 ${loginMutation.isPending ? 'loading' : ''}`} 
-                  disabled={loginMutation.isPending}
+                  className={`btn btn-primary w-full h-11 ${isSubmitting ? 'loading' : ''}`} 
+                  disabled={isSubmitting}
                 >
-                  {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                  {isSubmitting ? "Signing in..." : "Sign In"}
                 </button>
 
+                {/* Form-level errors */}
                 {errors.submit && (
-                  <div className={`alert ${errors.submit.includes("expired") || errors.submit.includes("restart") ? 'alert-error' : 'alert-warning'} shadow-sm`}>
-                    {errors.submit.includes("expired") || errors.submit.includes("restart") ? (
+                  <div className={`alert ${errors.submit.includes("locked") || errors.submit.includes("attempts") ? 'alert-error' : 'alert-warning'} shadow-sm`}>
+                    {errors.submit.includes("locked") || errors.submit.includes("attempts") ? (
                       <AlertCircle className="h-4 w-4" />
                     ) : (
                       <AlertTriangle className="h-4 w-4" />
@@ -245,10 +296,10 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className={`btn btn-outline w-full h-11 ${googleLoginMutation.isPending ? 'loading' : ''}`}
-                  disabled={googleLoginMutation.isPending}
+                  className={`btn btn-outline w-full h-11 ${isSubmitting ? 'loading' : ''}`}
+                  disabled={isSubmitting}
                 >
-                  {!googleLoginMutation.isPending && (
+                  {!isSubmitting && (
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -256,7 +307,7 @@ const Login = () => {
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
                   )}
-                  {googleLoginMutation.isPending ? "Signing in..." : "Sign in with Google"}
+                  {isSubmitting ? "Signing in..." : "Sign in with Google"}
                 </button>
 
                 {errors.google && (
