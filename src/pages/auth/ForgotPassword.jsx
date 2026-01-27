@@ -10,6 +10,10 @@ const ForgotPassword = () => {
   const [signupData, setSignupData] = useState({
     email: "",
   });
+  const [passwordData, setPasswordData] = useState({
+    password: "",
+    confirmPassword: ""
+  });
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
@@ -17,7 +21,6 @@ const ForgotPassword = () => {
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [errors, setErrors] = useState({});
   
-  const { register, handleSubmit, formState: { errors: formErrors }, watch } = useForm();
   const otpRefs = useRef([]);
 
   const forgotPasswordMutation = useForgotPasswordMutation();
@@ -116,6 +119,20 @@ const ForgotPassword = () => {
     const otpString = otp.join("");
     if (!otpString && otpSent) newErrors.otp = "OTP is required";
     if (otpString && otpString.length !== 6) newErrors.otp = "OTP must be 6 digits";
+    
+    // Password validation
+    if (!passwordData.password.trim()) {
+      newErrors.password = "Password is required";
+    } else if (passwordData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+    
+    if (!passwordData.confirmPassword.trim()) {
+      newErrors.confirmPassword = "Please confirm your password";
+    } else if (passwordData.password !== passwordData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    
     return newErrors;
   };
 
@@ -218,6 +235,34 @@ const ForgotPassword = () => {
     );
   };
 
+  // Handle password input change
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear errors for this field
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+    
+    // If both passwords are filled and don't match, show error
+    if (name === 'confirmPassword' && passwordData.password && value !== passwordData.password) {
+      setErrors(prev => ({ ...prev, confirmPassword: "Passwords do not match" }));
+    } else if (name === 'password' && passwordData.confirmPassword && value !== passwordData.confirmPassword) {
+      setErrors(prev => ({ ...prev, confirmPassword: "Passwords do not match" }));
+    } else if ((name === 'password' || name === 'confirmPassword') && 
+               passwordData.password && 
+               passwordData.confirmPassword && 
+               passwordData.password === passwordData.confirmPassword &&
+               errors.confirmPassword) {
+      // Clear password mismatch error if passwords now match
+      setErrors(prev => ({ ...prev, confirmPassword: "" }));
+    }
+  };
+
   // Complete Password Reset
   const handleResetPassword = async (e) => {
     e.preventDefault();
@@ -233,12 +278,15 @@ const ForgotPassword = () => {
       return;
     }
 
+    // Check if passwords match
+    if (passwordData.password !== passwordData.confirmPassword) {
+      setErrors({ confirmPassword: "Passwords do not match" });
+      return;
+    }
+
     setErrors({});
 
-    const formData = new FormData(e.target);
-    const newPassword = formData.get('password');
-
-    resetPasswordMutation.mutate(newPassword, {
+    resetPasswordMutation.mutate(passwordData.password, {
       onSuccess: () => {
         setTimeout(() => {
           navigate('/login');
@@ -593,6 +641,8 @@ const ForgotPassword = () => {
                         name="password"
                         placeholder="Enter new password"
                         className={`input input-bordered w-full pl-11 h-11 ${errors.password ? 'input-error' : ''}`}
+                        value={passwordData.password}
+                        onChange={handlePasswordChange}
                         required
                         minLength={6}
                         disabled={loading.resettingPassword}
@@ -620,6 +670,8 @@ const ForgotPassword = () => {
                         name="confirmPassword"
                         placeholder="Confirm new password"
                         className={`input input-bordered w-full pl-11 h-11 ${errors.confirmPassword ? 'input-error' : ''}`}
+                        value={passwordData.confirmPassword}
+                        onChange={handlePasswordChange}
                         required
                         disabled={loading.resettingPassword}
                       />
@@ -630,6 +682,21 @@ const ForgotPassword = () => {
                         {errors.confirmPassword}
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Password Requirements */}
+                  <div className="p-4 bg-base-200/50 rounded-lg border border-base-300 mt-4">
+                    <h4 className="font-semibold text-base-content text-sm mb-2">Password Requirements:</h4>
+                    <ul className="text-xs text-base-content/70 space-y-1">
+                      <li className={`flex items-center gap-2 ${passwordData.password.length >= 6 ? 'text-success' : ''}`}>
+                        <div className={`w-2 h-2 rounded-full ${passwordData.password.length >= 6 ? 'bg-success' : 'bg-base-300'}`} />
+                        At least 6 characters long
+                      </li>
+                      <li className={`flex items-center gap-2 ${passwordData.password && passwordData.confirmPassword && passwordData.password === passwordData.confirmPassword ? 'text-success' : ''}`}>
+                        <div className={`w-2 h-2 rounded-full ${passwordData.password && passwordData.confirmPassword && passwordData.password === passwordData.confirmPassword ? 'bg-success' : 'bg-base-300'}`} />
+                        Passwords must match
+                      </li>
+                    </ul>
                   </div>
                 </div>
 
@@ -642,8 +709,9 @@ const ForgotPassword = () => {
 
                 <button 
                   type="submit" 
-                  className={`btn btn-primary w-full h-11 ${loading.resettingPassword ? 'loading' : ''}`}
-                  disabled={loading.resettingPassword}
+                  className={`btn btn-primary w-full h-11 ${loading.resettingPassword ? 'loading' : ''}
+                    ${passwordData.password !== passwordData.confirmPassword ? 'btn-disabled' : ''}`}
+                  disabled={loading.resettingPassword || passwordData.password !== passwordData.confirmPassword}
                 >
                   {loading.resettingPassword ? 'Resetting Password...' : 'Reset Password'}
                 </button>
