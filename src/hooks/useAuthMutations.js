@@ -153,3 +153,119 @@ export const useGoogleLoginMutation = () => {
     }
   });
 };
+
+
+
+export const useForgotPasswordMutation = () => {
+  return useMutation({
+    mutationFn: (email) => 
+      axiosInstance.post('/auth/forget-password', { email }),
+    onSuccess: () => {
+      toast.success("OTP sent to your email!");
+    },
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || error.message;
+      
+      if (errorMessage.includes("User not found")) {
+        return { 
+          fieldErrors: { email: "No account found with this email" },
+          generalError: errorMessage
+        };
+      } else if (errorMessage.includes("Email is required")) {
+        return { 
+          fieldErrors: { email: "Email is required" },
+          generalError: errorMessage
+        };
+      } else {
+        return { 
+          fieldErrors: { email: errorMessage },
+          generalError: errorMessage
+        };
+      }
+    }
+  });
+};
+
+export const useVerifyResetOtpMutation = () => {
+  return useMutation({
+    mutationFn: ({ email, otp }) => 
+      axiosInstance.post('/auth/verify-reset-otp', { email, otp }),
+    onSuccess: () => {
+      toast.success("OTP verified! You can now reset your password.");
+    },
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || error.message;
+      
+      if (errorMessage.includes("OTP expired")) {
+        return { 
+          fieldErrors: { otp: "OTP has expired. Please request a new one." },
+          generalError: errorMessage
+        };
+      } else if (errorMessage.includes("Invalid OTP")) {
+        return { 
+          fieldErrors: { otp: "Invalid OTP. Please try again." },
+          generalError: errorMessage
+        };
+      } else if (errorMessage.includes("OTP not found")) {
+        return { 
+          fieldErrors: { otp: "OTP not found. Please request a new one." },
+          generalError: errorMessage
+        };
+      } else if (errorMessage.includes("Email and OTP are required")) {
+        return { 
+          fieldErrors: { 
+            email: "Email is required",
+            otp: "OTP is required" 
+          },
+          generalError: errorMessage
+        };
+      } else {
+        return { 
+          fieldErrors: { otp: errorMessage },
+          generalError: errorMessage
+        };
+      }
+    }
+  });
+};
+
+export const useResetPasswordMutation = () => {
+  return useMutation({
+    mutationFn: (newPassword) => 
+      axiosInstance.post('/auth/reset-password', { newPassword }),
+    onSuccess: () => {
+      toast.success("Password reset successful! You can now login with your new password.");
+    },
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || error.message;
+      
+      if (errorMessage.includes("Reset session expired")) {
+        return { 
+          fieldErrors: { 
+            password: "Reset session expired. Please start the process again." 
+          },
+          generalError: errorMessage
+        };
+      } else if (errorMessage.includes("must be at least 6 characters")) {
+        return { 
+          fieldErrors: { 
+            password: "Password must be at least 6 characters" 
+          },
+          generalError: errorMessage
+        };
+      } else if (errorMessage.includes("Invalid reset token")) {
+        return { 
+          fieldErrors: { 
+            password: "Invalid reset session. Please start again." 
+          },
+          generalError: errorMessage
+        };
+      } else {
+        return { 
+          fieldErrors: { password: errorMessage },
+          generalError: errorMessage
+        };
+      }
+    }
+  });
+};
