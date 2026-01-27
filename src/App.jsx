@@ -11,6 +11,7 @@ import SocietyDetails from "./pages/SocietyDetails";
 import EventSpends from "./pages/EventSpends";
 import { useSelector } from "react-redux";
 import { getToken } from "./utils/getToken";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 
 function App() {
   const  token=async()=>{
@@ -31,7 +32,7 @@ function App() {
         <Route path="/admin-panel" element={<AdminPanel />} />
         <Route path="/events/:eventId" element={<EventDetails />} />
         <Route path="/society/:id" element={<SocietyDetails />} />
-        <Route path="/events/:eventId/spends" element={<EventSpends />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
       </Routes>
       </div>
      
