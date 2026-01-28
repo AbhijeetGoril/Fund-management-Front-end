@@ -246,12 +246,12 @@ const Login = () => {
                       disabled={isSubmitting}
                     />
                   </div>
-                  {errors.password && (
+                  {/* {errors.password && (
                     <div className="mt-2 flex items-center gap-1 text-error text-sm">
                       <AlertCircle className="w-4 h-4" />
                       {errors.password}
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 {/* Remember Me Checkbox */}
