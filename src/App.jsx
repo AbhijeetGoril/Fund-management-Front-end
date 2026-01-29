@@ -31,8 +31,10 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin-panel" element={<AdminPanel />} />
         <Route path="/events/:eventId" element={<EventDetails />} />
+        <Route path="/events/:eventId/spends" element={<EventSpends />} />
         <Route path="/society/:id" element={<SocietyDetails />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
+      
       </Routes>
       </div>
      
