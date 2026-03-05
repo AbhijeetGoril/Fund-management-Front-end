@@ -9,7 +9,7 @@ import {
 import { toast } from 'react-toastify';
 import { addEvent } from "../../redux/slices/eventsSlice";
 import { useDispatch } from 'react-redux';
-import { Loader } from '../Loader'; // Import the daisyUI loader
+import { Loader } from '../Loader';
 
 const CreateEventForm = ({ setShowModal, members = [] }) => {
   const dispatch = useDispatch();
@@ -38,7 +38,6 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
     setLoading(true);
     
     try {
-      // Create payment records for all members
       const payments = members.map(member => ({
         memberId: member.id,
         amount: parseFloat(newEvent.amount),
@@ -48,7 +47,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
       }));
 
       const eventData = {
-        id: Date.now(), // Temporary ID, in real app this would come from backend
+        id: Date.now(),
         name: newEvent.name,
         date: newEvent.date,
         venue: newEvent.venue,
@@ -76,33 +75,33 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
   };
 
   const categories = [
-    { value: "Maintenance", label: "Maintenance", color: "green" },
-    { value: "Cultural", label: "Cultural", color: "blue" },
-    { value: "Security", label: "Security", color: "purple" },
-    { value: "Development", label: "Development", color: "emerald" },
-    { value: "Emergency", label: "Emergency", color: "red" }
+    { value: "Maintenance", label: "Maintenance", color: "success" },
+    { value: "Cultural", label: "Cultural", color: "primary" },
+    { value: "Security", label: "Security", color: "secondary" },
+    { value: "Development", label: "Development", color: "accent" },
+    { value: "Emergency", label: "Emergency", color: "error" }
   ];
 
   return (
-    <div className="fixed inset-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 bg-base-content/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-base-100 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in fade-in duration-300">
         {/* Header */}
         <div className="bg-gradient-to-r from-primary to-secondary p-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-                <CalendarIcon className="h-6 w-6 text-white" />
+              <div className="p-2 bg-primary-content/20 rounded-xl backdrop-blur-sm">
+                <CalendarIcon className="h-6 w-6 text-primary-content" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Create New Event</h2>
-                <p className="text-blue-100 text-sm">Add a new event for your society</p>
+                <h2 className="text-2xl font-bold text-primary-content">Create New Event</h2>
+                <p className="text-primary-content/80 text-sm">Add a new event for your society</p>
               </div>
             </div>
             <button
               onClick={() => setShowModal(false)}
-              className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200"
+              className="p-2 hover:bg-primary-content/20 rounded-xl transition-all duration-200"
             >
-              <XMarkIcon className="h-6 w-6 text-white" />
+              <XMarkIcon className="h-6 w-6 text-primary-content" />
             </button>
           </div>
         </div>
@@ -111,7 +110,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
         <form onSubmit={handleCreateEvent} className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
           {/* Event Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-base-content mb-2">
               Event Name *
             </label>
             <input
@@ -120,7 +119,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
               placeholder="e.g., Monthly Maintenance, Annual Function, Security Upgrade"
               value={newEvent.name}
               onChange={handleInputChange}
-              className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+              className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/50"
               required
             />
           </div>
@@ -128,7 +127,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Date */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-base-content mb-2">
                 Due Date *
               </label>
               <div className="relative">
@@ -137,16 +136,16 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                   name="date"
                   value={newEvent.date}
                   onChange={handleInputChange}
-                  className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12"
+                  className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12 text-base-content"
                   required
                 />
-                <CalendarIcon className="h-5 w-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
+                <CalendarIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2" />
               </div>
             </div>
 
             {/* Amount */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-base-content mb-2">
                 Amount per Member *
               </label>
               <div className="relative">
@@ -156,12 +155,12 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                   placeholder="0.00"
                   value={newEvent.amount}
                   onChange={handleInputChange}
-                  className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12"
+                  className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12 text-base-content placeholder:text-base-content/50"
                   required
                   min="0"
                   step="0.01"
                 />
-                <CurrencyRupeeIcon className="h-5 w-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
+                <CurrencyRupeeIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2" />
               </div>
             </div>
           </div>
@@ -169,7 +168,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Venue */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-base-content mb-2">
                 Venue *
               </label>
               <input
@@ -178,21 +177,21 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                 placeholder="e.g., Community Hall, Society Office"
                 value={newEvent.venue}
                 onChange={handleInputChange}
-                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/50"
                 required
               />
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-base-content mb-2">
                 Category *
               </label>
               <select
                 name="category"
                 value={newEvent.category}
                 onChange={handleInputChange}
-                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none bg-white"
+                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none text-base-content"
                 required
               >
                 {categories.map((category) => (
@@ -218,7 +217,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-base-content mb-2">
               Description
             </label>
             <div className="relative">
@@ -228,19 +227,19 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                 value={newEvent.description}
                 onChange={handleInputChange}
                 rows="4"
-                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none"
+                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none text-base-content placeholder:text-base-content/50"
               ></textarea>
-              <DocumentTextIcon className="h-5 w-5 text-gray-400 absolute top-4 right-4" />
+              <DocumentTextIcon className="h-5 w-5 text-base-content/40 absolute top-4 right-4" />
             </div>
           </div>
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-4">
+        <div className="px-6 py-4 bg-base-200 border-t border-base-300 flex justify-end gap-4">
           <button
             type="button"
             onClick={() => setShowModal(false)}
-            className="px-6 py-3 text-gray-700 font-medium rounded-2xl hover:bg-gray-100 transition-all duration-200 border border-gray-300"
+            className="px-6 py-3 text-base-content font-medium rounded-2xl hover:bg-base-300 transition-all duration-200 border border-base-300"
             disabled={loading}
           >
             Cancel
@@ -249,11 +248,11 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
             type="submit"
             onClick={handleCreateEvent}
             disabled={loading}
-            className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-2xl hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[140px] justify-center"
+            className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content font-semibold rounded-2xl hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[140px] justify-center"
           >
             {loading ? (
               <>
-                <Loader size="sm" color="white" variant="spinner" />
+                <Loader size="sm" color="primary-content" variant="spinner" />
                 <span>Creating...</span>
               </>
             ) : (
