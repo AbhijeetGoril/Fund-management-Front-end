@@ -9,6 +9,7 @@ import {
 import { toast } from 'react-toastify';
 import { addEvent } from "../../redux/slices/eventsSlice";
 import { useDispatch } from 'react-redux';
+import { Loader } from '../Loader'; // Import the daisyUI loader
 
 const CreateEventForm = ({ setShowModal, members = [] }) => {
   const dispatch = useDispatch();
@@ -68,7 +69,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
       toast.success("🎉 Event created successfully!");
       setShowModal(false);
     } catch (error) {
-      toast.error("Failed to create event",error);
+      toast.error("Failed to create event", error);
     } finally {
       setLoading(false);
     }
@@ -86,7 +87,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
     <div className="fixed inset-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in fade-in duration-300">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+        <div className="bg-gradient-to-r from-primary to-secondary p-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
@@ -119,7 +120,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
               placeholder="e.g., Monthly Maintenance, Annual Function, Security Upgrade"
               value={newEvent.name}
               onChange={handleInputChange}
-              className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
               required
             />
           </div>
@@ -136,7 +137,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                   name="date"
                   value={newEvent.date}
                   onChange={handleInputChange}
-                  className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 pl-12"
+                  className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12"
                   required
                 />
                 <CalendarIcon className="h-5 w-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
@@ -155,7 +156,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                   placeholder="0.00"
                   value={newEvent.amount}
                   onChange={handleInputChange}
-                  className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 pl-12"
+                  className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12"
                   required
                   min="0"
                   step="0.01"
@@ -177,7 +178,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                 placeholder="e.g., Community Hall, Society Office"
                 value={newEvent.venue}
                 onChange={handleInputChange}
-                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                 required
               />
             </div>
@@ -191,7 +192,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                 name="category"
                 value={newEvent.category}
                 onChange={handleInputChange}
-                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
+                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none bg-white"
                 required
               >
                 {categories.map((category) => (
@@ -204,12 +205,12 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
           </div>
 
           {/* Members Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4">
             <div className="flex items-center gap-3 mb-2">
-              <UserGroupIcon className="h-5 w-5 text-blue-600" />
-              <span className="font-semibold text-blue-800">Members Information</span>
+              <UserGroupIcon className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-primary">Members Information</span>
             </div>
-            <p className="text-sm text-blue-700">
+            <p className="text-sm text-primary/80">
               This event will be automatically assigned to all {members.length} society members. 
               Each member will be required to pay ₹{newEvent.amount || '0'}.
             </p>
@@ -227,7 +228,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                 value={newEvent.description}
                 onChange={handleInputChange}
                 rows="4"
-                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
+                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none"
               ></textarea>
               <DocumentTextIcon className="h-5 w-5 text-gray-400 absolute top-4 right-4" />
             </div>
@@ -248,12 +249,12 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
             type="submit"
             onClick={handleCreateEvent}
             disabled={loading}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-2xl hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-2xl hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[140px] justify-center"
           >
             {loading ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Creating...
+                <Loader size="sm" color="white" variant="spinner" />
+                <span>Creating...</span>
               </>
             ) : (
               <>
