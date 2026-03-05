@@ -5,7 +5,7 @@ export default function PageHeader({ title, subtitle, leftEmoji = "🏡", right 
         {/* Left: icon + titles */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {leftEmoji && (
-            <div className="flex-shrink-0 p-2 bg-base-100 rounded-xl sm:rounded-2xl shadow-sm border border-base-300">
+            <div className="flex-shrink-0 p-2 bg-base-100 rounded-xl sm:rounded-2xl shadow-sm border border-base-300 hover:border-base-400 hover:shadow-md transition-all duration-200">
               <span className="text-xl sm:text-2xl">{leftEmoji}</span>
             </div>
           )}
