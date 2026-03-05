@@ -24,7 +24,7 @@ import SocietyGrid from "../components/societies/SocietyGrid";
 
 import { societies as seedSocieties, personalEvents as seedPersonal } from "../data/dummy";
 
-// Normalize helpers
+// Normalize helpers (keep as is)
 function normalizeSocieties(list) {
   const arr = Array.isArray(list) ? list : [];
   return arr.map(s => ({
@@ -61,7 +61,7 @@ function normalizePersonal(list) {
 
 export default function Dashboard() {
   const [societies, setSocieties] = useState([]);
-  const [events, setEvents] = useState([]); // personal only
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
@@ -77,10 +77,8 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, []);
 
-  // Stats: separate tallies
   const stats = useMemo(() => {
     const totalSocieties = societies.length;
-
     const totalCollectedSoc = societies.reduce((sum, s) => sum + s.totalCollected, 0);
     const totalPendingSoc = societies.reduce(
       (sum, s) => sum + s.events.reduce((ps, e) => ps + e.pendingPayments, 0),
@@ -91,7 +89,6 @@ export default function Dashboard() {
     const totalCollectedInd = events.reduce((sum, e) => sum + e.totalCollected, 0);
     const totalPendingInd = events.reduce((sum, e) => sum + e.pendingPayments, 0);
 
-    // Dashboard totals include both categories
     return {
       totalSocieties,
       totalEvents: individualEventCount + societies.reduce((a, s) => a + s.events.length, 0),
@@ -101,7 +98,6 @@ export default function Dashboard() {
     };
   }, [societies, events]);
 
-  // Events tab filters personal events only
   const filteredPersonalEvents = useMemo(() => {
     return events.filter(e => {
       if (activeFilter === 'all') return true;
@@ -114,15 +110,14 @@ export default function Dashboard() {
   const handleEventClick = (id) => navigate(`/events/${id}`);
   const handleSocietyClick = (id) => navigate(`/society/${id}`);
 
-  // Show loading state with daisyUI loader
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-center">
             <Loader size="lg" color="primary" variant="spinner" />
-            <p className="mt-4 text-gray-600 font-medium animate-pulse">Loading dashboard...</p>
+            <p className="mt-4 text-base-content/60 font-medium animate-pulse">Loading dashboard...</p>
           </div>
         </div>
       </div>
@@ -130,9 +125,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
       <Navbar />
-      {showModal && <CreateEventForm setShowModal={setShowModal} />}
+      {showModal && <CreateEventForm setShowModal={setShowModal} members={[]} />}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader
@@ -140,16 +135,16 @@ export default function Dashboard() {
           subtitle="Manage societies and events efficiently"
           right={
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-green-200/50 flex items-center">
+              <div className="bg-base-100/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-success/20 flex items-center">
                 <div className="relative">
                   <div className="bg-success w-3 h-3 rounded-full mr-3 animate-ping absolute"></div>
                   <div className="bg-success w-3 h-3 rounded-full mr-3 relative"></div>
                 </div>
-                <span className="text-sm font-semibold text-gray-700">Active</span>
+                <span className="text-sm font-semibold text-base-content">Active</span>
               </div>
               <button
                 onClick={() => setShowModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
               >
                 <PlusIcon className="h-5 w-5" />
                 New Event
@@ -165,7 +160,7 @@ export default function Dashboard() {
             change="+2%" 
             trend="up" 
             icon={<BuildingLibraryIcon className="h-6 w-6" />} 
-            gradient="from-blue-500 to-cyan-500" 
+            gradient="from-primary to-info" 
           />
           <StatCard 
             label="Total Events" 
@@ -173,7 +168,7 @@ export default function Dashboard() {
             change="+12%" 
             trend="up" 
             icon={<ChartBarIcon className="h-6 w-6" />} 
-            gradient="from-purple-500 to-pink-500" 
+            gradient="from-secondary to-accent" 
           />
           <StatCard 
             label="Total Collected" 
@@ -181,7 +176,7 @@ export default function Dashboard() {
             change="+23%" 
             trend="up" 
             icon={<CurrencyRupeeIcon className="h-6 w-6" />} 
-            gradient="from-emerald-500 to-green-500" 
+            gradient="from-success to-success" 
           />
           <StatCard 
             label="Pending Payments" 
@@ -189,17 +184,17 @@ export default function Dashboard() {
             change="-8%" 
             trend="down" 
             icon={<ClockIcon className="h-6 w-6" />} 
-            gradient="from-amber-500 to-orange-500" 
+            gradient="from-warning to-warning" 
           />
         </div>
 
-        <div className="flex space-x-1 mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-1 shadow-lg border border-white/50 w-fit">
+        <div className="flex space-x-1 mb-6 bg-base-100/80 backdrop-blur-sm rounded-2xl p-1 shadow-lg border border-base-200/50 w-fit">
           <button 
             onClick={() => setActiveTab("events")} 
             className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
               activeTab === "events" 
-                ? "bg-gradient-to-r from-primary to-secondary text-white shadow-sm" 
-                : "text-gray-600 hover:text-gray-800"
+                ? "bg-gradient-to-r from-primary to-secondary text-primary-content shadow-sm" 
+                : "text-base-content/60 hover:text-base-content"
             }`}
           >
             <CalendarIcon className="h-4 w-4 inline mr-2" />
@@ -209,8 +204,8 @@ export default function Dashboard() {
             onClick={() => setActiveTab("societies")} 
             className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
               activeTab === "societies" 
-                ? "bg-gradient-to-r from-primary to-secondary text-white shadow-sm" 
-                : "text-gray-600 hover:text-gray-800"
+                ? "bg-gradient-to-r from-primary to-secondary text-primary-content shadow-sm" 
+                : "text-base-content/60 hover:text-base-content"
             }`}
           >
             <BuildingOfficeIcon className="h-4 w-4 inline mr-2" />
@@ -219,15 +214,15 @@ export default function Dashboard() {
         </div>
 
         {activeTab === "events" && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 overflow-hidden">
+          <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200/50 overflow-hidden">
             <SectionHeader
               title="Personal Events"
               subtitle={`${stats.individualEventCount} personal events`}
-              leftIcon={<CalendarIcon className="h-6 w-6" />}
+              leftIcon={<CalendarIcon className="h-6 w-6 text-primary" />}
               right={
                 <div className="flex flex-wrap gap-3">
                   <EventFilters activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                  <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 border border-gray-200 shadow-sm flex items-center gap-2">
+                  <button className="px-4 py-2 text-sm font-medium text-base-content bg-base-100 rounded-xl hover:bg-base-200 transition-all duration-200 border border-base-300 shadow-sm flex items-center gap-2">
                     <ArrowDownTrayIcon className="h-4 w-4" />
                     Export
                   </button>
@@ -235,7 +230,6 @@ export default function Dashboard() {
               }
             />
             
-            {/* EventGrid with daisyUI loader passed as prop */}
             <EventGrid
               events={filteredPersonalEvents}
               loading={loading}
@@ -249,16 +243,16 @@ export default function Dashboard() {
               }}
             />
             
-            <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+            <div className="px-6 py-4 bg-base-200/50 border-t border-base-200">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                <p className="text-sm text-gray-600">
-                  Showing <span className="font-semibold">{filteredPersonalEvents.length}</span> of{" "}
-                  <span className="font-semibold">{events.length}</span> personal events
+                <p className="text-sm text-base-content/60">
+                  Showing <span className="font-semibold text-base-content">{filteredPersonalEvents.length}</span> of{" "}
+                  <span className="font-semibold text-base-content">{events.length}</span> personal events
                 </p>
                 <div className="flex space-x-2">
-                  <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-xl border border-gray-200 shadow-sm">Previous</button>
-                  <button className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary to-secondary rounded-xl shadow-sm">1</button>
-                  <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-xl border border-gray-200 shadow-sm">Next</button>
+                  <button className="px-4 py-2 text-sm font-medium text-base-content bg-base-100 rounded-xl border border-base-300 shadow-sm hover:bg-base-200 transition-all duration-200">Previous</button>
+                  <button className="px-4 py-2 text-sm font-medium text-primary-content bg-gradient-to-r from-primary to-secondary rounded-xl shadow-sm">1</button>
+                  <button className="px-4 py-2 text-sm font-medium text-base-content bg-base-100 rounded-xl border border-base-300 shadow-sm hover:bg-base-200 transition-all duration-200">Next</button>
                 </div>
               </div>
             </div>
@@ -266,20 +260,19 @@ export default function Dashboard() {
         )}
 
         {activeTab === "societies" && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 overflow-hidden">
+          <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200/50 overflow-hidden">
             <SectionHeader
               title="Your Societies"
               subtitle="Manage and track all society communities"
-              leftIcon={<BuildingOfficeIcon className="h-6 w-6" />}
+              leftIcon={<BuildingOfficeIcon className="h-6 w-6 text-secondary" />}
               right={
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 border border-gray-200 shadow-sm flex items-center gap-2">
+                <button className="px-4 py-2 text-sm font-medium text-base-content bg-base-100 rounded-xl hover:bg-base-200 transition-all duration-200 border border-base-300 shadow-sm flex items-center gap-2">
                   <PlusIcon className="h-4 w-4" />
                   Add Society
                 </button>
               }
             />
             
-            {/* SocietyGrid with daisyUI loader passed as prop */}
             <SocietyGrid
               societies={societies}
               loading={loading}
@@ -295,7 +288,7 @@ export default function Dashboard() {
         )}
 
         <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
+          <p className="text-base-content/40 text-sm">
             © {new Date().getFullYear()} Community Management System. Crafted with ❤️ for better community living.
           </p>
         </div>
