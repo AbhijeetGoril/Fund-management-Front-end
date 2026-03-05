@@ -12,7 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 import Navbar from "../components/Navbar/Navbar";
-import { Loader } from "../components/Loader";
+import { Loader } from "../components/Loader"; 
 import CreateEventForm from "../components/Addmin-Panel/CreateEventForm";
 
 import PageHeader from "../components/layout/PageHeader";
@@ -114,6 +114,21 @@ export default function Dashboard() {
   const handleEventClick = (id) => navigate(`/events/${id}`);
   const handleSocietyClick = (id) => navigate(`/society/${id}`);
 
+  // Show loading state with daisyUI loader
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <Navbar />
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <div className="text-center">
+            <Loader size="lg" color="primary" variant="spinner" />
+            <p className="mt-4 text-gray-600 font-medium animate-pulse">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <Navbar />
@@ -127,14 +142,14 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-green-200/50 flex items-center">
                 <div className="relative">
-                  <div className="bg-green-500 w-3 h-3 rounded-full mr-3 animate-ping absolute"></div>
-                  <div className="bg-green-500 w-3 h-3 rounded-full mr-3 relative"></div>
+                  <div className="bg-success w-3 h-3 rounded-full mr-3 animate-ping absolute"></div>
+                  <div className="bg-success w-3 h-3 rounded-full mr-3 relative"></div>
                 </div>
                 <span className="text-sm font-semibold text-gray-700">Active</span>
               </div>
               <button
                 onClick={() => setShowModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
               >
                 <PlusIcon className="h-5 w-5" />
                 New Event
@@ -144,18 +159,60 @@ export default function Dashboard() {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard label="Total Societies" value={stats.totalSocieties} change="+2%" trend="up" icon={<BuildingLibraryIcon className="h-6 w-6" />} gradient="from-blue-500 to-cyan-500" />
-          <StatCard label="Total Events" value={stats.totalEvents} change="+12%" trend="up" icon={<ChartBarIcon className="h-6 w-6" />} gradient="from-purple-500 to-pink-500" />
-          <StatCard label="Total Collected" value={`₹${stats.totalCollected.toLocaleString()}`} change="+23%" trend="up" icon={<CurrencyRupeeIcon className="h-6 w-6" />} gradient="from-emerald-500 to-green-500" />
-          <StatCard label="Pending Payments" value={stats.totalPending} change="-8%" trend="down" icon={<ClockIcon className="h-6 w-6" />} gradient="from-amber-500 to-orange-500" />
+          <StatCard 
+            label="Total Societies" 
+            value={stats.totalSocieties} 
+            change="+2%" 
+            trend="up" 
+            icon={<BuildingLibraryIcon className="h-6 w-6" />} 
+            gradient="from-blue-500 to-cyan-500" 
+          />
+          <StatCard 
+            label="Total Events" 
+            value={stats.totalEvents} 
+            change="+12%" 
+            trend="up" 
+            icon={<ChartBarIcon className="h-6 w-6" />} 
+            gradient="from-purple-500 to-pink-500" 
+          />
+          <StatCard 
+            label="Total Collected" 
+            value={`₹${stats.totalCollected.toLocaleString()}`} 
+            change="+23%" 
+            trend="up" 
+            icon={<CurrencyRupeeIcon className="h-6 w-6" />} 
+            gradient="from-emerald-500 to-green-500" 
+          />
+          <StatCard 
+            label="Pending Payments" 
+            value={stats.totalPending} 
+            change="-8%" 
+            trend="down" 
+            icon={<ClockIcon className="h-6 w-6" />} 
+            gradient="from-amber-500 to-orange-500" 
+          />
         </div>
 
         <div className="flex space-x-1 mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-1 shadow-lg border border-white/50 w-fit">
-          <button onClick={() => setActiveTab("events")} className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === "events" ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm" : "text-gray-600 hover:text-gray-800"}`}>
+          <button 
+            onClick={() => setActiveTab("events")} 
+            className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+              activeTab === "events" 
+                ? "bg-gradient-to-r from-primary to-secondary text-white shadow-sm" 
+                : "text-gray-600 hover:text-gray-800"
+            }`}
+          >
             <CalendarIcon className="h-4 w-4 inline mr-2" />
             Events ({stats.individualEventCount})
           </button>
-          <button onClick={() => setActiveTab("societies")} className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === "societies" ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm" : "text-gray-600 hover:text-gray-800"}`}>
+          <button 
+            onClick={() => setActiveTab("societies")} 
+            className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+              activeTab === "societies" 
+                ? "bg-gradient-to-r from-primary to-secondary text-white shadow-sm" 
+                : "text-gray-600 hover:text-gray-800"
+            }`}
+          >
             <BuildingOfficeIcon className="h-4 w-4 inline mr-2" />
             Societies ({stats.totalSocieties})
           </button>
@@ -177,13 +234,21 @@ export default function Dashboard() {
                 </div>
               }
             />
+            
+            {/* EventGrid with daisyUI loader passed as prop */}
             <EventGrid
               events={filteredPersonalEvents}
               loading={loading}
               onCardClick={handleEventClick}
               emptyCta={() => setShowModal(true)}
               Loader={Loader}
+              loaderProps={{
+                size: "lg",
+                color: "primary",
+                variant: "spinner"
+              }}
             />
+            
             <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <p className="text-sm text-gray-600">
@@ -192,7 +257,7 @@ export default function Dashboard() {
                 </p>
                 <div className="flex space-x-2">
                   <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-xl border border-gray-200 shadow-sm">Previous</button>
-                  <button className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-sm">1</button>
+                  <button className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary to-secondary rounded-xl shadow-sm">1</button>
                   <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-xl border border-gray-200 shadow-sm">Next</button>
                 </div>
               </div>
@@ -213,11 +278,18 @@ export default function Dashboard() {
                 </button>
               }
             />
+            
+            {/* SocietyGrid with daisyUI loader passed as prop */}
             <SocietyGrid
               societies={societies}
               loading={loading}
               onCardClick={handleSocietyClick}
               Loader={Loader}
+              loaderProps={{
+                size: "lg",
+                color: "secondary",
+                variant: "dots"
+              }}
             />
           </div>
         )}
