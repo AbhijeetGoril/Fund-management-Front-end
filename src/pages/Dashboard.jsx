@@ -26,23 +26,49 @@ import { societies as seedSocieties, personalEvents as seedPersonal } from "../d
 
 // Normalize helpers (keep as is)
 function normalizeSocieties(list) {
-  const arr = Array.isArray(list) ? list : [];
-  return arr.map(s => ({
-    ...s,
-    totalMembers: Number.isFinite(Number(s.totalMembers)) ? Number(s.totalMembers) : 0,
-    totalCollected: Number.isFinite(Number(String(s.totalCollected).replace(/,/g, ''))) ? Number(String(s.totalCollected).replace(/,/g, '')) : 0,
-    status: (s.status || 'active').toLowerCase(),
-    events: Array.isArray(s.events) ? s.events.map(ev => ({
-      ...ev,
-      totalMembers: Number(ev.totalMembers) || 0,
-      paidMembers: Number(ev.paidMembers) || 0,
-      pendingPayments: Number(ev.pendingPayments) || 0,
-      totalCollected: Number(ev.totalCollected) || 0,
-      progress: Number(ev.progress) || 0,
-      status: (ev.status || 'active').toLowerCase(),
-      type: ev.type || 'society'
-    })) : []
-  }));
+  // Ensure input is an array
+  const societies = Array.isArray(list) ? list : [];
+
+  // Helper: safely convert to number
+  const toNumber = (value, defaultValue = 0) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : defaultValue;
+  };
+
+  // Helper: remove commas and convert to number
+  const toNumberFromCommaString = (value) => {
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/,/g, '');
+      return toNumber(cleaned);
+    }
+    return toNumber(value);
+  };
+
+  // Normalize a single event
+  const normalizeEvent = (event) => ({
+    ...event,
+    totalMembers: toNumber(event.totalMembers),
+    paidMembers: toNumber(event.paidMembers),
+    pendingPayments: toNumber(event.pendingPayments),
+    totalCollected: toNumber(event.totalCollected),
+    progress: toNumber(event.progress),
+    status: (event.status || 'active').toLowerCase(),
+    type: event.type || 'society'
+  });
+
+  // Normalize a single society
+  const normalizeSociety = (society) => ({
+    ...society,
+    totalMembers: toNumber(society.totalMembers),
+    totalCollected: toNumberFromCommaString(society.totalCollected),
+    status: (society.status || 'active').toLowerCase(),
+    events: Array.isArray(society.events)
+      ? society.events.map(normalizeEvent)
+      : []
+  });
+
+  // Apply normalization to all societies
+  return societies.map(normalizeSociety);
 }
 
 function normalizePersonal(list) {
