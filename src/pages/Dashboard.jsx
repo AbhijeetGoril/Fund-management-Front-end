@@ -72,17 +72,29 @@ function normalizeSocieties(list) {
 }
 
 function normalizePersonal(list) {
-  const arr = Array.isArray(list) ? list : [];
-  return arr.map(e => ({
-    ...e,
-    totalMembers: Number(e.totalMembers) || 0,
-    paidMembers: Number(e.paidMembers) || 0,
-    pendingPayments: Number(e.pendingPayments) || 0,
-    totalCollected: Number(e.totalCollected) || 0,
-    progress: Number(e.progress) || 0,
-    status: (e.status || 'active').toLowerCase(),
-    type: e.type || 'individual'
-  }));
+  // Ensure input is an array
+  const events = Array.isArray(list) ? list : [];
+
+  // Helper: safely convert to number, default to 0
+  const toNumber = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  // Helper: normalize a single event
+  const normalizeEvent = (event) => ({
+    ...event,
+    totalMembers: toNumber(event.totalMembers),
+    paidMembers: toNumber(event.paidMembers),
+    pendingPayments: toNumber(event.pendingPayments),
+    totalCollected: toNumber(event.totalCollected),
+    progress: toNumber(event.progress),
+    status: (event.status || 'active').toLowerCase(),
+    type: event.type || 'individual'
+  });
+
+  // Apply normalization to all events
+  return events.map(normalizeEvent);
 }
 
 export default function Dashboard() {
