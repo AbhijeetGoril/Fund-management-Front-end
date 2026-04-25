@@ -20,7 +20,7 @@ const dummyEventsArray = {
     status: "active",
     progress: 70,
     category: "Cultural",
-    color: "blue",
+    color: "primary",
     members: [
       { id: 1, name: "Abhijeet Sharma", email: "abhijeet@gmail.com", hasPaid: true, amount: 500, joinDate: "2024-01-15", avatar: "AS" },
       { id: 2, name: "Anjali Patel", email: "anjali@gmail.com", hasPaid: false, amount: 0, joinDate: "2024-01-10", avatar: "AP" },
@@ -29,7 +29,6 @@ const dummyEventsArray = {
       { id: 5, name: "Sanjay Mehta", email: "sanjay@gmail.com", hasPaid: false, amount: 0, joinDate: "2024-01-05", avatar: "SM" },
     ],
   },
-  // ...other events
 };
 
 const EventDetails = () => {
@@ -51,23 +50,25 @@ const EventDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
-        <Loader />
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <Loader size="lg" color="primary" variant="spinner" />
+        </div>
       </div>
     );
   }
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-          <div className="bg-white rounded-3xl shadow-xl p-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">Event not found</h2>
+          <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200 p-12">
+            <h2 className="text-3xl font-bold text-base-content mb-4">Event not found</h2>
             <button
               onClick={() => navigate("/dashboard")}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
+              className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
             >
               Back to Dashboard
             </button>
@@ -83,7 +84,7 @@ const EventDetails = () => {
   const paidMembers = members.filter((m) => m.hasPaid).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
       <Navbar />
 
       {showModal && (
@@ -94,10 +95,10 @@ const EventDetails = () => {
         />
       )}
 
-      {/* Animated Background */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-32 w-80 h-80 bg-blue-200 rounded-full blur-3xl opacity-20" />
-        <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-purple-200 rounded-full blur-3xl opacity-20" />
+      {/* Animated Background Accents */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-32 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-secondary/20 rounded-full blur-3xl" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -113,8 +114,8 @@ const EventDetails = () => {
           pendingPayments={pendingPayments}
         />
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 overflow-hidden">
-          <div className="border-b border-gray-200">
+        <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200/50 overflow-hidden">
+          <div className="border-b border-base-200">
             <nav className="flex space-x-8 px-6">
               {["members", "analytics", "settings"].map((tab) => (
                 <button
@@ -122,8 +123,8 @@ const EventDetails = () => {
                   onClick={() => setActiveTab(tab)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm capitalize transition-all duration-200 ${
                     activeTab === tab
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-base-content/60 hover:text-base-content hover:border-base-300"
                   }`}
                 >
                   {tab}
@@ -141,16 +142,16 @@ const EventDetails = () => {
               />
             )}
             {activeTab === "analytics" && (
-              <div className="text-gray-600">Analytics coming soon…</div>
+              <div className="text-base-content/70 p-8 text-center">Analytics coming soon…</div>
             )}
             {activeTab === "settings" && (
-              <div className="text-gray-600">Settings coming soon…</div>
+              <div className="text-base-content/70 p-8 text-center">Settings coming soon…</div>
             )}
           </div>
         </div>
 
         <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
+          <p className="text-base-content/40 text-sm">
             © {new Date().getFullYear()} Society Management System. All rights reserved.
           </p>
         </div>
