@@ -13,30 +13,30 @@ const StatsCards = ({ members, paidMembers, totalDonations, pendingPayments }) =
       <SummaryCard
         label="Total Participants"
         value={members.length}
-        icon={<UsersIcon className="h-6 w-6 text-blue-600" />}
-        color="blue"
-        gradient="from-blue-500 to-cyan-500"
+        icon={<UsersIcon className="h-6 w-6 text-primary" />}
+        color="primary"
+        gradient="from-primary to-secondary"
       />
       <SummaryCard
         label="Paid Members"
         value={paidMembers}
-        icon={<CheckCircleIcon className="h-6 w-6 text-green-500" />}
-        color="green"
-        gradient="from-green-500 to-emerald-500"
+        icon={<CheckCircleIcon className="h-6 w-6 text-success" />}
+        color="success"
+        gradient="from-success to-success/80"
       />
       <SummaryCard
         label="Total Collected"
         value={`₹${totalDonations.toLocaleString()}`}
-        icon={<CurrencyRupeeIcon className="h-6 w-6 text-amber-500" />}
-        color="amber"
-        gradient="from-amber-500 to-orange-500"
+        icon={<CurrencyRupeeIcon className="h-6 w-6 text-warning" />}
+        color="warning"
+        gradient="from-warning to-warning/80"
       />
       <SummaryCard
         label="Pending Payments"
         value={pendingPayments}
-        icon={<XCircleIcon className="h-6 w-6 text-red-500" />}
-        color="red"
-        gradient="from-red-500 to-pink-500"
+        icon={<XCircleIcon className="h-6 w-6 text-error" />}
+        color="error"
+        gradient="from-error to-error/80"
       />
     </div>
   );
