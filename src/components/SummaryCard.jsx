@@ -1,21 +1,47 @@
-const SummaryCard = ({ label, value, icon, color }) => {
+const SummaryCard = ({ label, value, icon, color = "primary" }) => {
   const colorClasses = {
-    blue: { bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-200" },
-    green: { bg: "bg-green-50", text: "text-green-600", border: "border-green-200" },
-    amber: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200" },
-    red: { bg: "bg-red-50", text: "text-red-600", border: "border-red-200" },
+    primary: {
+      bg: "bg-primary/10",
+      text: "text-primary",
+      border: "border-primary/20",
+    },
+    secondary: {
+      bg: "bg-secondary/10",
+      text: "text-secondary",
+      border: "border-secondary/20",
+    },
+    success: {
+      bg: "bg-success/10",
+      text: "text-success",
+      border: "border-success/20",
+    },
+    warning: {
+      bg: "bg-warning/10",
+      text: "text-warning",
+      border: "border-warning/20",
+    },
+    error: {
+      bg: "bg-error/10",
+      text: "text-error",
+      border: "border-error/20",
+    },
+    info: {
+      bg: "bg-info/10",
+      text: "text-info",
+      border: "border-info/20",
+    },
   };
-  
-  const colorConfig = colorClasses[color] || colorClasses.blue;
-  
+
+  const config = colorClasses[color] || colorClasses.primary;
+
   return (
-    <div className={`rounded-xl shadow-sm p-4 md:p-5 border ${colorConfig.border} ${colorConfig.bg}`}>
+    <div className={`rounded-xl shadow-sm p-4 md:p-5 border ${config.border} ${config.bg} backdrop-blur-sm transition-all hover:shadow-md`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-600 font-medium">{label}</p>
-          <h2 className={`text-xl md:text-2xl font-bold mt-1 ${colorConfig.text}`}>{value}</h2>
+          <p className="text-sm text-base-content/70 font-medium">{label}</p>
+          <h2 className={`text-xl md:text-2xl font-bold mt-1 ${config.text}`}>{value}</h2>
         </div>
-        <div className={`p-2 rounded-lg ${colorConfig.text}`}>
+        <div className={`p-2 rounded-lg ${config.text}`}>
           {icon}
         </div>
       </div>
