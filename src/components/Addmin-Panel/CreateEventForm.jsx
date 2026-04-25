@@ -11,7 +11,7 @@ import { addEvent } from "../../redux/slices/eventsSlice";
 import { useDispatch } from 'react-redux';
 import { Loader } from '../Loader';
 
-const CreateEventForm = ({ setShowModal, members = [] }) => {
+const CreateEventForm = ({ setShowForm, members = [] }) => {
   const dispatch = useDispatch();
   const [newEvent, setNewEvent] = useState({
     name: "",
@@ -26,13 +26,11 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
 
   const [loading, setLoading] = useState(false);
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewEvent({ ...newEvent, [name]: value });
   };
 
-  // Create new event
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -66,7 +64,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
 
       dispatch(addEvent(eventData));
       toast.success("🎉 Event created successfully!");
-      setShowModal(false);
+      setShowForm(false);
     } catch (error) {
       toast.error("Failed to create event", error);
     } finally {
@@ -83,9 +81,9 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-base-content/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-base-100 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in fade-in duration-300">
-        {/* Header */}
+    <div className="fixed inset-0 bg-base-content/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+      <div className="bg-base-100 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all">
+        {/* Header with gradient */}
         <div className="bg-gradient-to-r from-primary to-secondary p-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
@@ -93,21 +91,22 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                 <CalendarIcon className="h-6 w-6 text-primary-content" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-primary-content">Create New Event</h2>
+                <h2 className="text-2xl font-bold text-primary-content tracking-tight">Create New Event</h2>
                 <p className="text-primary-content/80 text-sm">Add a new event for your society</p>
               </div>
             </div>
             <button
-              onClick={() => setShowModal(false)}
+              onClick={() => setShowForm(false)}
               className="p-2 hover:bg-primary-content/20 rounded-xl transition-all duration-200"
+              aria-label="Close"
             >
               <XMarkIcon className="h-6 w-6 text-primary-content" />
             </button>
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleCreateEvent} className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+        {/* Scrollable Form */}
+        <form onSubmit={handleCreateEvent} className="p-6 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
           {/* Event Name */}
           <div>
             <label className="block text-sm font-semibold text-base-content mb-2">
@@ -125,7 +124,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Date */}
+            {/* Due Date */}
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
                 Due Date *
@@ -139,7 +138,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                   className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12 text-base-content"
                   required
                 />
-                <CalendarIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2" />
+                <CalendarIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
@@ -160,7 +159,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                   min="0"
                   step="0.01"
                 />
-                <CurrencyRupeeIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2" />
+                <CurrencyRupeeIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
           </div>
@@ -191,7 +190,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                 name="category"
                 value={newEvent.category}
                 onChange={handleInputChange}
-                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none text-base-content"
+                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none text-base-content cursor-pointer"
                 required
               >
                 {categories.map((category) => (
@@ -203,13 +202,13 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
             </div>
           </div>
 
-          {/* Members Info */}
-          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4">
+          {/* Members Info - Styled with theme colors */}
+          <div className="bg-base-200/80 border border-base-300 rounded-2xl p-4 backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-2">
               <UserGroupIcon className="h-5 w-5 text-primary" />
-              <span className="font-semibold text-primary">Members Information</span>
+              <span className="font-semibold text-base-content">Members Information</span>
             </div>
-            <p className="text-sm text-primary/80">
+            <p className="text-sm text-base-content/70">
               This event will be automatically assigned to all {members.length} society members. 
               Each member will be required to pay ₹{newEvent.amount || '0'}.
             </p>
@@ -229,16 +228,16 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                 rows="4"
                 className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none text-base-content placeholder:text-base-content/50"
               ></textarea>
-              <DocumentTextIcon className="h-5 w-5 text-base-content/40 absolute top-4 right-4" />
+              <DocumentTextIcon className="h-5 w-5 text-base-content/40 absolute top-4 right-4 pointer-events-none" />
             </div>
           </div>
         </form>
 
-        {/* Footer */}
-        <div className="px-6 py-4 bg-base-200 border-t border-base-300 flex justify-end gap-4">
+        {/* Footer Actions */}
+        <div className="px-6 py-4 bg-base-200/50 backdrop-blur-sm border-t border-base-300 flex justify-end gap-4">
           <button
             type="button"
-            onClick={() => setShowModal(false)}
+            onClick={() => setShowForm(false)}
             className="px-6 py-3 text-base-content font-medium rounded-2xl hover:bg-base-300 transition-all duration-200 border border-base-300"
             disabled={loading}
           >
@@ -248,7 +247,7 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
             type="submit"
             onClick={handleCreateEvent}
             disabled={loading}
-            className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content font-semibold rounded-2xl hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[140px] justify-center"
+            className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content font-semibold rounded-2xl hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2 min-w-[140px] justify-center"
           >
             {loading ? (
               <>
