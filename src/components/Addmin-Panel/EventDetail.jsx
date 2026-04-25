@@ -2,28 +2,27 @@ import { useState } from "react";
 import AdminNumberDetail from "./AdminNumberDetail";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
-import { useDispatch} from "react-redux";
-import { deleteEvent,updatePaidAmount,fullPayMember} from "../../redux/slices/eventsSlice";
+import { useDispatch } from "react-redux";
+import { deleteEvent, updatePaidAmount, fullPayMember } from "../../redux/slices/eventsSlice";
 
-const EventDetail = ({events,members}) => {
+const EventDetail = ({ events, members }) => {
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const dispatch= useDispatch();
- 
+  const dispatch = useDispatch();
+
   // delete Event
   const handleDeleteEvent = (eventId) => {
-    console.log(eventId);
-    dispatch(deleteEvent(eventId))
-    toast.success("Event delete successfully");
+    dispatch(deleteEvent(eventId));
+    toast.success("Event deleted successfully");
   };
 
-  // partial Paid 
-  const handlePartialPaid = (eventId, memberId,amountPaid) => {
+  // partial Paid
+  const handlePartialPaid = (eventId, memberId, amountPaid) => {
     dispatch(updatePaidAmount({
-    eventId, 
-    memberId, 
-    paidAmount: amountPaid,
-}));
-  }
+      eventId,
+      memberId,
+      paidAmount: amountPaid,
+    }));
+  };
 
   // Mark payment as paid
   const markPaymentAsPaid = (eventId, memberId) => {
@@ -52,8 +51,8 @@ const EventDetail = ({events,members}) => {
     const pendingMembers = totalMembers - paidMembers;
     const amountCollected = paidMembers * event.amount;
     const totalAmount = totalMembers * event.amount;
-    const percentageCollected = (amountCollected / totalAmount) * 100;
-    
+    const percentageCollected = totalAmount > 0 ? (amountCollected / totalAmount) * 100 : 0;
+
     return {
       totalMembers,
       paidMembers,
@@ -63,90 +62,95 @@ const EventDetail = ({events,members}) => {
       percentageCollected
     };
   };
-  return (events.map(event => {
-                const stats = calculateEventStats(event);
-                
-                return (
-                  
-                  <div key={event.id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-                    <div className="p-5">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
-                            Due: {formatDate(event.date)}
-                          </div>
-                          <h3 className="text-lg font-bold text-gray-800 mb-2">{event.title}</h3>
-                          <p className="text-gray-600 text-sm mb-4">{event.description}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-500">Amount per member</div>
-                          <div className="text-xl font-bold text-blue-600">{formatCurrency(event.amount)}</div>
-                        </div>
-                      </div>
-                      
-                      {/* Progress bar */}
-                      <div className="mt-4">
-                        <div className="flex justify-between text-sm text-gray-600 mb-1">
-                          <span>Collection Progress</span>
-                          <span>{stats.percentageCollected.toFixed(0)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full" 
-                            style={{ width: `${stats.percentageCollected}%` }}
-                          ></div>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
-                          <span>{formatCurrency(stats.amountCollected)} collected</span>
-                          <span>{formatCurrency(stats.totalAmount)} total</span>
-                        </div>
-                      </div>
-                      
-                      {/* Stats */}
-                      <div className="grid grid-cols-3 gap-4 mt-5 text-center">
-                        <div className="bg-green-50 p-3 rounded-lg">
-                          <div className="text-lg font-bold text-green-700">{stats.paidMembers}</div>
-                          <div className="text-sm text-gray-600">Paid</div>
-                        </div>
-                        <div className="bg-yellow-50 p-3 rounded-lg">
-                          <div className="text-lg font-bold text-yellow-700">{stats.pendingMembers}</div>
-                          <div className="text-sm text-gray-600">Pending</div>
-                        </div>
-                        <div className="bg-blue-50 p-3 rounded-lg">
-                          <div className="text-lg font-bold text-blue-700">{stats.totalMembers}</div>
-                          <div className="text-sm text-gray-600">Total</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* View Details Button */}
-                    <div className="bg-gray-50 px-5 py-3 border-t">
-                      <button 
-                        className="w-full text-center text-blue-600 font-medium hover:text-blue-800 flex items-center justify-center"
-                        onClick={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
-                      >
-                        {selectedEvent?.id === event.id ? "Hide Details" : "View Payment Details"}
-                        <svg 
-                          className={`ml-2 w-4 h-4 transition-transform ${selectedEvent?.id === event.id ? 'rotate-180' : ''}`} 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24" 
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    {/* Payment Details */}
-                    {selectedEvent?.id === event.id && (
-                    <AdminNumberDetail markPaymentAsPaid={markPaymentAsPaid} members={members} formatCurrency={formatCurrency} event={event} handleDeleteEvent={handleDeleteEvent} handlePartialPaid={handlePartialPaid} />
-                    )}
-                  </div>
-                 
-                );
-              })
-  )
-}
 
-export default EventDetail
+  return events.map(event => {
+    const stats = calculateEventStats(event);
+
+    return (
+      <div key={event.id} className="bg-base-100 rounded-2xl shadow-md overflow-hidden border border-base-200 hover:shadow-lg transition-shadow duration-300">
+        <div className="p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">
+                Due: {formatDate(event.date)}
+              </div>
+              <h3 className="text-lg font-bold text-base-content mb-2">{event.title}</h3>
+              <p className="text-base-content/70 text-sm mb-4">{event.description}</p>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-base-content/60">Amount per member</div>
+              <div className="text-xl font-bold text-primary">{formatCurrency(event.amount)}</div>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mt-4">
+            <div className="flex justify-between text-sm text-base-content/70 mb-1">
+              <span>Collection Progress</span>
+              <span>{stats.percentageCollected.toFixed(0)}%</span>
+            </div>
+            <div className="w-full bg-base-200 rounded-full h-2.5">
+              <div 
+                className="bg-gradient-to-r from-primary to-secondary h-2.5 rounded-full transition-all duration-500" 
+                style={{ width: `${stats.percentageCollected}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-xs text-base-content/50 mt-1">
+              <span>{formatCurrency(stats.amountCollected)} collected</span>
+              <span>{formatCurrency(stats.totalAmount)} total</span>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-4 mt-5 text-center">
+            <div className="bg-success/10 rounded-xl p-3 backdrop-blur-sm border border-success/20">
+              <div className="text-lg font-bold text-success">{stats.paidMembers}</div>
+              <div className="text-sm text-base-content/70">Paid</div>
+            </div>
+            <div className="bg-warning/10 rounded-xl p-3 backdrop-blur-sm border border-warning/20">
+              <div className="text-lg font-bold text-warning">{stats.pendingMembers}</div>
+              <div className="text-sm text-base-content/70">Pending</div>
+            </div>
+            <div className="bg-primary/10 rounded-xl p-3 backdrop-blur-sm border border-primary/20">
+              <div className="text-lg font-bold text-primary">{stats.totalMembers}</div>
+              <div className="text-sm text-base-content/70">Total</div>
+            </div>
+          </div>
+        </div>
+
+        {/* View Details Button */}
+        <div className="bg-base-200/50 px-6 py-3 border-t border-base-200">
+          <button 
+            className="w-full text-center text-primary font-medium hover:text-primary/80 flex items-center justify-center transition-colors duration-200"
+            onClick={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
+          >
+            {selectedEvent?.id === event.id ? "Hide Details" : "View Payment Details"}
+            <svg 
+              className={`ml-2 w-4 h-4 transition-transform duration-200 ${selectedEvent?.id === event.id ? 'rotate-180' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+
+        {/* Payment Details */}
+        {selectedEvent?.id === event.id && (
+          <AdminNumberDetail 
+            markPaymentAsPaid={markPaymentAsPaid} 
+            members={members} 
+            formatCurrency={formatCurrency} 
+            event={event} 
+            handleDeleteEvent={handleDeleteEvent} 
+            handlePartialPaid={handlePartialPaid} 
+          />
+        )}
+      </div>
+    );
+  });
+};
+
+export default EventDetail;
