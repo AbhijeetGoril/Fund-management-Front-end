@@ -1,89 +1,71 @@
 import { useState } from 'react';
-import { 
+import { useSelector, useDispatch } from 'react-redux';
+import {
   XMarkIcon,
   CalendarIcon,
   CurrencyRupeeIcon,
   DocumentTextIcon,
-  UserGroupIcon
+  MapPinIcon,
+  BuildingOfficeIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
-import { addEvent } from "../../redux/slices/eventsSlice";
-import { useDispatch } from 'react-redux';
+import { addEvent } from '../../redux/slices/eventsSlice';
 import { Loader } from '../Loader';
 
-const CreateEventForm = ({ setShowModal, members = [] }) => {
+const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => {
   const dispatch = useDispatch();
-  const [newEvent, setNewEvent] = useState({
-    name: "",
-    date: "",
-    venue: "",
-    totalMembers: members.length,
-    amount: "",
-    description: "",
-    category: "Maintenance",
-    color: "blue"
-  });
-
+  const { user } = useSelector((state) => state.auth); // assuming auth slice has user object
   const [loading, setLoading] = useState(false);
+
+  const [newEvent, setNewEvent] = useState({
+    title: '',
+    description: '',
+    date: '',
+    location: '',
+    society: societyId || '', // prefill if provided, otherwise empty
+    budgetTarget: '',
+    status: 'active',
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewEvent({ ...newEvent, [name]: value });
+    setNewEvent((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    try {
-      const payments = members.map(member => ({
-        memberId: member.id,
-        amount: parseFloat(newEvent.amount),
-        status: "pending",
-        paidAmount: 0,
-        date: ""
-      }));
 
+    try {
+      // Build event object matching Mongoose schema
       const eventData = {
-        id: Date.now(),
-        name: newEvent.name,
-        date: newEvent.date,
-        venue: newEvent.venue,
-        totalMembers: members.length,
-        paidMembers: 0,
-        totalCollected: 0,
-        pendingPayments: members.length,
-        status: "active",
-        progress: 0,
-        category: newEvent.category,
-        color: newEvent.color,
-        amount: parseFloat(newEvent.amount),
+        title: newEvent.title,
         description: newEvent.description,
-        payments
+        date: newEvent.date ? new Date(newEvent.date).toISOString() : new Date().toISOString(),
+        location: newEvent.location,
+        society: newEvent.society || null, // can be null if not provided
+        createdBy: user?._id,              // from authenticated user
+        budget: {
+          target: parseFloat(newEvent.budgetTarget) || 0,
+        },
+        status: newEvent.status,
       };
 
-      dispatch(addEvent(eventData));
-      toast.success("🎉 Event created successfully!");
+      // Dispatch action (adjust action name as per your slice)
+      await dispatch(addEvent(eventData)).unwrap();
+      toast.success('🎉 Event created successfully!');
       setShowModal(false);
     } catch (error) {
-      toast.error("Failed to create event", error);
+      toast.error(error?.message || 'Failed to create event');
     } finally {
       setLoading(false);
     }
   };
 
-  const categories = [
-    { value: "Maintenance", label: "Maintenance", color: "success" },
-    { value: "Cultural", label: "Cultural", color: "primary" },
-    { value: "Security", label: "Security", color: "secondary" },
-    { value: "Development", label: "Development", color: "accent" },
-    { value: "Emergency", label: "Emergency", color: "error" }
-  ];
-
   return (
     <div className="fixed inset-0 bg-base-content/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
       <div className="bg-base-100 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all">
-        {/* Header with gradient */}
+        {/* Header */}
         <div className="bg-gradient-to-r from-primary to-secondary p-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
@@ -91,8 +73,10 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
                 <CalendarIcon className="h-6 w-6 text-primary-content" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-primary-content tracking-tight">Create New Event</h2>
-                <p className="text-primary-content/80 text-sm">Add a new event for your society</p>
+                <h2 className="text-2xl font-bold text-primary-content tracking-tight">
+                  Create New Event
+                </h2>
+                <p className="text-primary-content/80 text-sm">Add an event following your society schema</p>
               </div>
             </div>
             <button
@@ -105,18 +89,18 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
           </div>
         </div>
 
-        {/* Scrollable Form */}
+        {/* Form */}
         <form onSubmit={handleCreateEvent} className="p-6 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
-          {/* Event Name */}
+          {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-base-content mb-2">
-              Event Name *
+              Event Title *
             </label>
             <input
               type="text"
-              name="name"
-              placeholder="e.g., Monthly Maintenance, Annual Function, Security Upgrade"
-              value={newEvent.name}
+              name="title"
+              placeholder="e.g., Annual Cultural Fest, Maintenance Campaign"
+              value={newEvent.title}
               onChange={handleInputChange}
               className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/50"
               required
@@ -124,10 +108,10 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Due Date */}
+            {/* Date */}
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
-                Due Date *
+                Event Date *
               </label>
               <div className="relative">
                 <input
@@ -142,20 +126,19 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
               </div>
             </div>
 
-            {/* Amount */}
+            {/* Budget Target */}
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
-                Amount per Member *
+                Budget Target (₹)
               </label>
               <div className="relative">
                 <input
                   type="number"
-                  name="amount"
+                  name="budgetTarget"
                   placeholder="0.00"
-                  value={newEvent.amount}
+                  value={newEvent.budgetTarget}
                   onChange={handleInputChange}
                   className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12 text-base-content placeholder:text-base-content/50"
-                  required
                   min="0"
                   step="0.01"
                 />
@@ -164,55 +147,48 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Venue */}
-            <div>
-              <label className="block text-sm font-semibold text-base-content mb-2">
-                Venue *
-              </label>
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-semibold text-base-content mb-2">
+              Location
+            </label>
+            <div className="relative">
               <input
                 type="text"
-                name="venue"
-                placeholder="e.g., Community Hall, Society Office"
-                value={newEvent.venue}
+                name="location"
+                placeholder="e.g., Community Hall, Online, Main Building"
+                value={newEvent.location}
                 onChange={handleInputChange}
-                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/50"
-                required
+                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12 text-base-content placeholder:text-base-content/50"
               />
+              <MapPinIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" />
             </div>
+          </div>
 
-            {/* Category */}
+          {/* Society Selection (if multiple societies exist) */}
+          {societies.length > 0 && (
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
-                Category *
+                Society
               </label>
-              <select
-                name="category"
-                value={newEvent.category}
-                onChange={handleInputChange}
-                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none text-base-content cursor-pointer"
-                required
-              >
-                {categories.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  name="society"
+                  value={newEvent.society}
+                  onChange={handleInputChange}
+                  className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none text-base-content cursor-pointer pl-12"
+                >
+                  <option value="">None (General Event)</option>
+                  {societies.map((soc) => (
+                    <option key={soc._id} value={soc._id}>
+                      {soc.name}
+                    </option>
+                  ))}
+                </select>
+                <BuildingOfficeIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
-          </div>
-
-          {/* Members Info - Styled with theme colors */}
-          <div className="bg-base-200/80 border border-base-300 rounded-2xl p-4 backdrop-blur-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <UserGroupIcon className="h-5 w-5 text-primary" />
-              <span className="font-semibold text-base-content">Members Information</span>
-            </div>
-            <p className="text-sm text-base-content/70">
-              This event will be automatically assigned to all {members.length} society members. 
-              Each member will be required to pay ₹{newEvent.amount || '0'}.
-            </p>
-          </div>
+          )}
 
           {/* Description */}
           <div>
@@ -222,12 +198,12 @@ const CreateEventForm = ({ setShowModal, members = [] }) => {
             <div className="relative">
               <textarea
                 name="description"
-                placeholder="Describe the purpose and details of this event..."
+                placeholder="Describe the purpose, agenda, and other details of the event..."
                 value={newEvent.description}
                 onChange={handleInputChange}
                 rows="4"
                 className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none text-base-content placeholder:text-base-content/50"
-              ></textarea>
+              />
               <DocumentTextIcon className="h-5 w-5 text-base-content/40 absolute top-4 right-4 pointer-events-none" />
             </div>
           </div>
