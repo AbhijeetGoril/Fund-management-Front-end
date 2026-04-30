@@ -1,4 +1,4 @@
-// SpendsTable.jsx (Fully Enhanced)
+// SpendsTable.jsx (Themed Version)
 import React from "react";
 import {
   ArrowUpIcon,
@@ -28,87 +28,80 @@ const SpendsTable = ({
       maximumFractionDigits: 0 
     }).format(Number(n || 0));
 
-  // Enhanced color system for categories
+  // Theme-based category configuration (using semantic roles)
   const getCategoryConfig = (category) => {
     const configs = {
       Decoration: {
-        gradient: "from-pink-500 to-rose-500",
-        bgGradient: "from-pink-50 to-rose-50",
-        border: "border-pink-200",
-        text: "text-pink-700",
-        light: "bg-pink-100"
+        gradient: "from-primary to-secondary",
+        bgLight: "bg-primary/10",
+        border: "border-primary/20",
+        text: "text-primary",
       },
       Food: {
-        gradient: "from-amber-500 to-orange-500",
-        bgGradient: "from-amber-50 to-orange-50",
-        border: "border-amber-200",
-        text: "text-amber-700",
-        light: "bg-amber-100"
+        gradient: "from-secondary to-accent",
+        bgLight: "bg-secondary/10",
+        border: "border-secondary/20",
+        text: "text-secondary",
       },
       Equipment: {
-        gradient: "from-blue-500 to-cyan-500",
-        bgGradient: "from-blue-50 to-cyan-50",
-        border: "border-blue-200",
-        text: "text-blue-700",
-        light: "bg-blue-100"
+        gradient: "from-accent to-info",
+        bgLight: "bg-accent/10",
+        border: "border-accent/20",
+        text: "text-accent",
       },
       Media: {
-        gradient: "from-purple-500 to-indigo-500",
-        bgGradient: "from-purple-50 to-indigo-50",
-        border: "border-purple-200",
-        text: "text-purple-700",
-        light: "bg-purple-100"
+        gradient: "from-info to-primary",
+        bgLight: "bg-info/10",
+        border: "border-info/20",
+        text: "text-info",
       },
       Transport: {
-        gradient: "from-emerald-500 to-teal-500",
-        bgGradient: "from-emerald-50 to-teal-50",
-        border: "border-emerald-200",
-        text: "text-emerald-700",
-        light: "bg-emerald-100"
+        gradient: "from-success to-emerald-600", // success with darker edge
+        bgLight: "bg-success/10",
+        border: "border-success/20",
+        text: "text-success",
       },
       Entertainment: {
-        gradient: "from-violet-500 to-purple-500",
-        bgGradient: "from-violet-50 to-purple-50",
-        border: "border-violet-200",
-        text: "text-violet-700",
-        light: "bg-violet-100"
+        gradient: "from-warning to-orange-500",
+        bgLight: "bg-warning/10",
+        border: "border-warning/20",
+        text: "text-warning",
       },
       Other: {
-        gradient: "from-gray-500 to-slate-500",
-        bgGradient: "from-gray-50 to-slate-50",
-        border: "border-gray-200",
-        text: "text-gray-700",
-        light: "bg-gray-100"
+        gradient: "from-base-300 to-base-400",
+        bgLight: "bg-base-300/30",
+        border: "border-base-300",
+        text: "text-base-content/70",
       }
     };
     return configs[category] || configs.Other;
   };
 
   const getAmountColor = (amount) => {
-    if (amount >= 10000) return "text-red-600 font-bold bg-red-50 px-2 py-1 rounded-lg";
-    if (amount >= 5000) return "text-amber-600 font-semibold bg-amber-50 px-2 py-1 rounded-lg";
-    return "text-gray-800 font-semibold bg-gray-50 px-2 py-1 rounded-lg";
+    if (amount >= 10000) return "text-error font-bold bg-error/10 px-2 py-1 rounded-lg";
+    if (amount >= 5000) return "text-warning font-semibold bg-warning/10 px-2 py-1 rounded-lg";
+    return "text-base-content font-semibold bg-base-200 px-2 py-1 rounded-lg";
   };
 
   const getStatusConfig = (status) => {
     const configs = {
       completed: {
-        bg: "bg-gradient-to-r from-green-100 to-emerald-100",
-        text: "text-green-800",
-        border: "border-green-200",
-        dot: "bg-green-500"
+        bg: "bg-success/20",
+        text: "text-success",
+        border: "border-success/30",
+        dot: "bg-success"
       },
       pending: {
-        bg: "bg-gradient-to-r from-amber-100 to-orange-100",
-        text: "text-amber-800",
-        border: "border-amber-200",
-        dot: "bg-amber-500"
+        bg: "bg-warning/20",
+        text: "text-warning",
+        border: "border-warning/30",
+        dot: "bg-warning"
       },
       cancelled: {
-        bg: "bg-gradient-to-r from-red-100 to-pink-100",
-        text: "text-red-800",
-        border: "border-red-200",
-        dot: "bg-red-500"
+        bg: "bg-error/20",
+        text: "text-error",
+        border: "border-error/30",
+        dot: "bg-error"
       }
     };
     return configs[status] || configs.pending;
@@ -116,7 +109,7 @@ const SpendsTable = ({
 
   const headerCell = (label, key, width = "auto") => (
     <th
-      className={`text-left py-3 px-3 sm:py-4 sm:px-4 text-xs sm:text-sm font-bold text-gray-700 cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 rounded-xl transition-all duration-200 group border-r border-gray-100 last:border-r-0 ${width}`}
+      className={`text-left py-3 px-3 sm:py-4 sm:px-4 text-xs sm:text-sm font-bold text-base-content/70 cursor-pointer hover:bg-primary/5 rounded-xl transition-all duration-200 group border-r border-base-200 last:border-r-0 ${width}`}
       onClick={() => {
         if (sortBy === key) setSortOrder(sortOrder === "asc" ? "desc" : "asc");
         else {
@@ -126,17 +119,17 @@ const SpendsTable = ({
       }}
     >
       <div className="flex items-center gap-2">
-        <span className="group-hover:text-blue-600 transition-colors">{label}</span>
+        <span className="group-hover:text-primary transition-colors">{label}</span>
         {sortBy === key && (
           <div className="flex flex-col">
             <ArrowUpIcon 
               className={`h-3 w-3 transition-all ${
-                sortOrder === "asc" ? "text-blue-600 scale-110" : "text-gray-400"
+                sortOrder === "asc" ? "text-primary scale-110" : "text-base-content/30"
               }`} 
             />
             <ArrowDownIcon 
               className={`h-3 w-3 -mt-1 transition-all ${
-                sortOrder === "desc" ? "text-blue-600 scale-110" : "text-gray-400"
+                sortOrder === "desc" ? "text-primary scale-110" : "text-base-content/30"
               }`} 
             />
           </div>
@@ -151,7 +144,7 @@ const SpendsTable = ({
     const statusConfig = getStatusConfig(spend.status);
 
     return (
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 mb-3 hover:shadow-xl transition-all duration-300">
+      <div className="bg-base-100 rounded-2xl shadow-md border border-base-200 p-4 mb-3 hover:shadow-lg transition-all duration-300">
         {/* Header */}
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center gap-3 flex-1">
@@ -159,12 +152,12 @@ const SpendsTable = ({
             <div className="flex-1 min-w-0">
               <button
                 onClick={() => onView(spend)}
-                className="text-left font-semibold text-gray-800 hover:text-blue-600 transition-colors text-base line-clamp-2 hover:underline"
+                className="text-left font-semibold text-base-content hover:text-primary transition-colors text-base line-clamp-2 hover:underline"
               >
                 {spend.description}
               </button>
               {spend.paidTo && (
-                <p className="text-sm text-gray-600 mt-1">Paid to: {spend.paidTo}</p>
+                <p className="text-sm text-base-content/60 mt-1">Paid to: {spend.paidTo}</p>
               )}
             </div>
           </div>
@@ -173,21 +166,21 @@ const SpendsTable = ({
         {/* Details Grid */}
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="flex items-center gap-2">
-            <CurrencyRupeeIcon className="h-4 w-4 text-green-600" />
+            <CurrencyRupeeIcon className="h-4 w-4 text-success" />
             <span className={getAmountColor(spend.amount)}>
               {formatINR(spend.amount)}
             </span>
           </div>
           
           <div className="flex items-center gap-2">
-            <CalendarIcon className="h-4 w-4 text-blue-500" />
-            <span className="text-sm font-medium text-gray-700">{spend.date}</span>
+            <CalendarIcon className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-base-content">{spend.date}</span>
           </div>
         </div>
 
         {/* Category and Status */}
         <div className="flex flex-wrap gap-2 mb-3">
-          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold text-white bg-gradient-to-r ${categoryConfig.gradient} shadow-sm`}>
+          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold text-primary-content bg-gradient-to-r ${categoryConfig.gradient} shadow-sm`}>
             {spend.category}
           </span>
           <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${statusConfig.text} ${statusConfig.bg} border ${statusConfig.border}`}>
@@ -199,31 +192,31 @@ const SpendsTable = ({
         {/* Receipt Number */}
         {spend.receiptNumber && (
           <div className="mb-3">
-            <p className="text-xs text-cyan-700 font-medium bg-cyan-50 px-2 py-1 rounded-lg inline-block">
+            <p className="text-xs text-info font-medium bg-info/10 px-2 py-1 rounded-lg inline-block">
               Receipt: #{spend.receiptNumber}
             </p>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex justify-between pt-3 border-t border-gray-100">
+        <div className="flex justify-between pt-3 border-t border-base-200">
           <button
             onClick={() => onView(spend)}
-            className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-2 text-primary hover:bg-primary/10 rounded-xl transition-all duration-200 text-sm font-medium"
           >
             <EyeIcon className="h-4 w-4" />
             View
           </button>
           <button
             onClick={() => onEdit(spend)}
-            className="flex items-center gap-2 px-3 py-2 text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200 text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-2 text-success hover:bg-success/10 rounded-xl transition-all duration-200 text-sm font-medium"
           >
             <PencilIcon className="h-4 w-4" />
             Edit
           </button>
           <button
             onClick={() => onDelete(spend.id)}
-            className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-2 text-error hover:bg-error/10 rounded-xl transition-all duration-200 text-sm font-medium"
           >
             <TrashIcon className="h-4 w-4" />
             Delete
@@ -234,30 +227,30 @@ const SpendsTable = ({
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl border border-white/50 overflow-hidden">
+    <div className="bg-base-100/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-md border border-base-200 overflow-hidden">
       <div className="p-4 sm:p-6">
         {/* Desktop Table */}
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b-2 border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50">
+              <tr className="border-b-2 border-base-200 bg-gradient-to-r from-base-200 to-primary/10">
                 {headerCell("Description", "description", "w-2/5")}
                 {headerCell("Amount", "amount", "w-1/6")}
                 {headerCell("Date", "date", "w-1/6")}
                 {headerCell("Category", "category", "w-1/6")}
                 {headerCell("Status", "status", "w-1/6")}
-                <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 w-24">Actions</th>
+                <th className="text-left py-4 px-4 text-sm font-bold text-base-content/70 w-24">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-              {items.map((spend, index) => {
+            <tbody className="divide-y divide-base-200">
+              {items.map((spend) => {
                 const categoryConfig = getCategoryConfig(spend.category);
                 const statusConfig = getStatusConfig(spend.status);
                 
                 return (
                   <tr 
                     key={spend.id} 
-                    className="group hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all duration-300"
+                    className="group hover:bg-primary/5 transition-all duration-300"
                   >
                     {/* Description */}
                     <td className="py-4 px-4">
@@ -266,15 +259,15 @@ const SpendsTable = ({
                         <div className="min-w-0 flex-1">
                           <button
                             onClick={() => onView(spend)}
-                            className="text-left font-semibold text-gray-800 group-hover:text-blue-600 transition-colors text-sm line-clamp-2 hover:underline"
+                            className="text-left font-semibold text-base-content group-hover:text-primary transition-colors text-sm line-clamp-2 hover:underline"
                           >
                             {spend.description}
                           </button>
                           {spend.paidTo && (
-                            <p className="text-xs text-gray-600 mt-1">Paid to: {spend.paidTo}</p>
+                            <p className="text-xs text-base-content/60 mt-1">Paid to: {spend.paidTo}</p>
                           )}
                           {spend.receiptNumber && (
-                            <p className="text-xs text-cyan-600 font-medium mt-1">#{spend.receiptNumber}</p>
+                            <p className="text-xs text-info font-medium mt-1">#{spend.receiptNumber}</p>
                           )}
                         </div>
                       </div>
@@ -283,7 +276,7 @@ const SpendsTable = ({
                     {/* Amount */}
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
-                        <CurrencyRupeeIcon className="h-4 w-4 text-green-600" />
+                        <CurrencyRupeeIcon className="h-4 w-4 text-success" />
                         <span className={getAmountColor(spend.amount)}>
                           {formatINR(spend.amount)}
                         </span>
@@ -292,15 +285,15 @@ const SpendsTable = ({
 
                     {/* Date */}
                     <td className="py-4 px-4">
-                      <div className="flex items-center gap-2 text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
-                        <CalendarIcon className="h-4 w-4 text-blue-500" />
+                      <div className="flex items-center gap-2 text-base-content/70 bg-base-200 rounded-lg px-3 py-2">
+                        <CalendarIcon className="h-4 w-4 text-primary" />
                         <span className="text-sm font-medium">{spend.date}</span>
                       </div>
                     </td>
 
                     {/* Category */}
                     <td className="py-4 px-4">
-                      <span className={`inline-flex items-center px-3 py-2 rounded-full text-xs font-bold text-white bg-gradient-to-r ${categoryConfig.gradient} shadow-sm`}>
+                      <span className={`inline-flex items-center px-3 py-2 rounded-full text-xs font-bold text-primary-content bg-gradient-to-r ${categoryConfig.gradient} shadow-sm`}>
                         {spend.category}
                       </span>
                     </td>
@@ -318,21 +311,21 @@ const SpendsTable = ({
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                         <button
                           onClick={() => onView(spend)}
-                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 tooltip"
+                          className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
                           title="View Details"
                         >
                           <EyeIcon className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => onEdit(spend)}
-                          className="p-2 text-green-600 hover:bg-green-100 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 tooltip"
+                          className="p-2 text-success hover:bg-success/10 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
                           title="Edit"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => onDelete(spend.id)}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 tooltip"
+                          className="p-2 text-error hover:bg-error/10 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
                           title="Delete"
                         >
                           <TrashIcon className="h-4 w-4" />
@@ -356,12 +349,10 @@ const SpendsTable = ({
         {/* Empty State */}
         {items.length === 0 && (
           <div className="text-center py-12">
-            <DocumentMagnifyingGlassIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg mb-2 font-semibold">No spends found</p>
-            <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
-              {items.length === 0 
-                ? "Get started by adding your first spend to track expenses."
-                : "Try adjusting your search or filters to find what you're looking for."}
+            <DocumentMagnifyingGlassIcon className="h-16 w-16 text-base-content/30 mx-auto mb-4" />
+            <p className="text-base-content/70 text-lg mb-2 font-semibold">No spends found</p>
+            <p className="text-base-content/50 text-sm mb-4 max-w-md mx-auto">
+              Get started by adding your first spend to track expenses.
             </p>
           </div>
         )}
@@ -369,10 +360,10 @@ const SpendsTable = ({
 
       {/* Table Footer */}
       {items.length > 0 && (
-        <div className="bg-gray-50 border-t border-gray-100 px-4 sm:px-6 py-3">
-          <div className="flex justify-between items-center text-sm text-gray-600">
+        <div className="bg-base-200/50 border-t border-base-200 px-4 sm:px-6 py-3">
+          <div className="flex justify-between items-center text-sm text-base-content/70">
             <span>
-              Showing <span className="font-semibold text-blue-600">{items.length}</span> spends
+              Showing <span className="font-semibold text-primary">{items.length}</span> spends
             </span>
             <div className="flex items-center gap-4">
               <span className="hidden sm:inline">Sorted by: <span className="font-semibold">{sortBy}</span> ({sortOrder})</span>
