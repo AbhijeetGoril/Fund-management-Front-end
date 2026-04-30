@@ -1,10 +1,7 @@
-// EventSpends.jsx (Complete Enhanced Version)
+// EventSpends.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  PlusIcon,
-} from "@heroicons/react/20/solid";
+import { ArrowLeftIcon, PlusIcon } from "@heroicons/react/20/solid";
 import Navbar from "../components/Navbar/Navbar";
 import { Loader } from "../components/Loader";
 import SpendsHero from "../components/Spends/SpendsHero";
@@ -39,15 +36,11 @@ const EventSpends = () => {
 
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // UI state
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
-
-  // Modals
   const [addEditOpen, setAddEditOpen] = useState(false);
   const [editingSpend, setEditingSpend] = useState(null);
   const [viewSpend, setViewSpend] = useState(null);
@@ -61,7 +54,6 @@ const EventSpends = () => {
     return () => clearTimeout(t);
   }, [eventId]);
 
-  // Calculate statistics
   const totalSpent = useMemo(
     () => (event?.spends || []).reduce((sum, s) => sum + s.amount, 0),
     [event]
@@ -76,14 +68,10 @@ const EventSpends = () => {
       acc[s.status] = (acc[s.status] || 0) + 1;
       return acc;
     }, {}) || {};
-  
   const completedSpends = statusCounts.completed || 0;
   const pendingSpends = statusCounts.pending || 0;
-  const cancelledSpends = statusCounts.cancelled || 0;
-
   const categories = [...new Set(event?.spends.map((s) => s.category) || [])];
 
-  // Filter and sort spends
   const filteredSpends = useMemo(() => {
     if (!event) return [];
     const q = searchTerm.trim().toLowerCase();
@@ -97,50 +85,37 @@ const EventSpends = () => {
       const matchesStatus = filterStatus === "all" || spend.status === filterStatus;
       return matchesSearch && matchesCategory && matchesStatus;
     });
-    
-    // Sort spends
     filtered.sort((a, b) => {
       let aVal, bVal;
       if (sortBy === "amount") {
-        aVal = a.amount; 
-        bVal = b.amount;
+        aVal = a.amount; bVal = b.amount;
       } else if (sortBy === "date") {
-        aVal = new Date(a.date); 
-        bVal = new Date(b.date);
-      } else if (sortBy === "description") {
-        aVal = a.description.toLowerCase(); 
-        bVal = b.description.toLowerCase();
+        aVal = new Date(a.date); bVal = new Date(b.date);
       } else {
-        aVal = a[sortBy]; 
-        bVal = b[sortBy];
+        aVal = a[sortBy]; bVal = b[sortBy];
       }
       return sortOrder === "asc" ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
     });
     return filtered;
   }, [event, searchTerm, filterCategory, filterStatus, sortBy, sortOrder]);
 
-  // Modal handlers
   const openAdd = () => {
     setEditingSpend(null);
     setAddEditOpen(true);
   };
-
   const openEdit = (spend) => {
     setEditingSpend(spend);
     setAddEditOpen(true);
   };
-
   const onSubmitAddEdit = (payload) => {
     if (!event) return;
     if (editingSpend) {
-      // Edit existing spend
       const updated = event.spends.map((s) =>
         s.id === editingSpend.id ? { ...s, ...payload } : s
       );
       setEvent({ ...event, spends: updated });
       setEditingSpend(null);
     } else {
-      // Add new spend
       const nextId = Math.max(...event.spends.map((s) => s.id)) + 1;
       const newSpend = {
         id: nextId,
@@ -152,7 +127,6 @@ const EventSpends = () => {
     }
     setAddEditOpen(false);
   };
-
   const handleDeleteSpend = (id) => {
     if (!event) return;
     if (window.confirm("Are you sure you want to delete this spend?")) {
@@ -162,23 +136,25 @@ const EventSpends = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
-        <Loader />
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <Loader size="lg" color="primary" variant="spinner" />
+        </div>
       </div>
     );
   }
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-          <div className="bg-white rounded-3xl shadow-xl p-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">Event not found</h2>
+          <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200 p-12">
+            <h2 className="text-3xl font-bold text-base-content mb-4">Event not found</h2>
             <button
               onClick={() => navigate("/dashboard")}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
+              className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
             >
               Back to Dashboard
             </button>
@@ -189,23 +165,23 @@ const EventSpends = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
       <Navbar />
 
-      {/* Enhanced Background */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-32 w-80 h-80 bg-green-200 rounded-full blur-3xl opacity-20"></div>
-        <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-purple-200 rounded-full blur-3xl opacity-20"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-100 rounded-full blur-3xl opacity-10"></div>
+      {/* Animated blobs using theme colors */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-32 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-secondary/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
       </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6">
-        {/* Enhanced Header */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(`/events/${event.id}`)}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-all duration-200 bg-white/90 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-lg border border-white/50 hover:shadow-xl hover:scale-105 active:scale-95"
+              className="flex items-center gap-2 text-base-content/70 hover:text-base-content transition-all duration-200 bg-base-100/90 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-md border border-base-200 hover:shadow-lg hover:scale-105 active:scale-95"
             >
               <ArrowLeftIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Back to Event</span>
@@ -214,7 +190,7 @@ const EventSpends = () => {
 
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg w-full sm:w-auto justify-center"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg w-full sm:w-auto justify-center"
           >
             <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             <span className="text-sm sm:text-base">Add Spend</span>
@@ -267,7 +243,7 @@ const EventSpends = () => {
 
         {/* Footer */}
         <div className="mt-6 sm:mt-8 text-center">
-          <p className="text-gray-500 text-xs sm:text-sm">
+          <p className="text-base-content/40 text-xs sm:text-sm">
             © {new Date().getFullYear()} Society Management System. All rights reserved.
           </p>
         </div>
@@ -283,7 +259,6 @@ const EventSpends = () => {
         onSubmit={onSubmitAddEdit}
         initial={editingSpend}
       />
-      
       <ViewModal
         spend={viewSpend}
         onClose={() => setViewSpend(null)}
