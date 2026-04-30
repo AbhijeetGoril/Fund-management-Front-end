@@ -1,4 +1,4 @@
-// SpendModals.jsx (Enhanced)
+// SpendModals.jsx (Themed Version)
 import React, { useEffect, useCallback, useState } from "react";
 import { 
   CurrencyRupeeIcon, 
@@ -12,7 +12,7 @@ import { PencilIcon } from "lucide-react";
 
 const Backdrop = ({ onClose }) => (
   <div 
-    className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-all duration-300" 
+    className="fixed inset-0 bg-base-content/40 backdrop-blur-sm transition-all duration-300" 
     onClick={onClose} 
     aria-hidden="true" 
   />
@@ -80,31 +80,66 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
     return () => document.removeEventListener("keydown", onEsc);
   }, [open, onEsc]);
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      Decoration: "border-pink-200 bg-pink-50 text-pink-700",
-      Food: "border-amber-200 bg-amber-50 text-amber-700",
-      Equipment: "border-blue-200 bg-blue-50 text-blue-700",
-      Media: "border-purple-200 bg-purple-50 text-purple-700",
-      Transport: "border-emerald-200 bg-emerald-50 text-emerald-700",
-      Entertainment: "border-violet-200 bg-violet-50 text-violet-700",
-      Other: "border-gray-200 bg-gray-50 text-gray-700"
+  // Theme-based category styling
+  const getCategoryConfig = (category) => {
+    const configs = {
+      Decoration: {
+        border: "border-primary/30",
+        bg: "bg-primary/10",
+        text: "text-primary",
+      },
+      Food: {
+        border: "border-secondary/30",
+        bg: "bg-secondary/10",
+        text: "text-secondary",
+      },
+      Equipment: {
+        border: "border-accent/30",
+        bg: "bg-accent/10",
+        text: "text-accent",
+      },
+      Media: {
+        border: "border-info/30",
+        bg: "bg-info/10",
+        text: "text-info",
+      },
+      Transport: {
+        border: "border-success/30",
+        bg: "bg-success/10",
+        text: "text-success",
+      },
+      Entertainment: {
+        border: "border-warning/30",
+        bg: "bg-warning/10",
+        text: "text-warning",
+      },
+      Other: {
+        border: "border-base-300",
+        bg: "bg-base-200",
+        text: "text-base-content/70",
+      }
     };
-    return colors[category] || colors.Other;
+    return configs[category] || configs.Other;
   };
 
   const getStatusConfig = (status) => {
     const configs = {
       completed: {
-        color: "text-green-700 bg-green-50 border-green-200",
+        bg: "bg-success/20",
+        text: "text-success",
+        border: "border-success/30",
         icon: <CheckCircleIcon className="h-4 w-4" />
       },
       pending: {
-        color: "text-amber-700 bg-amber-50 border-amber-200",
+        bg: "bg-warning/20",
+        text: "text-warning",
+        border: "border-warning/30",
         icon: <ClockIcon className="h-4 w-4" />
       },
       cancelled: {
-        color: "text-red-700 bg-red-50 border-red-200",
+        bg: "bg-error/20",
+        text: "text-error",
+        border: "border-error/30",
         icon: <XCircleIcon className="h-4 w-4" />
       }
     };
@@ -119,19 +154,19 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
       <div 
         role="dialog" 
         aria-modal="true" 
-        className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-gray-100 transform transition-all duration-300 scale-95 hover:scale-100"
+        className="relative z-10 w-full max-w-2xl rounded-3xl bg-base-100 shadow-2xl border border-base-200 transform transition-all duration-300 scale-95 hover:scale-100"
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50 rounded-t-3xl">
+        <div className="px-6 py-5 border-b border-base-200 bg-gradient-to-r from-base-200 to-primary/10 rounded-t-3xl">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-xl">
-              <DocumentTextIcon className="h-6 w-6 text-blue-600" />
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <DocumentTextIcon className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-xl font-bold text-base-content">
                 {initial ? "Edit Spend" : "Add New Spend"}
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-base-content/70">
                 {initial ? "Update spend details" : "Add a new expense to track"}
               </p>
             </div>
@@ -142,21 +177,21 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Description */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
                 <span>Description</span>
-                <span className="text-red-500">*</span>
+                <span className="text-error">*</span>
               </label>
               <input
                 type="text"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.description ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 ${
+                  errors.description ? 'border-error bg-error/5' : 'border-base-300 hover:border-base-400'
                 }`}
                 placeholder="Enter spend description..."
               />
               {errors.description && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                <p className="mt-2 text-sm text-error flex items-center gap-1">
                   <XCircleIcon className="h-4 w-4" />
                   {errors.description}
                 </p>
@@ -165,10 +200,10 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
 
             {/* Amount */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <CurrencyRupeeIcon className="h-4 w-4 text-green-600" />
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                <CurrencyRupeeIcon className="h-4 w-4 text-success" />
                 <span>Amount (₹)</span>
-                <span className="text-red-500">*</span>
+                <span className="text-error">*</span>
               </label>
               <input
                 type="number"
@@ -176,13 +211,13 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
                 step="1"
                 value={form.amount}
                 onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.amount ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 ${
+                  errors.amount ? 'border-error bg-error/5' : 'border-base-300 hover:border-base-400'
                 }`}
                 placeholder="0"
               />
               {errors.amount && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                <p className="mt-2 text-sm text-error flex items-center gap-1">
                   <XCircleIcon className="h-4 w-4" />
                   {errors.amount}
                 </p>
@@ -191,21 +226,21 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
 
             {/* Date */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 text-blue-600" />
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-primary" />
                 <span>Date</span>
-                <span className="text-red-500">*</span>
+                <span className="text-error">*</span>
               </label>
               <input
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.date ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content ${
+                  errors.date ? 'border-error bg-error/5' : 'border-base-300 hover:border-base-400'
                 }`}
               />
               {errors.date && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                <p className="mt-2 text-sm text-error flex items-center gap-1">
                   <XCircleIcon className="h-4 w-4" />
                   {errors.date}
                 </p>
@@ -214,15 +249,15 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Category <span className="text-red-500">*</span>
+              <label className="block text-sm font-semibold text-base-content/80 mb-2">
+                Category <span className="text-error">*</span>
               </label>
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer ${
-                  errors.category ? 'border-red-300 bg-red-50' : 
-                  form.category ? `${getCategoryColor(form.category)} border-2 font-semibold` : 'border-gray-300 hover:border-gray-400'
+                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none cursor-pointer bg-base-100 text-base-content ${
+                  errors.category ? 'border-error bg-error/5' : 
+                  form.category ? `${getCategoryConfig(form.category).border} ${getCategoryConfig(form.category).bg} ${getCategoryConfig(form.category).text} border-2 font-semibold` : 'border-base-300 hover:border-base-400'
                 }`}
               >
                 <option value="">Select Category</option>
@@ -235,7 +270,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
                 <option value="Other">Other</option>
               </select>
               {errors.category && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                <p className="mt-2 text-sm text-error flex items-center gap-1">
                   <XCircleIcon className="h-4 w-4" />
                   {errors.category}
                 </p>
@@ -244,15 +279,13 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-base-content/80 mb-2">
                 Status
               </label>
               <select
                 value={form.status}
                 onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer ${
-                  getStatusConfig(form.status).color
-                } border-2 font-semibold`}
+                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none cursor-pointer bg-base-100 ${getStatusConfig(form.status).bg} ${getStatusConfig(form.status).text} ${getStatusConfig(form.status).border} border-2 font-semibold`}
               >
                 <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
@@ -262,52 +295,52 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
 
             {/* Paid To */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-base-content/80 mb-2">
                 Paid To (Vendor)
               </label>
               <input
                 type="text"
                 value={form.paidTo}
                 onChange={(e) => setForm((f) => ({ ...f, paidTo: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                className="w-full px-4 py-3 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 hover:border-base-400"
                 placeholder="Vendor name"
               />
             </div>
 
             {/* Receipt Number */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-base-content/80 mb-2">
                 Receipt Number
               </label>
               <input
                 type="text"
                 value={form.receiptNumber}
                 onChange={(e) => setForm((f) => ({ ...f, receiptNumber: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                className="w-full px-4 py-3 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 hover:border-base-400"
                 placeholder="Receipt number"
               />
             </div>
 
             {/* Notes */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-base-content/80 mb-2">
                 Additional Notes
               </label>
               <textarea
                 rows="3"
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 resize-none"
+                className="w-full px-4 py-3 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 hover:border-base-400 resize-none"
                 placeholder="Any additional notes about this spend..."
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-100">
+          <div className="flex gap-3 pt-4 border-t border-base-200">
             <button 
               type="submit"
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 justify-center"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 justify-center"
             >
               <CheckCircleIcon className="h-5 w-5" />
               {initial ? "Update Spend" : "Add Spend"}
@@ -315,7 +348,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
             <button 
               type="button" 
               onClick={onClose}
-              className="px-6 py-3 bg-gray-500 text-white rounded-2xl font-semibold hover:bg-gray-600 transition-all duration-300 hover:scale-105 flex items-center gap-2"
+              className="px-6 py-3 bg-base-200 text-base-content rounded-2xl font-semibold hover:bg-base-300 transition-all duration-300 hover:scale-105 flex items-center gap-2"
             >
               <XCircleIcon className="h-5 w-5" />
               Cancel
@@ -335,75 +368,22 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
 
   const getCategoryConfig = (category) => {
     const configs = {
-      Decoration: {
-        gradient: "from-pink-500 to-rose-500",
-        bg: "bg-pink-100",
-        text: "text-pink-700",
-        border: "border-pink-200"
-      },
-      Food: {
-        gradient: "from-amber-500 to-orange-500",
-        bg: "bg-amber-100",
-        text: "text-amber-700",
-        border: "border-amber-200"
-      },
-      Equipment: {
-        gradient: "from-blue-500 to-cyan-500",
-        bg: "bg-blue-100",
-        text: "text-blue-700",
-        border: "border-blue-200"
-      },
-      Media: {
-        gradient: "from-purple-500 to-indigo-500",
-        bg: "bg-purple-100",
-        text: "text-purple-700",
-        border: "border-purple-200"
-      },
-      Transport: {
-        gradient: "from-emerald-500 to-teal-500",
-        bg: "bg-emerald-100",
-        text: "text-emerald-700",
-        border: "border-emerald-200"
-      },
-      Entertainment: {
-        gradient: "from-violet-500 to-purple-500",
-        bg: "bg-violet-100",
-        text: "text-violet-700",
-        border: "border-violet-200"
-      },
-      Other: {
-        gradient: "from-gray-500 to-slate-500",
-        bg: "bg-gray-100",
-        text: "text-gray-700",
-        border: "border-gray-200"
-      }
+      Decoration: { gradient: "from-primary to-secondary", bg: "bg-primary/10", text: "text-primary", border: "border-primary/20" },
+      Food: { gradient: "from-secondary to-accent", bg: "bg-secondary/10", text: "text-secondary", border: "border-secondary/20" },
+      Equipment: { gradient: "from-accent to-info", bg: "bg-accent/10", text: "text-accent", border: "border-accent/20" },
+      Media: { gradient: "from-info to-primary", bg: "bg-info/10", text: "text-info", border: "border-info/20" },
+      Transport: { gradient: "from-success to-emerald-600", bg: "bg-success/10", text: "text-success", border: "border-success/20" },
+      Entertainment: { gradient: "from-warning to-orange-500", bg: "bg-warning/10", text: "text-warning", border: "border-warning/20" },
+      Other: { gradient: "from-base-300 to-base-400", bg: "bg-base-200", text: "text-base-content/70", border: "border-base-300" }
     };
     return configs[category] || configs.Other;
   };
 
   const getStatusConfig = (status) => {
     const configs = {
-      completed: {
-        bg: "bg-green-100",
-        text: "text-green-800",
-        border: "border-green-200",
-        icon: "✅",
-        label: "Completed"
-      },
-      pending: {
-        bg: "bg-amber-100",
-        text: "text-amber-800",
-        border: "border-amber-200",
-        icon: "⏳",
-        label: "Pending"
-      },
-      cancelled: {
-        bg: "bg-red-100",
-        text: "text-red-800",
-        border: "border-red-200",
-        icon: "❌",
-        label: "Cancelled"
-      }
+      completed: { bg: "bg-success/20", text: "text-success", border: "border-success/30", icon: "✅", label: "Completed" },
+      pending: { bg: "bg-warning/20", text: "text-warning", border: "border-warning/30", icon: "⏳", label: "Pending" },
+      cancelled: { bg: "bg-error/20", text: "text-error", border: "border-error/30", icon: "❌", label: "Cancelled" }
     };
     return configs[status] || configs.pending;
   };
@@ -416,22 +396,22 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <Backdrop onClose={onClose} />
-      <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-gray-100 transform transition-all duration-300 scale-95 hover:scale-100">
+      <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-base-100 shadow-2xl border border-base-200 transform transition-all duration-300 scale-95 hover:scale-100">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50 rounded-t-3xl">
+        <div className="px-6 py-5 border-b border-base-200 bg-gradient-to-r from-base-200 to-primary/10 rounded-t-3xl">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-3">
               <div className={`p-2 ${categoryConfig.bg} rounded-xl`}>
-                <DocumentTextIcon className="h-6 w-6 text-gray-700" />
+                <DocumentTextIcon className={`h-6 w-6 ${categoryConfig.text}`} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Spend Details</h3>
-                <p className="text-sm text-gray-600">Complete information about this expense</p>
+                <h3 className="text-xl font-bold text-base-content">Spend Details</h3>
+                <p className="text-sm text-base-content/70">Complete information about this expense</p>
               </div>
             </div>
             <button 
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200"
+              className="p-2 text-base-content/50 hover:text-base-content hover:bg-base-200 rounded-xl transition-all duration-200"
             >
               <XCircleIcon className="h-5 w-5" />
             </button>
@@ -443,34 +423,34 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Description */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Description</label>
-              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200">
-                <p className="text-lg font-semibold text-gray-800">{spend.description}</p>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Description</label>
+              <div className="p-4 bg-base-200 rounded-2xl border border-base-300">
+                <p className="text-lg font-semibold text-base-content">{spend.description}</p>
               </div>
             </div>
 
             {/* Amount */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Amount</label>
-              <div className="p-4 bg-green-50 rounded-2xl border border-green-200">
-                <p className="text-xl font-bold text-green-700">{formatINR(spend.amount)}</p>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Amount</label>
+              <div className="p-4 bg-success/10 rounded-2xl border border-success/20">
+                <p className="text-xl font-bold text-success">{formatINR(spend.amount)}</p>
               </div>
             </div>
 
             {/* Date */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Date</label>
-              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200 flex items-center gap-3">
-                <CalendarIcon className="h-5 w-5 text-blue-600" />
-                <p className="text-lg font-semibold text-gray-800">{spend.date}</p>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Date</label>
+              <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 flex items-center gap-3">
+                <CalendarIcon className="h-5 w-5 text-primary" />
+                <p className="text-lg font-semibold text-base-content">{spend.date}</p>
               </div>
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Category</label>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Category</label>
               <div className={`p-4 ${categoryConfig.bg} rounded-2xl border ${categoryConfig.border}`}>
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold text-white bg-gradient-to-r ${categoryConfig.gradient}`}>
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold text-primary-content bg-gradient-to-r ${categoryConfig.gradient}`}>
                   {spend.category}
                 </span>
               </div>
@@ -478,7 +458,7 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Status</label>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Status</label>
               <div className={`p-4 ${statusConfig.bg} rounded-2xl border ${statusConfig.border}`}>
                 <span className="text-lg font-semibold flex items-center gap-2">
                   {statusConfig.icon}
@@ -489,25 +469,25 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
 
             {/* Paid To */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Paid To</label>
-              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200">
-                <p className="text-lg font-semibold text-gray-800">{spend.paidTo || "N/A"}</p>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Paid To</label>
+              <div className="p-4 bg-base-200 rounded-2xl border border-base-300">
+                <p className="text-lg font-semibold text-base-content">{spend.paidTo || "N/A"}</p>
               </div>
             </div>
 
             {/* Receipt Number */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Receipt Number</label>
-              <div className="p-4 bg-cyan-50 rounded-2xl border border-cyan-200">
-                <p className="text-lg font-semibold text-gray-800">{spend.receiptNumber || "N/A"}</p>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Receipt Number</label>
+              <div className="p-4 bg-info/10 rounded-2xl border border-info/20">
+                <p className="text-lg font-semibold text-info">{spend.receiptNumber || "N/A"}</p>
               </div>
             </div>
 
             {/* Approved By */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Approved By</label>
-              <div className="p-4 bg-purple-50 rounded-2xl border border-purple-200">
-                <p className="text-lg font-semibold text-gray-800">{spend.approvedBy || "N/A"}</p>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Approved By</label>
+              <div className="p-4 bg-accent/10 rounded-2xl border border-accent/20">
+                <p className="text-lg font-semibold text-accent">{spend.approvedBy || "N/A"}</p>
               </div>
             </div>
           </div>
@@ -515,25 +495,25 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
           {/* Notes */}
           {spend.notes && (
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Notes</label>
-              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200">
-                <p className="text-gray-800 leading-relaxed">{spend.notes}</p>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Notes</label>
+              <div className="p-4 bg-warning/10 rounded-2xl border border-warning/20">
+                <p className="text-base-content leading-relaxed">{spend.notes}</p>
               </div>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-100">
+          <div className="flex gap-3 pt-4 border-t border-base-200">
             <button 
               onClick={() => onEdit(spend)}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 justify-center"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 justify-center"
             >
               <PencilIcon className="h-5 w-5" />
               Edit Spend
             </button>
             <button 
               onClick={onClose}
-              className="flex-1 px-6 py-3 bg-gray-500 text-white rounded-2xl font-semibold hover:bg-gray-600 transition-all duration-300 hover:scale-105 flex items-center gap-2 justify-center"
+              className="flex-1 px-6 py-3 bg-base-200 text-base-content rounded-2xl font-semibold hover:bg-base-300 transition-all duration-300 hover:scale-105 flex items-center gap-2 justify-center"
             >
               <XCircleIcon className="h-5 w-5" />
               Close
