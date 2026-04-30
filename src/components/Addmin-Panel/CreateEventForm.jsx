@@ -11,7 +11,7 @@ import { addEvent } from "../../redux/slices/eventsSlice";
 import { useDispatch } from 'react-redux';
 import { Loader } from '../Loader';
 
-const CreateEventForm = ({ setShowForm, members = [] }) => {
+const CreateEventForm = ({ setShowModal, members = [] }) => {
   const dispatch = useDispatch();
   const [newEvent, setNewEvent] = useState({
     name: "",
@@ -64,7 +64,7 @@ const CreateEventForm = ({ setShowForm, members = [] }) => {
 
       dispatch(addEvent(eventData));
       toast.success("🎉 Event created successfully!");
-      setShowForm(false);
+      setShowModal(false);
     } catch (error) {
       toast.error("Failed to create event", error);
     } finally {
@@ -96,7 +96,7 @@ const CreateEventForm = ({ setShowForm, members = [] }) => {
               </div>
             </div>
             <button
-              onClick={() => setShowForm(false)}
+              onClick={() => setShowModal(false)}
               className="p-2 hover:bg-primary-content/20 rounded-xl transition-all duration-200"
               aria-label="Close"
             >
@@ -237,7 +237,7 @@ const CreateEventForm = ({ setShowForm, members = [] }) => {
         <div className="px-6 py-4 bg-base-200/50 backdrop-blur-sm border-t border-base-300 flex justify-end gap-4">
           <button
             type="button"
-            onClick={() => setShowForm(false)}
+            onClick={() => setShowModal(false)}
             className="px-6 py-3 text-base-content font-medium rounded-2xl hover:bg-base-300 transition-all duration-200 border border-base-300"
             disabled={loading}
           >
