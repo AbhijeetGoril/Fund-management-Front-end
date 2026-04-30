@@ -6,6 +6,8 @@ import ProfileDropdown from "./ProfileDropdown";
 import MobileMenu from "./MobileMenu";
 import ThemeSelector from "./ThemeSeletor";
 import { axiosInstance } from "../../lib/axois";
+import { useDispatch } from "react-redux";
+import { logout } from '../../redux/slices/authSlice';
 
 const Navbar = ({
   title = "Society Manager",
@@ -17,6 +19,7 @@ const Navbar = ({
   ],
 }) => {
   const [user, setUser] = useState(null);
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
   const [desktopDropdownOpen, setDesktopDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -58,6 +61,7 @@ const Navbar = ({
     try {
       await axiosInstance.post("/auth/logout");
       setUser(null);
+      dispatch(logout());
       closeAll();
       // Optional: Redirect to login page after logout
       // window.location.href = "/login";

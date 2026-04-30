@@ -15,7 +15,7 @@ import { Loader } from '../Loader';
 const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth); // assuming auth slice has user object
-
+  console.log(user)
   const [loading, setLoading] = useState(false);
 
   const [newEvent, setNewEvent] = useState({

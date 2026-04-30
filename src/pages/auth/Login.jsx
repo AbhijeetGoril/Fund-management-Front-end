@@ -108,7 +108,12 @@ const Login = () => {
       setIsSubmitting(true);
       
       const response = await googleLoginMutation.mutateAsync(idToken);
+      const userData = response.data?.user || response.user;
+      const token = response.data?.token || response.token;
+    
+      dispatch(setUser({ user: userData, token }));
       navigate("/dashboard");
+
       
     } catch (error) {
       setIsSubmitting(false);
