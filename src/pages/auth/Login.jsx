@@ -5,9 +5,12 @@ import { auth } from "../../firebase/firebaseConfig";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { toast } from "react-toastify";
 import { useLoginMutation, useGoogleLoginMutation } from "../../hooks/useAuthMutations";
+import { useDispatch } from 'react-redux';
+import { setUser } from '../../redux/slices/authSlice';
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [loginData, setLoginData] = useState({
     email: "",
     password: "",
@@ -138,29 +141,37 @@ const Login = () => {
 
   // Handle Regular Login
   const handleLogin = async (e) => {
-    e.preventDefault();
-    
-    // Clear previous errors
-    setErrors({});
-    
-    // Validate form
-    const formErrors = validateForm();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      return;
-    }
+  e.preventDefault();
+  setErrors({});
+  const formErrors = validateForm();
+  if (Object.keys(formErrors).length > 0) {
+    setErrors(formErrors);
+    return;
+  }
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
+  try {
+    const response = await loginMutation.mutateAsync(loginData);
     
-    try {
-      const response = await loginMutation.mutateAsync(loginData);
-      navigate("/dashboard");
-    } catch (error) {
-      handleLoginError(error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    // ✅ NEW: Save user & token to Redux
+    // You need to know the shape of `response`.
+    // Common shapes:
+    //   - response.data.user, response.data.token
+    //   - response.user, response.token
+    //   - response itself is the user object
+    // Check by doing console.log(response)
+    const userData = response.data?.user || response.user;
+    const token = response.data?.token || response.token;
+    
+    dispatch(setUser({ user: userData, token }));
+    
+    navigate("/dashboard");
+  } catch (error) {
+    handleLoginError(error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <>
