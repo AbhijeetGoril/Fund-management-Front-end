@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   XMarkIcon,
@@ -14,16 +14,16 @@ import { Loader } from '../Loader';
 
 const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth); // assuming auth slice has user object
-  console.log(user)
+  const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
+
 
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
     date: '',
     location: '',
-    society: societyId || '', // prefill if provided, otherwise empty
+    society: societyId || '',
     budgetTarget: '',
     status: 'active',
   });
@@ -37,29 +37,48 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
     e.preventDefault();
     setLoading(true);
 
-    try {
-      // Build event object matching Mongoose schema
-      const eventData = {
-        title: newEvent.title,
-        description: newEvent.description,
-        date: newEvent.date ? new Date(newEvent.date).toISOString() : new Date().toISOString(),
-        location: newEvent.location,
-        society: newEvent.society || null, // can be null if not provided
-        createdBy: user?._id,              // from authenticated user
-        budget: {
-          target: parseFloat(newEvent.budgetTarget) || 0,
-        },
-        status: newEvent.status,
-      };
-
-      // Dispatch action (adjust action name as per your slice)
-      await dispatch(addEvent(eventData)).unwrap();
-      toast.success('🎉 Event created successfully!');
-      setShowModal(false);
-    } catch (error) {
-      toast.error(error?.message || 'Failed to create event');
-    } finally {
+    // --- Client-side validations ---
+    if (parseFloat(newEvent.budgetTarget) < 0) {
+      toast.error('Budget target cannot be negative');
       setLoading(false);
+      return;
+    }
+
+    // Build event object matching Mongoose schema
+    let eventDate;
+    if (newEvent.date) {
+      // Preserve the selected date as UTC midnight to avoid timezone shifts
+      eventDate = new Date(newEvent.date + 'T00:00:00Z').toISOString();
+    } else {
+      eventDate = new Date().toISOString();
+    }
+
+    const eventData = {
+      title: newEvent.title.trim(),
+      description: newEvent.description.trim(),
+      date: eventDate,
+      location: newEvent.location.trim(),
+      society: newEvent.society || null,
+      createdBy: user?._id,
+      budget: {
+        target: parseFloat(newEvent.budgetTarget) || 0,
+      },
+      status: newEvent.status,
+    };
+
+    try {
+      await dispatch(addEvent(eventData)).unwrap();
+      console.log("DONE");
+   
+        toast.success('🎉 Event created successfully!');
+        setShowModal(false);
+      
+    } catch (error) {
+    
+        toast.error(error?.message || 'Failed to create event');
+      
+    } finally {
+       setLoading(false);
     }
   };
 
@@ -77,7 +96,9 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                 <h2 className="text-2xl font-bold text-primary-content tracking-tight">
                   Create New Event
                 </h2>
-                <p className="text-primary-content/80 text-sm">Add an event following your society schema</p>
+                <p className="text-primary-content/80 text-sm">
+                  Add an event following your society schema
+                </p>
               </div>
             </div>
             <button
@@ -198,6 +219,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
             </label>
             <div className="relative">
               <textarea
+                required
                 name="description"
                 placeholder="Describe the purpose, agenda, and other details of the event..."
                 value={newEvent.description}
