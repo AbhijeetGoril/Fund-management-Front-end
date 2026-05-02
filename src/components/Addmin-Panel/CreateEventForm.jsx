@@ -7,15 +7,18 @@ import {
   DocumentTextIcon,
   MapPinIcon,
   BuildingOfficeIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import { addEvent } from '../../redux/slices/eventsSlice';
 import { Loader } from '../Loader';
+import { axiosInstance } from '../../lib/axois';
 
 const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   const [newEvent, setNewEvent] = useState({
     title: '',
@@ -32,11 +35,39 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
     setNewEvent((prev) => ({ ...prev, [name]: value }));
   };
 
+  // AI Description Suggestion using axiosInstance
+  const handleAISuggest = async () => {
+    if (!newEvent.title.trim()) {
+      toast.error('Please enter an event title first');
+      return;
+    }
+
+    setIsSuggesting(true);
+    try {
+      const response = await axiosInstance.post('/ai/suggest-description', {
+        title: newEvent.title,
+      });
+
+      const data = response.data;
+      if (data.description) {
+        setNewEvent((prev) => ({ ...prev, description: data.description }));
+        toast.success('✨ AI description generated successfully!');
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || error.message || 'Could not generate description';
+      toast.error(errorMsg);
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // --- Client-side required field validations ---
+    // Client-side validations
     if (!newEvent.title.trim()) {
       toast.error('Event title is required');
       setLoading(false);
@@ -79,7 +110,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
       return;
     }
 
-    // Build event object matching Mongoose schema
+    // Build event object
     let eventDate;
     if (newEvent.date) {
       eventDate = new Date(newEvent.date + 'T00:00:00Z').toISOString();
@@ -114,7 +145,6 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
   return (
     <div className="fixed inset-0 bg-base-content/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
       <div className="bg-base-100 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all">
-
         {/* Header */}
         <div className="bg-gradient-to-r from-primary to-secondary p-6">
           <div className="flex justify-between items-center">
@@ -146,7 +176,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
           onSubmit={handleCreateEvent}
           className="p-6 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar"
         >
-          {/* Title */}
+          {/* Title (without AI button now) */}
           <div>
             <label className="block text-sm font-semibold text-base-content mb-2">
               Event Title <span className="text-error">*</span>
@@ -248,11 +278,26 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
             </div>
           )}
 
-          {/* Description */}
+          {/* Description with AI button inline */}
           <div>
-            <label className="block text-sm font-semibold text-base-content mb-2">
-              Description <span className="text-error">*</span>
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-semibold text-base-content">
+                Description <span className="text-error">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAISuggest}
+                disabled={isSuggesting || loading}
+                className="px-3 py-1.5 bg-gradient-to-r from-accent to-secondary text-white text-sm font-medium rounded-xl hover:shadow-md transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSuggesting ? (
+                  <Loader size="sm" color="white" variant="spinner" />
+                ) : (
+                  <SparklesIcon className="h-4 w-4" />
+                )}
+                <span>Suggest with AI</span>
+              </button>
+            </div>
             <div className="relative">
               <textarea
                 name="description"
@@ -260,11 +305,14 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                 value={newEvent.description}
                 onChange={handleInputChange}
                 rows="4"
-                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none text-base-content placeholder:text-base-content/50"
+                className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none text-base-content placeholder:text-base-content/50 pr-12"
                 required
               />
               <DocumentTextIcon className="h-5 w-5 text-base-content/40 absolute top-4 right-4 pointer-events-none" />
             </div>
+            <p className="text-xs text-base-content/60 mt-1">
+              Click "Suggest with AI" to auto-generate a description based on the event title.
+            </p>
           </div>
         </form>
 
