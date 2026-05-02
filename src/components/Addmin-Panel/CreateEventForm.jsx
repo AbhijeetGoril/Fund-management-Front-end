@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   XMarkIcon,
@@ -16,7 +16,6 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
-
 
   const [newEvent, setNewEvent] = useState({
     title: '',
@@ -37,9 +36,45 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
     e.preventDefault();
     setLoading(true);
 
-    // --- Client-side validations ---
+    // --- Client-side required field validations ---
+    if (!newEvent.title.trim()) {
+      toast.error('Event title is required');
+      setLoading(false);
+      return;
+    }
+
+    if (!newEvent.date) {
+      toast.error('Event date is required');
+      setLoading(false);
+      return;
+    }
+
+    if (!newEvent.location.trim()) {
+      toast.error('Location is required');
+      setLoading(false);
+      return;
+    }
+
+    if (newEvent.budgetTarget === '' || newEvent.budgetTarget === null) {
+      toast.error('Budget target is required');
+      setLoading(false);
+      return;
+    }
+
     if (parseFloat(newEvent.budgetTarget) < 0) {
       toast.error('Budget target cannot be negative');
+      setLoading(false);
+      return;
+    }
+
+    if (!newEvent.description.trim()) {
+      toast.error('Description is required');
+      setLoading(false);
+      return;
+    }
+
+    if (societies.length > 0 && !newEvent.society) {
+      toast.error('Please select a society');
       setLoading(false);
       return;
     }
@@ -47,7 +82,6 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
     // Build event object matching Mongoose schema
     let eventDate;
     if (newEvent.date) {
-      // Preserve the selected date as UTC midnight to avoid timezone shifts
       eventDate = new Date(newEvent.date + 'T00:00:00Z').toISOString();
     } else {
       eventDate = new Date().toISOString();
@@ -68,23 +102,19 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
 
     try {
       await dispatch(addEvent(eventData)).unwrap();
-      console.log("DONE");
-   
-        toast.success('🎉 Event created successfully!');
-        setShowModal(false);
-      
+      toast.success('🎉 Event created successfully!');
+      setShowModal(false);
     } catch (error) {
-    
-        toast.error(error?.message || 'Failed to create event');
-      
+      toast.error(error?.message || 'Failed to create event');
     } finally {
-       setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-base-content/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
       <div className="bg-base-100 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all">
+
         {/* Header */}
         <div className="bg-gradient-to-r from-primary to-secondary p-6">
           <div className="flex justify-between items-center">
@@ -97,7 +127,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                   Create New Event
                 </h2>
                 <p className="text-primary-content/80 text-sm">
-                  Add an event following your society schema
+                  All fields are required
                 </p>
               </div>
             </div>
@@ -112,11 +142,14 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
         </div>
 
         {/* Form */}
-        <form onSubmit={handleCreateEvent} className="p-6 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
+        <form
+          onSubmit={handleCreateEvent}
+          className="p-6 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar"
+        >
           {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-base-content mb-2">
-              Event Title *
+              Event Title <span className="text-error">*</span>
             </label>
             <input
               type="text"
@@ -133,7 +166,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
             {/* Date */}
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
-                Event Date *
+                Event Date <span className="text-error">*</span>
               </label>
               <div className="relative">
                 <input
@@ -151,7 +184,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
             {/* Budget Target */}
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
-                Budget Target (₹)
+                Budget Target (₹) <span className="text-error">*</span>
               </label>
               <div className="relative">
                 <input
@@ -163,6 +196,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                   className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12 text-base-content placeholder:text-base-content/50"
                   min="0"
                   step="0.01"
+                  required
                 />
                 <CurrencyRupeeIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
@@ -172,7 +206,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
           {/* Location */}
           <div>
             <label className="block text-sm font-semibold text-base-content mb-2">
-              Location
+              Location <span className="text-error">*</span>
             </label>
             <div className="relative">
               <input
@@ -182,16 +216,17 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                 value={newEvent.location}
                 onChange={handleInputChange}
                 className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 pl-12 text-base-content placeholder:text-base-content/50"
+                required
               />
               <MapPinIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
-          {/* Society Selection (if multiple societies exist) */}
+          {/* Society Selection */}
           {societies.length > 0 && (
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
-                Society
+                Society <span className="text-error">*</span>
               </label>
               <div className="relative">
                 <select
@@ -199,8 +234,9 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                   value={newEvent.society}
                   onChange={handleInputChange}
                   className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none text-base-content cursor-pointer pl-12"
+                  required
                 >
-                  <option value="">None (General Event)</option>
+                  <option value="">Select a society</option>
                   {societies.map((soc) => (
                     <option key={soc._id} value={soc._id}>
                       {soc.name}
@@ -215,17 +251,17 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
           {/* Description */}
           <div>
             <label className="block text-sm font-semibold text-base-content mb-2">
-              Description
+              Description <span className="text-error">*</span>
             </label>
             <div className="relative">
               <textarea
-                required
                 name="description"
                 placeholder="Describe the purpose, agenda, and other details of the event..."
                 value={newEvent.description}
                 onChange={handleInputChange}
                 rows="4"
                 className="w-full p-4 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none text-base-content placeholder:text-base-content/50"
+                required
               />
               <DocumentTextIcon className="h-5 w-5 text-base-content/40 absolute top-4 right-4 pointer-events-none" />
             </div>
