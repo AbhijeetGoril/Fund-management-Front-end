@@ -35,19 +35,16 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
     setNewEvent((prev) => ({ ...prev, [name]: value }));
   };
 
-  // AI Description Suggestion using axiosInstance
   const handleAISuggest = async () => {
     if (!newEvent.title.trim()) {
       toast.error('Please enter an event title first');
       return;
     }
-
     setIsSuggesting(true);
     try {
       const response = await axiosInstance.post('/ai/suggest-description', {
         title: newEvent.title,
       });
-
       const data = response.data;
       if (data.description) {
         setNewEvent((prev) => ({ ...prev, description: data.description }));
@@ -66,51 +63,43 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    // Client-side validations
+    // ... validations (same as before)
     if (!newEvent.title.trim()) {
       toast.error('Event title is required');
       setLoading(false);
       return;
     }
-
     if (!newEvent.date) {
       toast.error('Event date is required');
       setLoading(false);
       return;
     }
-
     if (!newEvent.location.trim()) {
       toast.error('Location is required');
       setLoading(false);
       return;
     }
-
     if (newEvent.budgetTarget === '' || newEvent.budgetTarget === null) {
       toast.error('Budget target is required');
       setLoading(false);
       return;
     }
-
     if (parseFloat(newEvent.budgetTarget) < 0) {
       toast.error('Budget target cannot be negative');
       setLoading(false);
       return;
     }
-
     if (!newEvent.description.trim()) {
       toast.error('Description is required');
       setLoading(false);
       return;
     }
-
     if (societies.length > 0 && !newEvent.society) {
       toast.error('Please select a society');
       setLoading(false);
       return;
     }
 
-    // Build event object
     let eventDate;
     if (newEvent.date) {
       eventDate = new Date(newEvent.date + 'T00:00:00Z').toISOString();
@@ -125,9 +114,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
       location: newEvent.location.trim(),
       society: newEvent.society || null,
       createdBy: user?._id,
-      budget: {
-        target: parseFloat(newEvent.budgetTarget) || 0,
-      },
+      budget: { target: parseFloat(newEvent.budgetTarget) || 0 },
       status: newEvent.status,
     };
 
@@ -156,27 +143,17 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                 <h2 className="text-2xl font-bold text-primary-content tracking-tight">
                   Create New Event
                 </h2>
-                <p className="text-primary-content/80 text-sm">
-                  All fields are required
-                </p>
+                <p className="text-primary-content/80 text-sm">All fields are required</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowModal(false)}
-              className="p-2 hover:bg-primary-content/20 rounded-xl transition-all duration-200"
-              aria-label="Close"
-            >
+            <button onClick={() => setShowModal(false)} className="p-2 hover:bg-primary-content/20 rounded-xl transition-all duration-200">
               <XMarkIcon className="h-6 w-6 text-primary-content" />
             </button>
           </div>
         </div>
 
-        {/* Form */}
-        <form
-          onSubmit={handleCreateEvent}
-          className="p-6 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar"
-        >
-          {/* Title (without AI button now) */}
+        <form onSubmit={handleCreateEvent} className="p-6 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
+          {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-base-content mb-2">
               Event Title <span className="text-error">*</span>
@@ -193,7 +170,6 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Date */}
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
                 Event Date <span className="text-error">*</span>
@@ -210,8 +186,6 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                 <CalendarIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
-
-            {/* Budget Target */}
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
                 Budget Target (₹) <span className="text-error">*</span>
@@ -233,7 +207,6 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
             </div>
           </div>
 
-          {/* Location */}
           <div>
             <label className="block text-sm font-semibold text-base-content mb-2">
               Location <span className="text-error">*</span>
@@ -252,7 +225,6 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
             </div>
           </div>
 
-          {/* Society Selection */}
           {societies.length > 0 && (
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
@@ -268,9 +240,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                 >
                   <option value="">Select a society</option>
                   {societies.map((soc) => (
-                    <option key={soc._id} value={soc._id}>
-                      {soc.name}
-                    </option>
+                    <option key={soc._id} value={soc._id}>{soc.name}</option>
                   ))}
                 </select>
                 <BuildingOfficeIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" />
@@ -278,7 +248,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
             </div>
           )}
 
-          {/* Description with AI button inline */}
+          {/* Description with AI button - Fixed sizes */}
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-semibold text-base-content">
@@ -288,14 +258,20 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
                 type="button"
                 onClick={handleAISuggest}
                 disabled={isSuggesting || loading}
-                className="px-3 py-1.5 bg-gradient-to-r from-accent to-secondary text-white text-sm font-medium rounded-xl hover:shadow-md transition-all disabled:opacity-50 flex items-center gap-2"
+                className="h-9 px-3 bg-gradient-to-r from-accent to-secondary text-white text-sm font-medium rounded-xl hover:shadow-md transition-all disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                style={{ minWidth: '130px' }}
               >
                 {isSuggesting ? (
-                  <Loader size="sm" color="white" variant="spinner" />
+                  <>
+                    <Loader size="sm" color="white" variant="spinner" />
+                    <span>Suggesting...</span>
+                  </>
                 ) : (
-                  <SparklesIcon className="h-4 w-4" />
+                  <>
+                    <SparklesIcon className="h-4 w-4" />
+                    <span>Suggest with AI</span>
+                  </>
                 )}
-                <span>Suggest with AI</span>
               </button>
             </div>
             <div className="relative">
@@ -316,12 +292,12 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
           </div>
         </form>
 
-        {/* Footer Actions */}
+        {/* Footer Actions - Fixed button sizes */}
         <div className="px-6 py-4 bg-base-200/50 backdrop-blur-sm border-t border-base-300 flex justify-end gap-4">
           <button
             type="button"
             onClick={() => setShowModal(false)}
-            className="px-6 py-3 text-base-content font-medium rounded-2xl hover:bg-base-300 transition-all duration-200 border border-base-300"
+            className="h-11 px-6 text-base-content font-medium rounded-2xl hover:bg-base-300 transition-all duration-200 border border-base-300"
             disabled={loading}
           >
             Cancel
@@ -330,7 +306,8 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
             type="submit"
             onClick={handleCreateEvent}
             disabled={loading}
-            className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content font-semibold rounded-2xl hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2 min-w-[140px] justify-center"
+            className="h-11 px-6 bg-gradient-to-r from-primary to-secondary text-primary-content font-semibold rounded-2xl hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
+            style={{ minWidth: '140px' }}
           >
             {loading ? (
               <>
@@ -340,7 +317,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
             ) : (
               <>
                 <CalendarIcon className="h-5 w-5" />
-                Create Event
+                <span>Create Event</span>
               </>
             )}
           </button>
