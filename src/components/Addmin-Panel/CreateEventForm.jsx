@@ -14,7 +14,7 @@ import { addEvent } from '../../redux/slices/eventsSlice';
 import { Loader } from '../Loader';
 import { axiosInstance } from '../../lib/axois';
 
-const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => {
+const CreateEventForm = ({ setShowModal, societyId = null, societies = [],onEventCreated }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
@@ -121,6 +121,7 @@ const CreateEventForm = ({ setShowModal, societyId = null, societies = [] }) => 
     try {
       await dispatch(addEvent(eventData)).unwrap();
       toast.success('🎉 Event created successfully!');
+        onEventCreated?.();
       setShowModal(false);
     } catch (error) {
       toast.error(error?.message || 'Failed to create event');

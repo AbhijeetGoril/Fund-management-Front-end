@@ -104,6 +104,7 @@ export default function Dashboard() {
     isLoading,
     isError,
     error,
+    refetch: refetchMyEvents,
   } = useQuery({
     queryKey: ["myEvents"],
     queryFn: fetchMyEvents,
@@ -189,7 +190,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
       <Navbar />
-      {showModal && <CreateEventForm setShowModal={setShowModal} members={[]} />}
+      {showModal && <CreateEventForm onEventCreated={refetchMyEvents}  setShowModal={setShowModal} members={[]} />}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader
