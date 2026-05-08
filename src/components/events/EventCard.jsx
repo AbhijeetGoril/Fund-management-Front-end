@@ -59,13 +59,13 @@ export default function EventCard({ event = {}, onClick }) {
         <div className="flex justify-between items-start">
           <div className="flex flex-col gap-2">
             <div className="flex gap-2">
-              <Badge 
-                text={(status || 'active').toUpperCase()} 
-                className="badge badge-outline text-white border-white/30 bg-white/10" 
+              <Badge
+                text={(status || 'active').toUpperCase()}
+                className="badge badge-outline text-white border-white/30 bg-white/10"
               />
-              <Badge 
-                text={type === 'society' ? 'Society' : 'Personal'} 
-                className={`badge ${typeBadge}`} 
+              <Badge
+                text={type === 'society' ? 'Society' : 'Personal'}
+                className={`badge ${typeBadge}`}
               />
             </div>
             <h3 className="text-xl font-bold text-white mt-1 line-clamp-1">{title}</h3>
@@ -79,13 +79,17 @@ export default function EventCard({ event = {}, onClick }) {
 
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <Badge 
-            text={category} 
-            className={`badge ${categoryBadge}`} 
+          <Badge
+            text={category}
+            className={`badge ${categoryBadge}`}
           />
           <div className="text-sm text-base-content/60 flex items-center gap-1">
             <CalendarIcon className="h-4 w-4" />
-            {date}
+            {new Date(date).toLocaleDateString("en-IN", {
+              year: "numeric",
+              month: "long",
+              day: "numeric"
+            })}
           </div>
         </div>
 
@@ -95,9 +99,9 @@ export default function EventCard({ event = {}, onClick }) {
             <span className="font-semibold text-base-content">{Number(progress) || 0}%</span>
           </div>
           <div className="w-full bg-base-200 rounded-full h-2.5">
-            <div 
-              className={`h-2.5 rounded-full bg-gradient-to-r ${statusGradient}`} 
-              style={{ width: `${Math.min(Number(progress) || 0, 100)}%` }} 
+            <div
+              className={`h-2.5 rounded-full bg-gradient-to-r ${statusGradient}`}
+              style={{ width: `${Math.min(Number(progress) || 0, 100)}%` }}
             />
           </div>
         </div>
