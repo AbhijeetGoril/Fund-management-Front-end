@@ -139,12 +139,14 @@ const EventDetails = () => {
       <Navbar />
 
       {showModal && (
-        <AddNewMember
-          members={members}
-          setMembers={(newMembers) => setEvent({ ...event, members: newMembers })}
-          setShowModal={setShowModal}
-        />
-      )}
+  <AddNewMember
+    members={members}
+    setMembers={(newMembers) => setEvent({ ...event, members: newMembers })}
+    setShowModal={setShowModal}
+    eventTotalBudget={event.totalBudget}
+    existingMembersCount={members.length}
+  />
+)}
 
       {/* Animated Background Accents */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
