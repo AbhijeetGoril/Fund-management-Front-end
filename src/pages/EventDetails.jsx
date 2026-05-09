@@ -13,8 +13,7 @@ const dummyEventsArray = {
     name: "Annual Function 2024",
     date: "2024-03-15",
     venue: "Community Hall",
-    description:
-      "Join us for an evening of cultural performances, delicious food, and community bonding. This annual event brings together all society members for a night of celebration and entertainment.",
+    description: "Join us for an evening of cultural performances, delicious food, and community bonding. This annual event brings together all society members for a night of celebration and entertainment.",
     totalBudget: 50000,
     collectedAmount: 35000,
     status: "active",
@@ -22,11 +21,61 @@ const dummyEventsArray = {
     category: "Cultural",
     color: "primary",
     members: [
-      { id: 1, name: "Abhijeet Sharma", email: "abhijeet@gmail.com", hasPaid: true, amount: 500, joinDate: "2024-01-15", avatar: "AS" },
-      { id: 2, name: "Anjali Patel", email: "anjali@gmail.com", hasPaid: false, amount: 0, joinDate: "2024-01-10", avatar: "AP" },
-      { id: 3, name: "Rohit Kumar", email: "rohit@gmail.com", hasPaid: true, amount: 800, joinDate: "2024-01-08", avatar: "RK" },
-      { id: 4, name: "Priya Singh", email: "priya@gmail.com", hasPaid: true, amount: 600, joinDate: "2024-01-12", avatar: "PS" },
-      { id: 5, name: "Sanjay Mehta", email: "sanjay@gmail.com", hasPaid: false, amount: 0, joinDate: "2024-01-05", avatar: "SM" },
+      { 
+        id: 1, 
+        name: "Abhijeet Sharma", 
+        email: "abhijeet@gmail.com", 
+        hasPaid: true, 
+        amount: 500,
+        expectedAmount: 10000,
+        remainingAmount: 9500,  // Still needs to pay ₹9500
+        joinDate: "2024-01-15", 
+        avatar: "AS" 
+      },
+      { 
+        id: 2, 
+        name: "Anjali Patel", 
+        email: "anjali@gmail.com", 
+        hasPaid: false, 
+        amount: 0,
+        expectedAmount: 10000,
+        remainingAmount: 10000,  // Needs to pay full ₹10000
+        joinDate: "2024-01-10", 
+        avatar: "AP" 
+      },
+      { 
+        id: 3, 
+        name: "Rohit Kumar", 
+        email: "rohit@gmail.com", 
+        hasPaid: true, 
+        amount: 8000,
+        expectedAmount: 10000,
+        remainingAmount: 2000,  // Partial payment, needs ₹2000 more
+        joinDate: "2024-01-08", 
+        avatar: "RK" 
+      },
+      { 
+        id: 4, 
+        name: "Priya Singh", 
+        email: "priya@gmail.com", 
+        hasPaid: true, 
+        amount: 6000,
+        expectedAmount: 10000,
+        remainingAmount: 4000,  // Partial payment, needs ₹4000 more
+        joinDate: "2024-01-12", 
+        avatar: "PS" 
+      },
+      { 
+        id: 5, 
+        name: "Sanjay Mehta", 
+        email: "sanjay@gmail.com", 
+        hasPaid: false, 
+        amount: 0,
+        expectedAmount: 10000,
+        remainingAmount: 10000,  // Needs to pay full ₹10000
+        joinDate: "2024-01-05", 
+        avatar: "SM" 
+      },
     ],
   },
 };
@@ -80,8 +129,10 @@ const EventDetails = () => {
 
   const { members } = event;
   const totalDonations = members.reduce((sum, m) => sum + m.amount, 0);
+  const totalRemainingAmount = members.reduce((sum, m) => sum + m.remainingAmount, 0);
   const pendingPayments = members.filter((m) => !m.hasPaid).length;
   const paidMembers = members.filter((m) => m.hasPaid).length;
+  const partialPaidMembers = members.filter((m) => m.hasPaid && m.remainingAmount > 0).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
@@ -112,6 +163,9 @@ const EventDetails = () => {
           paidMembers={paidMembers}
           totalDonations={totalDonations}
           pendingPayments={pendingPayments}
+          totalBudget={event.totalBudget}
+          totalRemainingAmount={totalRemainingAmount}
+          partialPaidMembers={partialPaidMembers}
         />
 
         <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200/50 overflow-hidden">
