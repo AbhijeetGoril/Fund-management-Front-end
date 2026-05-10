@@ -5,6 +5,7 @@ import EventHeader from "../components/events/EventHeader";
 import StatsCards from "../components/events/StatsCards";
 import MembersTab from "../components/events/MembersTab";
 import AddNewMember from "../components/DashBorad/AddNewMumber";
+import ShareEventModal from "../components/events/ShareEventModal";
 import { Loader } from "../components/Loader";
 
 const dummyEventsArray = {
@@ -13,7 +14,8 @@ const dummyEventsArray = {
     name: "Annual Function 2024",
     date: "2024-03-15",
     venue: "Community Hall",
-    description: "Join us for an evening of cultural performances, delicious food, and community bonding. This annual event brings together all society members for a night of celebration and entertainment.",
+    description:
+      "Join us for an evening of cultural performances, delicious food, and community bonding. This annual event brings together all society members for a night of celebration and entertainment.",
     totalBudget: 50000,
     collectedAmount: 35000,
     status: "active",
@@ -21,60 +23,60 @@ const dummyEventsArray = {
     category: "Cultural",
     color: "primary",
     members: [
-      { 
-        id: 1, 
-        name: "Abhijeet Sharma", 
-        email: "abhijeet@gmail.com", 
-        hasPaid: true, 
+      {
+        id: 1,
+        name: "Abhijeet Sharma",
+        email: "abhijeet@gmail.com",
+        hasPaid: true,
         amount: 500,
         expectedAmount: 10000,
-        remainingAmount: 9500,  // Still needs to pay ₹9500
-        joinDate: "2024-01-15", 
-        avatar: "AS" 
+        remainingAmount: 9500,
+        joinDate: "2024-01-15",
+        avatar: "AS",
       },
-      { 
-        id: 2, 
-        name: "Anjali Patel", 
-        email: "anjali@gmail.com", 
-        hasPaid: false, 
+      {
+        id: 2,
+        name: "Anjali Patel",
+        email: "anjali@gmail.com",
+        hasPaid: false,
         amount: 0,
         expectedAmount: 10000,
-        remainingAmount: 10000,  // Needs to pay full ₹10000
-        joinDate: "2024-01-10", 
-        avatar: "AP" 
+        remainingAmount: 10000,
+        joinDate: "2024-01-10",
+        avatar: "AP",
       },
-      { 
-        id: 3, 
-        name: "Rohit Kumar", 
-        email: "rohit@gmail.com", 
-        hasPaid: true, 
+      {
+        id: 3,
+        name: "Rohit Kumar",
+        email: "rohit@gmail.com",
+        hasPaid: true,
         amount: 8000,
         expectedAmount: 10000,
-        remainingAmount: 2000,  // Partial payment, needs ₹2000 more
-        joinDate: "2024-01-08", 
-        avatar: "RK" 
+        remainingAmount: 2000,
+        joinDate: "2024-01-08",
+        avatar: "RK",
       },
-      { 
-        id: 4, 
-        name: "Priya Singh", 
-        email: "priya@gmail.com", 
-        hasPaid: true, 
+      {
+        id: 4,
+        name: "Priya Singh",
+        email: "priya@gmail.com",
+        hasPaid: true,
         amount: 6000,
         expectedAmount: 10000,
-        remainingAmount: 4000,  // Partial payment, needs ₹4000 more
-        joinDate: "2024-01-12", 
-        avatar: "PS" 
+        remainingAmount: 4000,
+        joinDate: "2024-01-12",
+        avatar: "PS",
       },
-      { 
-        id: 5, 
-        name: "Sanjay Mehta", 
-        email: "sanjay@gmail.com", 
-        hasPaid: false, 
+      {
+        id: 5,
+        name: "Sanjay Mehta",
+        email: "sanjay@gmail.com",
+        hasPaid: false,
         amount: 0,
         expectedAmount: 10000,
-        remainingAmount: 10000,  // Needs to pay full ₹10000
-        joinDate: "2024-01-05", 
-        avatar: "SM" 
+        remainingAmount: 10000,
+        joinDate: "2024-01-05",
+        avatar: "SM",
       },
     ],
   },
@@ -86,6 +88,7 @@ const EventDetails = () => {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [activeTab, setActiveTab] = useState("members");
 
   useEffect(() => {
@@ -114,7 +117,9 @@ const EventDetails = () => {
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-16 text-center">
           <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200 p-12">
-            <h2 className="text-3xl font-bold text-base-content mb-4">Event not found</h2>
+            <h2 className="text-3xl font-bold text-base-content mb-4">
+              Event not found
+            </h2>
             <button
               onClick={() => navigate("/dashboard")}
               className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
@@ -132,20 +137,37 @@ const EventDetails = () => {
   const totalRemainingAmount = members.reduce((sum, m) => sum + m.remainingAmount, 0);
   const pendingPayments = members.filter((m) => !m.hasPaid).length;
   const paidMembers = members.filter((m) => m.hasPaid).length;
-  const partialPaidMembers = members.filter((m) => m.hasPaid && m.remainingAmount > 0).length;
+  const partialPaidMembers = members.filter(
+    (m) => m.hasPaid && m.remainingAmount > 0
+  ).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
       <Navbar />
 
       {showModal && (
-  <AddNewMember
-    members={members}
-    setMembers={(newMembers) => setEvent({ ...event, members: newMembers })}
-    setShowModal={setShowModal}
-    eventTotalBudget={event.totalBudget}
-    existingMembersCount={members.length}
-  />
+        <AddNewMember
+          members={members}
+          setMembers={(newMembers) =>
+            setEvent({ ...event, members: newMembers })
+          }
+          setShowModal={setShowModal}
+          eventTotalBudget={event.totalBudget}
+          existingMembersCount={members.length}
+        />
+      )}
+
+      {showShareModal && (
+  <>
+    <div className="fixed top-4 right-4 bg-red-500 text-white p-2 z-[100]">
+      Debug: event.id={event.id}, event.name={event.name}
+    </div>
+    <ShareEventModal
+      eventId={event.id}
+      eventName={event.name}
+      onClose={() => setShowShareModal(false)}
+    />
+  </>
 )}
 
       {/* Animated Background Accents */}
@@ -158,6 +180,7 @@ const EventDetails = () => {
         <EventHeader
           event={{ ...event, collectedAmount: totalDonations }}
           onBack={() => navigate("/dashboard")}
+          onShare={() => setShowShareModal(true)}
         />
 
         <StatsCards
@@ -198,17 +221,22 @@ const EventDetails = () => {
               />
             )}
             {activeTab === "analytics" && (
-              <div className="text-base-content/70 p-8 text-center">Analytics coming soon…</div>
+              <div className="text-base-content/70 p-8 text-center">
+                Analytics coming soon…
+              </div>
             )}
             {activeTab === "settings" && (
-              <div className="text-base-content/70 p-8 text-center">Settings coming soon…</div>
+              <div className="text-base-content/70 p-8 text-center">
+                Settings coming soon…
+              </div>
             )}
           </div>
         </div>
 
         <div className="mt-8 text-center">
           <p className="text-base-content/40 text-sm">
-            © {new Date().getFullYear()} Society Management System. All rights reserved.
+            © {new Date().getFullYear()} Society Management System. All rights
+            reserved.
           </p>
         </div>
       </div>

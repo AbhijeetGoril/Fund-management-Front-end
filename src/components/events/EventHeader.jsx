@@ -8,7 +8,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { ReceiptPercentIcon } from "@heroicons/react/24/outline";
 
-const EventHeader = ({ event, onBack }) => {
+const EventHeader = ({ event, onBack, onShare }) => {  // ← Added onShare prop
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-8">
@@ -30,7 +30,10 @@ const EventHeader = ({ event, onBack }) => {
             <span className="font-semibold">Spends</span>
           </Link>
 
-          <button className="p-3 bg-base-100/80 backdrop-blur-sm rounded-2xl shadow-md border border-base-200 hover:shadow-lg transition-all duration-200">
+          <button 
+            onClick={onShare}  // ← Added onClick handler
+            className="p-3 bg-base-100/80 backdrop-blur-sm rounded-2xl shadow-md border border-base-200 hover:shadow-lg transition-all duration-200"
+          >
             <ShareIcon className="h-5 w-5 text-base-content/70" />
           </button>
           <button className="p-3 bg-base-100/80 backdrop-blur-sm rounded-2xl shadow-md border border-base-200 hover:shadow-lg transition-all duration-200">
