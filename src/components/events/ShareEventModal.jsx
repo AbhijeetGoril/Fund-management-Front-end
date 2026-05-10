@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   XMarkIcon,
   LinkIcon,
@@ -13,7 +13,7 @@ import { FaWhatsapp } from "react-icons/fa";
 const ShareEventModal = ({ eventId, eventName, onClose }) => {
   const [copied, setCopied] = useState(false);
   const [qrVisible, setQrVisible] = useState(false);
-
+  const modalRef = useRef(null);
   // Convert eventId to string to ensure consistency
   const shareUrl = `${window.location.origin}/events/${String(eventId)}?ref=share`;
 
@@ -40,6 +40,29 @@ const ShareEventModal = ({ eventId, eventName, onClose }) => {
       handleCopy();
     }
   };
+  useEffect(()=>{
+    const handleClickOutside=(event)=>{
+      if(modalRef.current && !modalRef.current.contains(event.target)){
+        onClose()
+      }
+    };
+    // Handle escape key press
+     const handleEscKey = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscKey);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscKey);
+    };
+  },[onClose])
 
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`Join us for ${eventName}: ${shareUrl}`)}`;
   const mailUrl = `mailto:?subject=${encodeURIComponent(eventName)}&body=${encodeURIComponent(`Hi! Here's the event link: ${shareUrl}`)}`;
@@ -47,7 +70,7 @@ const ShareEventModal = ({ eventId, eventName, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div className="bg-base-100 rounded-3xl shadow-2xl border border-base-200 w-full max-w-md p-6 relative">
+      <div  ref={modalRef} className="bg-base-100 rounded-3xl shadow-2xl border border-base-200 w-full max-w-md p-6 relative">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-1">
