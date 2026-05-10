@@ -158,16 +158,13 @@ const EventDetails = () => {
       )}
 
       {showShareModal && (
-  <>
-    <div className="fixed top-4 right-4 bg-red-500 text-white p-2 z-[100]">
-      Debug: event.id={event.id}, event.name={event.name}
-    </div>
+
     <ShareEventModal
-      eventId={event.id}
+      eventId={eventId}
       eventName={event.name}
       onClose={() => setShowShareModal(false)}
     />
-  </>
+
 )}
 
       {/* Animated Background Accents */}

@@ -21,7 +21,7 @@ const ShareEventModal = ({ eventId, eventName, onClose }) => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      
     } catch (err) {
       console.error("Failed to copy:", err);
     }
