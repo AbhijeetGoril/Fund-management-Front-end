@@ -55,7 +55,7 @@ export const addEvent = createAsyncThunk(
   "events/addEvent",
   async (eventData, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.post("/societies/createEvent", eventData);
+      const res = await axiosInstance.post("/societies/events/createEvent", eventData);
       console.log("message:",res)
       return res.data;
     } catch (err) {

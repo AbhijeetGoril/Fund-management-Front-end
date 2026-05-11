@@ -27,7 +27,7 @@ import { societies as seedSocieties } from "../data/dummy";
 
 // ── Fetcher ───────────────────────────────────────────────────────────────────
 const fetchMyEvents = async () => {
-  const res = await axiosInstance.get("/societies/allMyRelatedEvents");
+  const res = await axiosInstance.get("/societies/events/allMyRelatedEvents");
   console.log("API Response:", res.data);
   return res.data.events;
 };
