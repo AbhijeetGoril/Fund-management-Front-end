@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Navbar from "../components/Navbar/Navbar";
 import EventHeader from "../components/events/EventHeader";
 import StatsCards from "../components/events/StatsCards";
@@ -7,100 +8,72 @@ import MembersTab from "../components/events/MembersTab";
 import AddNewMember from "../components/DashBorad/AddNewMumber";
 import ShareEventModal from "../components/events/ShareEventModal";
 import { Loader } from "../components/Loader";
+import { axiosInstance } from "../lib/axois";
 
-const dummyEventsArray = {
-  1: {
-    id: 1,
-    name: "Annual Function 2024",
-    date: "2024-03-15",
-    venue: "Community Hall",
-    description:
-      "Join us for an evening of cultural performances, delicious food, and community bonding. This annual event brings together all society members for a night of celebration and entertainment.",
-    totalBudget: 50000,
-    collectedAmount: 35000,
-    status: "active",
-    progress: 70,
-    category: "Cultural",
-    color: "primary",
-    members: [
-      {
-        id: 1,
-        name: "Abhijeet Sharma",
-        email: "abhijeet@gmail.com",
-        hasPaid: true,
-        amount: 500,
-        expectedAmount: 10000,
-        remainingAmount: 9500,
-        joinDate: "2024-01-15",
-        avatar: "AS",
-      },
-      {
-        id: 2,
-        name: "Anjali Patel",
-        email: "anjali@gmail.com",
-        hasPaid: false,
-        amount: 0,
-        expectedAmount: 10000,
-        remainingAmount: 10000,
-        joinDate: "2024-01-10",
-        avatar: "AP",
-      },
-      {
-        id: 3,
-        name: "Rohit Kumar",
-        email: "rohit@gmail.com",
-        hasPaid: true,
-        amount: 8000,
-        expectedAmount: 10000,
-        remainingAmount: 2000,
-        joinDate: "2024-01-08",
-        avatar: "RK",
-      },
-      {
-        id: 4,
-        name: "Priya Singh",
-        email: "priya@gmail.com",
-        hasPaid: true,
-        amount: 6000,
-        expectedAmount: 10000,
-        remainingAmount: 4000,
-        joinDate: "2024-01-12",
-        avatar: "PS",
-      },
-      {
-        id: 5,
-        name: "Sanjay Mehta",
-        email: "sanjay@gmail.com",
-        hasPaid: false,
-        amount: 0,
-        expectedAmount: 10000,
-        remainingAmount: 10000,
-        joinDate: "2024-01-05",
-        avatar: "SM",
-      },
-    ],
-  },
+// ── API functions ─────────────────────────────────────────────────
+const fetchEventById = async (eventId) => {
+  const { data } = await axiosInstance.get(`/societies/events/${eventId}`);
+  return data;
 };
 
+const addParticipantApi = async (payload) => {
+  const { data } = await axiosInstance.post(
+    "/societies/events/addParticipant",
+    payload
+  );
+  return data;
+};
+
+// ── Component ─────────────────────────────────────────────────────
 const EventDetails = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
   const [showModal, setShowModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [activeTab, setActiveTab] = useState("members");
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const foundEvent = dummyEventsArray[eventId] || dummyEventsArray[1];
-      setEvent(foundEvent);
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(t);
-  }, [eventId]);
+  // ── Query: fetch event ────────────────────────────────────────
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["event", eventId],
+    queryFn: () => fetchEventById(eventId),
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    retry: 2,
+  });
 
-  if (loading) {
+  // ── Mutation: add participant ─────────────────────────────────
+  const { mutate: addParticipant, isPending: isAdding } = useMutation({
+    mutationFn: addParticipantApi,
+    onSuccess: () => {
+      // Invalidate so event data auto-refetches (summary + participants refresh)
+      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+      setShowModal(false);
+    },
+    onError: (err) => {
+      console.error("Failed to add participant:", err);
+      alert(err.response?.data?.message || "Could not add participant. Please try again.");
+    },
+  });
+
+  const handleAddParticipant = (participantData) => {
+    addParticipant({
+      eventId,
+      name: participantData.name,
+      email: participantData.email,
+      phone: participantData.phone ?? "",
+      amountToPay: participantData.amountToPay ?? 0,
+    });
+  };
+
+  // ── Loading ───────────────────────────────────────────────────
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
@@ -111,86 +84,109 @@ const EventDetails = () => {
     );
   }
 
-  if (!event) {
+  // ── Error ─────────────────────────────────────────────────────
+  if (isError || !data?.event) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-16 text-center">
           <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200 p-12">
             <h2 className="text-3xl font-bold text-base-content mb-4">
-              Event not found
+              {isError ? "Failed to load event" : "Event not found"}
             </h2>
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
-            >
-              Back to Dashboard
-            </button>
+            {isError && (
+              <p className="text-base-content/60 mb-6 text-sm">
+                {error?.response?.data?.message || error?.message}
+              </p>
+            )}
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={refetch}
+                className="px-6 py-3 border border-base-300 text-base-content rounded-2xl font-semibold hover:bg-base-200 transition-all duration-300"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
+              >
+                Back to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  const { members } = event;
-  const totalDonations = members.reduce((sum, m) => sum + m.amount, 0);
-  const totalRemainingAmount = members.reduce((sum, m) => sum + m.remainingAmount, 0);
-  const pendingPayments = members.filter((m) => !m.hasPaid).length;
-  const paidMembers = members.filter((m) => m.hasPaid).length;
-  const partialPaidMembers = members.filter(
-    (m) => m.hasPaid && m.remainingAmount > 0
-  ).length;
+  // ── Destructure API response ──────────────────────────────────
+  const { event, members, participants, summary } = data;
+
+  // ── Derived stats from API summary ───────────────────────────
+  const totalDonations        = summary?.totalAmountPaid     ?? 0;
+  const totalRemainingAmount  = summary?.totalPendingAmount  ?? 0;
+  const totalParticipants     = summary?.totalParticipants   ?? 0;
+  const paidParticipants      = participants.filter((p) => p.paymentStatus === "paid").length;
+  const pendingParticipants   = participants.filter((p) => p.paymentStatus === "pending").length;
+  const partialParticipants   = participants.filter((p) => p.paymentStatus === "partial").length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
       <Navbar />
 
+      {/* Add Participant Modal */}
       {showModal && (
         <AddNewMember
-          members={members}
-          setMembers={(newMembers) =>
-            setEvent({ ...event, members: newMembers })
-          }
+          members={participants}
+          setMembers={() => {}}           // managed by React Query now
           setShowModal={setShowModal}
-          eventTotalBudget={event.totalBudget}
-          existingMembersCount={members.length}
+          eventTotalBudget={event.budget?.target ?? 0}
+          existingMembersCount={totalParticipants}
+          onSubmit={handleAddParticipant} // pass the mutation handler
+          isLoading={isAdding}
         />
       )}
 
+      {/* Share Modal */}
       {showShareModal && (
+        <ShareEventModal
+          eventId={eventId}
+          eventName={event.title}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
 
-    <ShareEventModal
-      eventId={eventId}
-      eventName={event.name}
-      onClose={() => setShowShareModal(false)}
-    />
-
-)}
-
-      {/* Animated Background Accents */}
+      {/* Background accents */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-32 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-secondary/20 rounded-full blur-3xl" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
         <EventHeader
-          event={{ ...event, collectedAmount: totalDonations }}
+          event={{
+            ...event,
+            name: event.title,                        // normalise title → name
+            collectedAmount: totalDonations,
+            totalBudget: event.budget?.target ?? 0,
+          }}
           onBack={() => navigate("/dashboard")}
           onShare={() => setShowShareModal(true)}
         />
 
         <StatsCards
-          members={members}
-          paidMembers={paidMembers}
+          members={participants}
+          paidMembers={paidParticipants}
           totalDonations={totalDonations}
-          pendingPayments={pendingPayments}
-          totalBudget={event.totalBudget}
+          pendingPayments={pendingParticipants}
+          totalBudget={event.budget?.target ?? 0}
           totalRemainingAmount={totalRemainingAmount}
-          partialPaidMembers={partialPaidMembers}
+          partialPaidMembers={partialParticipants}
         />
 
         <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200/50 overflow-hidden">
+          {/* Tabs */}
           <div className="border-b border-base-200">
             <nav className="flex space-x-8 px-6">
               {["members", "analytics", "settings"].map((tab) => (
@@ -213,7 +209,7 @@ const EventDetails = () => {
             {activeTab === "members" && (
               <MembersTab
                 event={event}
-                members={members}
+                members={participants}       // participants are the "members" in the UI
                 onAddMember={() => setShowModal(true)}
               />
             )}
@@ -232,8 +228,7 @@ const EventDetails = () => {
 
         <div className="mt-8 text-center">
           <p className="text-base-content/40 text-sm">
-            © {new Date().getFullYear()} Society Management System. All rights
-            reserved.
+            © {new Date().getFullYear()} Society Management System. All rights reserved.
           </p>
         </div>
       </div>
