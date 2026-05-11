@@ -9,7 +9,7 @@ import {
   BuildingLibraryIcon,
   ChartBarIcon,
   CurrencyRupeeIcon,
-  PlusIcon
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 
 import Navbar from "../components/Navbar/Navbar";
@@ -27,9 +27,8 @@ import { societies as seedSocieties } from "../data/dummy";
 
 // ── Fetcher ───────────────────────────────────────────────────────────────────
 const fetchMyEvents = async () => {
-  const res = await axiosInstance.get("/societies/events/allMyRelatedEvents");
-  console.log("API Response:", res.data);
-  return res.data.events;
+  const { data } = await axiosInstance.get("/societies/events/allMyRelatedEvents");
+  return data.events;
 };
 
 // ── Normalizers ───────────────────────────────────────────────────────────────
@@ -65,22 +64,24 @@ function normalizeSocieties(list) {
 function normalizeApiEvents(list) {
   if (!Array.isArray(list)) return [];
   return list.map((e) => ({
-    id: e._id,
-    _id: e._id,
-    title: e.title,
-    description: e.description,
-    category: e.category,
-    date: e.date,
-    status: (e.status || "active").toLowerCase(),
-    type: "individual",
-    isAdmin: e.isAdmin ?? false,
-    createdBy: e.createdBy,
-    society: e.society,
-    totalMembers: e.members?.length ?? 0,
-    paidMembers: 0,
+    id:              e._id,
+    _id:             e._id,
+    title:           e.title,
+    description:     e.description,
+    category:        e.category,
+    date:            e.date,
+    location:        e.location ?? "",
+    coverPhoto:      e.coverPhoto ?? "",        // ← new
+    status:          (e.status || "active").toLowerCase(),
+    type:            "individual",
+    isAdmin:         e.isAdmin ?? false,
+    createdBy:       e.createdBy,
+    society:         e.society,
+    totalMembers:    e.members?.length ?? 0,
+    paidMembers:     0,
     pendingPayments: 0,
-    totalCollected: e.budget?.collected ?? 0,
-    progress: e.budget?.target
+    totalCollected:  e.budget?.collected ?? 0,
+    progress:        e.budget?.target
       ? Math.round(((e.budget.collected ?? 0) / e.budget.target) * 100)
       : 0,
   }));
@@ -91,14 +92,13 @@ export default function Dashboard() {
   const [societies, setSocieties] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState("events");
+  const [activeTab, setActiveTab]       = useState("events");
   const navigate = useNavigate();
 
   useEffect(() => {
     setSocieties(normalizeSocieties(seedSocieties));
   }, []);
 
-  // ── React Query ──────────────────────────────────────────────────────────
   const {
     data: rawEvents,
     isLoading,
@@ -107,7 +107,7 @@ export default function Dashboard() {
     refetch: refetchMyEvents,
   } = useQuery({
     queryKey: ["myEvents"],
-    queryFn: fetchMyEvents,
+    queryFn:  fetchMyEvents,
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });
@@ -116,21 +116,18 @@ export default function Dashboard() {
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
-    const totalSocieties = societies.length;
     const totalCollectedSoc = societies.reduce((s, c) => s + c.totalCollected, 0);
-    const totalPendingSoc = societies.reduce(
-      (s, c) => s + c.events.reduce((ps, e) => ps + e.pendingPayments, 0),
-      0
+    const totalPendingSoc   = societies.reduce(
+      (s, c) => s + c.events.reduce((ps, e) => ps + e.pendingPayments, 0), 0
     );
     const totalCollectedInd = events.reduce((s, e) => s + e.totalCollected, 0);
-    const totalPendingInd = events.reduce((s, e) => s + e.pendingPayments, 0);
+    const totalPendingInd   = events.reduce((s, e) => s + e.pendingPayments, 0);
 
     return {
-      totalSocieties,
-      totalEvents:
-        events.length + societies.reduce((a, s) => a + s.events.length, 0),
-      totalCollected: totalCollectedSoc + totalCollectedInd,
-      totalPending: totalPendingSoc + totalPendingInd,
+      totalSocieties:       societies.length,
+      totalEvents:          events.length + societies.reduce((a, s) => a + s.events.length, 0),
+      totalCollected:       totalCollectedSoc + totalCollectedInd,
+      totalPending:         totalPendingSoc + totalPendingInd,
       individualEventCount: events.length,
     };
   }, [societies, events]);
@@ -138,7 +135,7 @@ export default function Dashboard() {
   // ── Filtered events ───────────────────────────────────────────────────────
   const filteredPersonalEvents = useMemo(() => {
     return events.filter((e) => {
-      if (activeFilter === "all") return true;
+      if (activeFilter === "all")        return true;
       if (activeFilter === "individual") return e.type === "individual";
       if (activeFilter === "active" || activeFilter === "completed")
         return e.status === activeFilter;
@@ -146,7 +143,7 @@ export default function Dashboard() {
     });
   }, [events, activeFilter]);
 
-  const handleEventClick = (id) => navigate(`/events/${id}`);
+  const handleEventClick   = (id) => navigate(`/events/${id}`);
   const handleSocietyClick = (id) => navigate(`/society/${id}`);
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -172,14 +169,17 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <p className="text-lg font-semibold text-error">Failed to load events</p>
-            <p className="text-sm text-base-content/60 mt-1">
+            <p className="text-sm text-base-content/60">
               {error?.response?.data?.message || error?.message}
             </p>
-            <p className="text-xs text-base-content/40 mt-1">
-              URL tried: {axiosInstance.defaults.baseURL}/societies/allMyRelatedEvents
-            </p>
+            <button
+              onClick={refetchMyEvents}
+              className="mt-4 px-6 py-2 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-medium hover:shadow-lg transition-all"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>
@@ -190,7 +190,15 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
       <Navbar />
-      {showModal && <CreateEventForm onEventCreated={refetchMyEvents}  setShowModal={setShowModal} members={[]} />}
+
+      {showModal && (
+        <CreateEventForm
+          onEventCreated={refetchMyEvents}
+          setShowModal={setShowModal}
+          societies={societies}
+          societyId={null}
+        />
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader
@@ -361,8 +369,7 @@ export default function Dashboard() {
 
         <div className="mt-8 text-center">
           <p className="text-base-content/40 text-sm">
-            © {new Date().getFullYear()} Community Management System. Crafted
-            with ❤️ for better community living.
+            © {new Date().getFullYear()} Community Management System. Crafted with ❤️ for better community living.
           </p>
         </div>
       </div>

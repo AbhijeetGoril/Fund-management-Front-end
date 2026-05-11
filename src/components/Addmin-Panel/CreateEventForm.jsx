@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import {
   XMarkIcon,
@@ -6,31 +6,28 @@ import {
   CurrencyRupeeIcon,
   DocumentTextIcon,
   MapPinIcon,
-  BuildingOfficeIcon,
   SparklesIcon,
+  PhotoIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import { Loader } from '../Loader';
 import { axiosInstance } from '../../lib/axois';
 
-const CreateEventForm = ({
-  setShowModal,
-  societyId = null,
-  societies = [],
-  onEventCreated,
-}) => {
+const CreateEventForm = ({ setShowModal, onEventCreated }) => {
   const { user } = useSelector((state) => state.auth);
-  const [loading, setLoading]         = useState(false);
+  const [loading, setLoading]           = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [coverPreview, setCoverPreview] = useState(null);
+  const [coverFile, setCoverFile]       = useState(null);
+  const fileInputRef                    = useRef(null);
 
   const [form, setForm] = useState({
     title:        '',
     description:  '',
     date:         '',
     location:     '',
-    societyId:    societyId || '',   // ← matches backend field name
     budgetTarget: '',
-    status:       'active',
   });
 
   // ── Field change ──────────────────────────────────────────────────
@@ -39,23 +36,45 @@ const CreateEventForm = ({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // ── Cover photo ───────────────────────────────────────────────────
+  const handleCoverChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be smaller than 5 MB');
+      return;
+    }
+
+    setCoverFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setCoverPreview(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveCover = () => {
+    setCoverFile(null);
+    setCoverPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   // ── AI description ────────────────────────────────────────────────
   const handleAISuggest = async () => {
     if (!form.title.trim()) {
       toast.error('Please enter an event title first');
       return;
     }
-
     setIsSuggesting(true);
     const toastId = toast.loading('✨ Generating description...');
-
     try {
       const { data } = await axiosInstance.post('/ai/suggest-description', {
         title: form.title.trim(),
       });
-
       if (!data.description) throw new Error('Invalid response from server');
-
       setForm((prev) => ({ ...prev, description: data.description }));
       toast.update(toastId, {
         render:    '✨ AI description generated!',
@@ -77,27 +96,12 @@ const CreateEventForm = ({
 
   // ── Validation ────────────────────────────────────────────────────
   const validate = () => {
-    if (!form.title.trim()) {
-      toast.error('Event title is required'); return false;
-    }
-    if (!form.date) {
-      toast.error('Event date is required'); return false;
-    }
-    if (!form.location.trim()) {
-      toast.error('Location is required'); return false;
-    }
-    if (form.budgetTarget === '') {
-      toast.error('Budget target is required'); return false;
-    }
-    if (parseFloat(form.budgetTarget) < 0) {
-      toast.error('Budget target cannot be negative'); return false;
-    }
-    if (!form.description.trim()) {
-      toast.error('Description is required'); return false;
-    }
-    if (societies.length > 0 && !form.societyId) {
-      toast.error('Please select a society'); return false;
-    }
+    if (!form.title.trim())                { toast.error('Event title is required');   return false; }
+    if (!form.date)                        { toast.error('Event date is required');     return false; }
+    if (!form.location.trim())             { toast.error('Location is required');       return false; }
+    if (form.budgetTarget === '')          { toast.error('Budget target is required');  return false; }
+    if (parseFloat(form.budgetTarget) < 0) { toast.error('Budget cannot be negative'); return false; }
+    if (!form.description.trim())          { toast.error('Description is required');   return false; }
     return true;
   };
 
@@ -106,24 +110,24 @@ const CreateEventForm = ({
     e.preventDefault();
     if (!validate()) return;
 
-    // Build payload matching your backend exactly
-    const payload = {
-      title:       form.title.trim(),
-      description: form.description.trim(),
-      date:        new Date(form.date + 'T00:00:00Z').toISOString(),
-      location:    form.location.trim(),
-      budget:      parseFloat(form.budgetTarget) || 0,
-      // only send societyId if it exists
-      ...(form.societyId && { societyId: form.societyId }),
-    };
+    const formData = new FormData();
+    formData.append('title',       form.title.trim());
+    formData.append('description', form.description.trim());
+    formData.append('date',        new Date(form.date + 'T00:00:00Z').toISOString());
+    formData.append('location',    form.location.trim());
+    formData.append('budget',      parseFloat(form.budgetTarget) || 0);
+    if (coverFile) formData.append('coverPhoto', coverFile);
 
     setLoading(true);
     const toastId = toast.loading('Creating event...');
 
     try {
-      const { data } = await axiosInstance.post('/societies/events/createEvent', payload);
+      const { data } = await axiosInstance.post(
+        '/societies/events/createEvent',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
 
-      // Backend returns the event object directly (not { success, event })
       toast.update(toastId, {
         render:    `🎉 "${data.title}" created successfully!`,
         type:      'success',
@@ -131,16 +135,11 @@ const CreateEventForm = ({
         autoClose: 3000,
       });
 
-      onEventCreated?.(data); // pass new event back to parent if needed
+      onEventCreated?.(data);
       setShowModal(false);
     } catch (err) {
-      const msg =
-        err.response?.data?.message ||
-        err.message ||
-        'Failed to create event. Please try again.';
-
       toast.update(toastId, {
-        render:    msg,
+        render:    err.response?.data?.message || err.message || 'Failed to create event',
         type:      'error',
         isLoading: false,
         autoClose: 5000,
@@ -165,7 +164,9 @@ const CreateEventForm = ({
                 <h2 className="text-2xl font-bold text-primary-content tracking-tight">
                   Create New Event
                 </h2>
-                <p className="text-primary-content/80 text-sm">All fields are required</p>
+                <p className="text-primary-content/80 text-sm">
+                  Fill in the details below
+                </p>
               </div>
             </div>
             <button
@@ -178,13 +179,65 @@ const CreateEventForm = ({
           </div>
         </div>
 
-        {/* ── Form body ── */}
+        {/* ── Scrollable body ── */}
         <form
           id="create-event-form"
           onSubmit={handleSubmit}
-          className="p-6 space-y-6 overflow-y-auto max-h-[60vh]"
+          className="p-6 space-y-5 overflow-y-auto max-h-[60vh]"
           noValidate
         >
+          {/* Cover photo */}
+          <div>
+            <label className="block text-sm font-semibold text-base-content mb-2">
+              Cover Photo{' '}
+              <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
+            </label>
+
+            {coverPreview ? (
+              <div className="relative rounded-2xl overflow-hidden border border-base-300 h-40">
+                <img
+                  src={coverPreview}
+                  alt="Cover preview"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveCover}
+                  className="absolute top-2 right-2 p-1.5 bg-error text-white rounded-xl hover:bg-error/80 transition-colors"
+                  aria-label="Remove cover photo"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+                <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 rounded-lg text-white text-xs truncate max-w-[80%]">
+                  {coverFile?.name}
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                className="w-full h-32 border-2 border-dashed border-base-300 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-all duration-200 disabled:opacity-50 cursor-pointer"
+              >
+                <PhotoIcon className="h-8 w-8 text-base-content/30" />
+                <span className="text-sm text-base-content/50">
+                  Click to upload a cover photo
+                </span>
+                <span className="text-xs text-base-content/30">
+                  PNG, JPG, WEBP — max 5 MB
+                </span>
+              </button>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverChange}
+            />
+          </div>
+
           {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-base-content mb-2">
@@ -193,7 +246,7 @@ const CreateEventForm = ({
             <input
               type="text"
               name="title"
-              placeholder="e.g., Annual Cultural Fest, Maintenance Campaign"
+              placeholder="e.g., Annual Cultural Fest"
               value={form.title}
               onChange={handleChange}
               disabled={loading}
@@ -202,7 +255,7 @@ const CreateEventForm = ({
           </div>
 
           {/* Date + Budget */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold text-base-content mb-2">
                 Event Date <span className="text-error">*</span>
@@ -251,7 +304,7 @@ const CreateEventForm = ({
               <input
                 type="text"
                 name="location"
-                placeholder="e.g., Community Hall, Online, Main Building"
+                placeholder="e.g., Community Hall, Online"
                 value={form.location}
                 onChange={handleChange}
                 disabled={loading}
@@ -259,30 +312,6 @@ const CreateEventForm = ({
               />
             </div>
           </div>
-
-          {/* Society (conditional) */}
-          {societies.length > 0 && (
-            <div>
-              <label className="block text-sm font-semibold text-base-content mb-2">
-                Society <span className="text-error">*</span>
-              </label>
-              <div className="relative">
-                <BuildingOfficeIcon className="h-5 w-5 text-base-content/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <select
-                  name="societyId"
-                  value={form.societyId}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="w-full p-4 pl-12 bg-base-100 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none text-base-content cursor-pointer disabled:opacity-60"
-                >
-                  <option value="">Select a society</option>
-                  {societies.map((soc) => (
-                    <option key={soc._id} value={soc._id}>{soc.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
 
           {/* Description + AI */}
           <div>
@@ -312,7 +341,7 @@ const CreateEventForm = ({
             <div className="relative">
               <textarea
                 name="description"
-                placeholder="Describe the purpose, agenda, and other details of the event..."
+                placeholder="Describe the purpose, agenda, and other details..."
                 value={form.description}
                 onChange={handleChange}
                 disabled={loading || isSuggesting}
@@ -322,7 +351,7 @@ const CreateEventForm = ({
               <DocumentTextIcon className="h-5 w-5 text-base-content/40 absolute top-4 right-4 pointer-events-none" />
             </div>
             <p className="text-xs text-base-content/50 mt-1">
-              Click "Suggest with AI" to auto-generate a description from the event title.
+              Click "Suggest with AI" to auto-generate a description from the title.
             </p>
           </div>
         </form>
