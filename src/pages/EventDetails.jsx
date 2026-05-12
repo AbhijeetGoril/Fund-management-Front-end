@@ -11,21 +11,16 @@ import { Loader } from "../components/Loader";
 import { axiosInstance } from "../lib/axois";
 import { toast } from "react-toastify";
 
-// ── API functions ─────────────────────────────────────────────────
 const fetchEventById = async (eventId) => {
   const { data } = await axiosInstance.get(`/societies/events/${eventId}`);
   return data;
 };
 
 const addParticipantApi = async (payload) => {
-  const { data } = await axiosInstance.post(
-    "/societies/events/addParticipant",
-    payload
-  );
+  const { data } = await axiosInstance.post("/societies/events/addParticipant", payload);
   return data;
 };
 
-// ── Component ─────────────────────────────────────────────────────
 const EventDetails = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -34,9 +29,7 @@ const EventDetails = () => {
   const [showModal, setShowModal]           = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [activeTab, setActiveTab]           = useState("members");
-  const [imgError, setImgError]             = useState(false); // ← cover image fallback
 
-  // ── Query ─────────────────────────────────────────────────────
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["event", eventId],
     queryFn:  () => fetchEventById(eventId),
@@ -44,7 +37,6 @@ const EventDetails = () => {
     retry: 2,
   });
 
-  // ── Mutation ──────────────────────────────────────────────────
   const { mutate: addParticipant, isPending: isAdding } = useMutation({
     mutationFn: addParticipantApi,
     onSuccess: () => {
@@ -69,7 +61,6 @@ const EventDetails = () => {
     });
   };
 
-  // ── Loading ───────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
@@ -81,7 +72,6 @@ const EventDetails = () => {
     );
   }
 
-  // ── Error ─────────────────────────────────────────────────────
   if (isError || !data?.event) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
@@ -97,16 +87,10 @@ const EventDetails = () => {
               </p>
             )}
             <div className="flex gap-3 justify-center">
-              <button
-                onClick={refetch}
-                className="px-6 py-3 border border-base-300 text-base-content rounded-2xl font-semibold hover:bg-base-200 transition-all duration-300"
-              >
+              <button onClick={refetch} className="px-6 py-3 border border-base-300 text-base-content rounded-2xl font-semibold hover:bg-base-200 transition-all duration-300">
                 Retry
               </button>
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
-              >
+              <button onClick={() => navigate("/dashboard")} className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300">
                 Back to Dashboard
               </button>
             </div>
@@ -116,8 +100,7 @@ const EventDetails = () => {
     );
   }
 
-  // ── Destructure ───────────────────────────────────────────────
-  const { event, members, participants, summary } = data;
+  const { event, participants, summary } = data;
 
   const totalDonations       = summary?.totalAmountPaid    ?? 0;
   const totalRemainingAmount = summary?.totalPendingAmount ?? 0;
@@ -125,8 +108,6 @@ const EventDetails = () => {
   const paidParticipants     = participants.filter((p) => p.paymentStatus === "paid").length;
   const pendingParticipants  = participants.filter((p) => p.paymentStatus === "pending").length;
   const partialParticipants  = participants.filter((p) => p.paymentStatus === "partial").length;
-
-  const hasCover = !!event.coverPhoto && !imgError;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
@@ -152,40 +133,23 @@ const EventDetails = () => {
         />
       )}
 
-      {/* Background accents */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-32 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-secondary/20 rounded-full blur-3xl" />
       </div>
 
-      {/* ── Cover photo banner ── */}
-      {hasCover && (
-        <div className="relative w-full h-56 md:h-72 overflow-hidden">
-          <img
-            src={event.coverPhoto}
-            alt={event.title}
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover"
-          />
-          {/* gradient fade into page bg at bottom */}
-          <div className="absolute inset-0 bg-gradient-to-t from-base-200 via-base-200/30 to-transparent" />
-        </div>
-      )}
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* pull card up to overlap the cover image */}
-        <div className={hasCover ? "-mt-20 relative z-10" : ""}>
-          <EventHeader
-            event={{
-              ...event,
-              name:            event.title,
-              collectedAmount: totalDonations,
-              totalBudget:     event.budget?.target ?? 0,
-            }}
-            onBack={() => navigate("/dashboard")}
-            onShare={() => setShowShareModal(true)}
-          />
-        </div>
+        {/* ── cover photo passed IN to EventHeader — no separate banner ── */}
+        <EventHeader
+          event={{
+            ...event,
+            name:            event.title,
+            collectedAmount: totalDonations,
+            totalBudget:     event.budget?.target ?? 0,
+          }}
+          onBack={() => navigate("/dashboard")}
+          onShare={() => setShowShareModal(true)}
+        />
 
         <StatsCards
           members={participants}
@@ -198,7 +162,6 @@ const EventDetails = () => {
         />
 
         <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200/50 overflow-hidden">
-          {/* Tabs */}
           <div className="border-b border-base-200">
             <nav className="flex space-x-8 px-6">
               {["members", "analytics", "settings"].map((tab) => (
@@ -226,14 +189,10 @@ const EventDetails = () => {
               />
             )}
             {activeTab === "analytics" && (
-              <div className="text-base-content/70 p-8 text-center">
-                Analytics coming soon…
-              </div>
+              <div className="text-base-content/70 p-8 text-center">Analytics coming soon…</div>
             )}
             {activeTab === "settings" && (
-              <div className="text-base-content/70 p-8 text-center">
-                Settings coming soon…
-              </div>
+              <div className="text-base-content/70 p-8 text-center">Settings coming soon…</div>
             )}
           </div>
         </div>
