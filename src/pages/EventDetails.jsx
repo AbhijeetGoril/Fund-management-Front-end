@@ -9,6 +9,7 @@ import AddNewMember from "../components/DashBorad/AddNewMumber";
 import ShareEventModal from "../components/events/ShareEventModal";
 import { Loader } from "../components/Loader";
 import { axiosInstance } from "../lib/axois";
+import { toast } from "react-toastify";
 
 // ── API functions ─────────────────────────────────────────────────
 const fetchEventById = async (eventId) => {
@@ -30,44 +31,40 @@ const EventDetails = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal]           = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [activeTab, setActiveTab] = useState("members");
+  const [activeTab, setActiveTab]           = useState("members");
+  const [imgError, setImgError]             = useState(false); // ← cover image fallback
 
-  // ── Query: fetch event ────────────────────────────────────────
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
+  // ── Query ─────────────────────────────────────────────────────
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["event", eventId],
-    queryFn: () => fetchEventById(eventId),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    queryFn:  () => fetchEventById(eventId),
+    staleTime: 1000 * 60 * 2,
     retry: 2,
   });
 
-  // ── Mutation: add participant ─────────────────────────────────
+  // ── Mutation ──────────────────────────────────────────────────
   const { mutate: addParticipant, isPending: isAdding } = useMutation({
     mutationFn: addParticipantApi,
     onSuccess: () => {
-      // Invalidate so event data auto-refetches (summary + participants refresh)
       queryClient.invalidateQueries({ queryKey: ["event", eventId] });
       setShowModal(false);
     },
     onError: (err) => {
-      console.error("Failed to add participant:", err);
-      alert(err.response?.data?.message || "Could not add participant. Please try again.");
+      toast.error(
+        err?.response?.data?.message || "Could not add participant. Please try again.",
+        { position: "top-right", autoClose: 5000 }
+      );
     },
   });
 
   const handleAddParticipant = (participantData) => {
     addParticipant({
       eventId,
-      name: participantData.name,
-      email: participantData.email,
-      phone: participantData.phone ?? "",
+      name:        participantData.name,
+      email:       participantData.email,
+      phone:       participantData.phone ?? "",
       amountToPay: participantData.amountToPay ?? 0,
     });
   };
@@ -119,35 +116,34 @@ const EventDetails = () => {
     );
   }
 
-  // ── Destructure API response ──────────────────────────────────
+  // ── Destructure ───────────────────────────────────────────────
   const { event, members, participants, summary } = data;
 
-  // ── Derived stats from API summary ───────────────────────────
-  const totalDonations        = summary?.totalAmountPaid     ?? 0;
-  const totalRemainingAmount  = summary?.totalPendingAmount  ?? 0;
-  const totalParticipants     = summary?.totalParticipants   ?? 0;
-  const paidParticipants      = participants.filter((p) => p.paymentStatus === "paid").length;
-  const pendingParticipants   = participants.filter((p) => p.paymentStatus === "pending").length;
-  const partialParticipants   = participants.filter((p) => p.paymentStatus === "partial").length;
+  const totalDonations       = summary?.totalAmountPaid    ?? 0;
+  const totalRemainingAmount = summary?.totalPendingAmount ?? 0;
+  const totalParticipants    = summary?.totalParticipants  ?? 0;
+  const paidParticipants     = participants.filter((p) => p.paymentStatus === "paid").length;
+  const pendingParticipants  = participants.filter((p) => p.paymentStatus === "pending").length;
+  const partialParticipants  = participants.filter((p) => p.paymentStatus === "partial").length;
+
+  const hasCover = !!event.coverPhoto && !imgError;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
       <Navbar />
 
-      {/* Add Participant Modal */}
       {showModal && (
         <AddNewMember
           members={participants}
-          setMembers={() => {}}           // managed by React Query now
+          setMembers={() => {}}
           setShowModal={setShowModal}
           eventTotalBudget={event.budget?.target ?? 0}
           existingMembersCount={totalParticipants}
-          onSubmit={handleAddParticipant} // pass the mutation handler
+          onSubmit={handleAddParticipant}
           isLoading={isAdding}
         />
       )}
 
-      {/* Share Modal */}
       {showShareModal && (
         <ShareEventModal
           eventId={eventId}
@@ -162,18 +158,34 @@ const EventDetails = () => {
         <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-secondary/20 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* ── Cover photo banner ── */}
+      {hasCover && (
+        <div className="relative w-full h-56 md:h-72 overflow-hidden">
+          <img
+            src={event.coverPhoto}
+            alt={event.title}
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover"
+          />
+          {/* gradient fade into page bg at bottom */}
+          <div className="absolute inset-0 bg-gradient-to-t from-base-200 via-base-200/30 to-transparent" />
+        </div>
+      )}
 
-        <EventHeader
-          event={{
-            ...event,
-            name: event.title,                        // normalise title → name
-            collectedAmount: totalDonations,
-            totalBudget: event.budget?.target ?? 0,
-          }}
-          onBack={() => navigate("/dashboard")}
-          onShare={() => setShowShareModal(true)}
-        />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* pull card up to overlap the cover image */}
+        <div className={hasCover ? "-mt-20 relative z-10" : ""}>
+          <EventHeader
+            event={{
+              ...event,
+              name:            event.title,
+              collectedAmount: totalDonations,
+              totalBudget:     event.budget?.target ?? 0,
+            }}
+            onBack={() => navigate("/dashboard")}
+            onShare={() => setShowShareModal(true)}
+          />
+        </div>
 
         <StatsCards
           members={participants}
@@ -209,7 +221,7 @@ const EventDetails = () => {
             {activeTab === "members" && (
               <MembersTab
                 event={event}
-                members={participants}       // participants are the "members" in the UI
+                members={participants}
                 onAddMember={() => setShowModal(true)}
               />
             )}
