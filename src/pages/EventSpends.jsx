@@ -1,7 +1,8 @@
 // EventSpends.jsx
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeftIcon, PlusIcon } from "@heroicons/react/20/solid";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Navbar from "../components/Navbar/Navbar";
 import { Loader } from "../components/Loader";
 import SpendsHero from "../components/Spends/SpendsHero";
@@ -19,43 +20,66 @@ import toast from "react-hot-toast";
 
 const EventSpends = () => {
   const { eventId } = useParams();
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
+  const queryClient = useQueryClient();
 
-  // ── State ────────────────────────────────────────────────────────────
-  const [spends, setSpends]         = useState([]);
-  const [eventInfo, setEventInfo]   = useState(null);
-  const [summary, setSummary]       = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  // ── UI State ──────────────────────────────────────────────────────────
+  const [searchTerm,     setSearchTerm]     = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterStatus,   setFilterStatus]   = useState("all");
+  const [sortBy,         setSortBy]         = useState("spendDate");
+  const [sortOrder,      setSortOrder]      = useState("desc");
+  const [addEditOpen,    setAddEditOpen]    = useState(false);
+  const [editingSpend,   setEditingSpend]   = useState(null);
+  const [viewSpend,      setViewSpend]      = useState(null);
 
-  const [searchTerm, setSearchTerm]           = useState("");
-  const [filterCategory, setFilterCategory]   = useState("all");
-  const [filterStatus, setFilterStatus]       = useState("all");
-  const [sortBy, setSortBy]                   = useState("spendDate");
-  const [sortOrder, setSortOrder]             = useState("desc");
+  // ── Query ─────────────────────────────────────────────────────────────
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["eventSpends", eventId],
+    queryFn:  () => getEventSpends(eventId),
+    staleTime: 30_000,
+  });
 
-  const [addEditOpen, setAddEditOpen]   = useState(false);
-  const [editingSpend, setEditingSpend] = useState(null);
-  const [viewSpend, setViewSpend]       = useState(null);
+  const spends    = data?.data?.spends  ?? [];
+  const summary   = data?.data?.summary ?? null;
+  const eventInfo = data?.data?.event   ?? null;
 
-  // ── Fetch ─────────────────────────────────────────────────────────────
-  const fetchSpends = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await getEventSpends(eventId);
-      console.log(res)
-      setSpends(res.data.spends || []);
-      setSummary(res.data.summary || null);
-      setEventInfo(res.data.event || null);
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to load spends");
-    } finally {
-      setLoading(false);
-    }
-  }, [eventId]);
+  // ── Mutations ─────────────────────────────────────────────────────────
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["eventSpends", eventId] });
 
-  useEffect(() => { fetchSpends(); }, [fetchSpends]);
+  const addMutation = useMutation({
+    mutationFn: (fd) => addSpend(fd),
+    onSuccess: () => {
+      toast.success("Spend added successfully");
+      setAddEditOpen(false);
+      invalidate();
+    },
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || "Failed to add spend"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, fd }) => updateSpend(id, fd),
+    onSuccess: () => {
+      toast.success("Spend updated successfully");
+      setAddEditOpen(false);
+      setEditingSpend(null);
+      invalidate();
+    },
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || "Failed to update spend"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteSpend(id),
+    onSuccess: () => {
+      toast.success("Spend deleted");
+      invalidate();
+    },
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || "Failed to delete spend"),
+  });
 
   // ── Derived values ────────────────────────────────────────────────────
   const totalSpent      = summary?.totalSpent      ?? 0;
@@ -72,9 +96,10 @@ const EventSpends = () => {
     [spends]
   );
 
-  // ── Filtered + sorted ─────────────────────────────────────────────────
+  // ── Filtered + Sorted ─────────────────────────────────────────────────
   const filteredSpends = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
+
     let list = spends.filter((spend) => {
       const matchesSearch =
         !q ||
@@ -120,41 +145,33 @@ const EventSpends = () => {
     setAddEditOpen(true);
   };
 
-  const onSubmitAddEdit = async (formData) => {
-    try {
-      setSubmitting(true);
-      if (editingSpend) {
-        await updateSpend(editingSpend._id, formData);
-        toast.success("Spend updated successfully");
-      } else {
-        await addSpend(formData);
-        toast.success("Spend added successfully");
-      }
-      setAddEditOpen(false);
-      setEditingSpend(null);
-      await fetchSpends();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Something went wrong");
-    } finally {
-      setSubmitting(false);
+  const onSubmitAddEdit = (fd) => {
+    if (editingSpend) {
+      updateMutation.mutate({ id: editingSpend._id, fd });
+    } else {
+      addMutation.mutate(fd);
     }
   };
 
-  const handleDeleteSpend = async (id) => {
+  const handleDeleteSpend = (id) => {
     if (!window.confirm("Are you sure you want to delete this spend?")) return;
-    try {
-      await deleteSpend(id);
-      toast.success("Spend deleted");
-      await fetchSpends();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to delete spend");
-    }
+    deleteMutation.mutate(id);
+  };
+
+  const isSubmitting = addMutation.isPending || updateMutation.isPending;
+
+  // ── eventForHero (safe — works even if eventInfo is null) ─────────────
+  const eventForHero = {
+    id:          eventInfo?._id             ?? eventId,
+    name:        eventInfo?.title           ?? "Event Spends",
+    totalBudget: eventInfo?.budget?.target  ?? totalBudget,
+    date:        eventInfo?.date            ?? null,
+    location:    eventInfo?.location        ?? "",
+    description: eventInfo?.description     ?? "",
   };
 
   // ── Loading ───────────────────────────────────────────────────────────
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
@@ -165,13 +182,16 @@ const EventSpends = () => {
     );
   }
 
-  if (!eventInfo) {
+  // ── Error ─────────────────────────────────────────────────────────────
+  if (isError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-16 text-center">
           <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200 p-12">
-            <h2 className="text-3xl font-bold text-base-content mb-4">Event not found</h2>
+            <h2 className="text-3xl font-bold text-base-content mb-4">
+              {error?.response?.data?.message || "Failed to load spends"}
+            </h2>
             <button
               onClick={() => navigate("/dashboard")}
               className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
@@ -184,14 +204,7 @@ const EventSpends = () => {
     );
   }
 
-  // shape eventInfo to match what SpendsHero expects
-  const eventForHero = {
-    ...eventInfo,
-    name: eventInfo.title,
-    totalBudget: eventInfo.budget?.target ?? 0,
-    id: eventInfo._id,
-  };
-
+  // ── Render ────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
       <Navbar />
@@ -208,7 +221,7 @@ const EventSpends = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <button
-            onClick={() => navigate(`/events/${eventInfo._id}`)}
+            onClick={() => navigate(`/events/${eventId}`)}
             className="flex items-center gap-2 text-base-content/70 hover:text-base-content transition-all duration-200 bg-base-100/90 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-md border border-base-200 hover:shadow-lg hover:scale-105 active:scale-95"
           >
             <ArrowLeftIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -217,11 +230,13 @@ const EventSpends = () => {
 
           <button
             onClick={openAdd}
-            disabled={submitting}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg w-full sm:w-auto justify-center disabled:opacity-60"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg w-full sm:w-auto justify-center disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="text-sm sm:text-base">Add Spend</span>
+            <span className="text-sm sm:text-base">
+              {isSubmitting ? "Saving..." : "Add Spend"}
+            </span>
           </button>
         </div>
 
@@ -285,6 +300,7 @@ const EventSpends = () => {
       <AddOrEditModal
         open={addEditOpen}
         onClose={() => {
+          if (isSubmitting) return;
           setAddEditOpen(false);
           setEditingSpend(null);
         }}
