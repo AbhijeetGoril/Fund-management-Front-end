@@ -1,52 +1,68 @@
 // SpendModals.jsx (Themed Version)
 import React, { useEffect, useCallback, useState } from "react";
-import { 
-  CurrencyRupeeIcon, 
-  CalendarIcon, 
+import {
+  CurrencyRupeeIcon,
+  CalendarIcon,
   DocumentTextIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ClockIcon
+  ClockIcon,
 } from "@heroicons/react/20/solid";
 import { PencilIcon } from "lucide-react";
 
 const Backdrop = ({ onClose }) => (
-  <div 
-    className="fixed inset-0 bg-base-content/40 backdrop-blur-sm transition-all duration-300" 
-    onClick={onClose} 
-    aria-hidden="true" 
+  <div
+    className="fixed inset-0 bg-base-content/40 backdrop-blur-sm transition-all duration-300"
+    onClick={onClose}
+    aria-hidden="true"
   />
 );
 
-export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
+export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) => {
   const emptyForm = {
-    description: "",
+    title: "",
     amount: "",
-    date: new Date().toISOString().split("T")[0],
+    spendDate: new Date().toISOString().split("T")[0],
     category: "",
+    paidBy: "",
     paidTo: "",
     receiptNumber: "",
-    receiptImage: "",
-    status: "pending",
+    receiptImage: null,
+    receiptImagePreview: "",
     notes: "",
   };
 
-  const [form, setForm] = useState(initial || emptyForm);
+  const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    setForm(initial || emptyForm);
+    if (initial) {
+      setForm({
+        title: initial.title || "",
+        amount: initial.amount || "",
+        spendDate: initial.spendDate
+          ? initial.spendDate.split("T")[0]
+          : new Date().toISOString().split("T")[0],
+        category: initial.category || "",
+        paidBy: initial.paidBy || "",
+        paidTo: initial.paidTo || "",
+        receiptNumber: initial.receiptNumber || "",
+        receiptImage: null,
+        receiptImagePreview: initial.receiptImage || "",
+        notes: initial.notes || "",
+      });
+    } else {
+      setForm(emptyForm);
+    }
     setErrors({});
   }, [initial, open]);
 
   const validate = () => {
     const e = {};
-    if (!form.description.trim()) e.description = "Description is required";
+    if (!form.title.trim()) e.title = "Title is required";
     const amt = Number(form.amount);
-    if (!form.amount || Number.isNaN(amt) || amt <= 0)
-      e.amount = "Enter a valid amount";
-    if (!form.date) e.date = "Date is required";
-    if (!form.category) e.category = "Category is required";
+    if (!form.amount || Number.isNaN(amt) || amt <= 0) e.amount = "Enter a valid amount";
+    if (!form.paidBy.trim()) e.paidBy = "Paid By is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -54,13 +70,23 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    onSubmit({ ...form, amount: Number(form.amount) });
+
+    const fd = new FormData();
+    fd.append("event", eventId);
+    fd.append("title", form.title.trim());
+    fd.append("amount", Number(form.amount));
+    fd.append("paidBy", form.paidBy.trim());
+    if (form.category)      fd.append("category", form.category);
+    if (form.paidTo)        fd.append("paidTo", form.paidTo);
+    if (form.notes)         fd.append("notes", form.notes);
+    if (form.spendDate)     fd.append("spendDate", form.spendDate);
+    if (form.receiptNumber) fd.append("receiptNumber", form.receiptNumber);
+    if (form.receiptImage)  fd.append("receiptImage", form.receiptImage);
+
+    onSubmit(fd);
   };
 
-  const onEsc = useCallback(
-    (e) => { if (e.key === "Escape") onClose(); },
-    [onClose]
-  );
+  const onEsc = useCallback((e) => { if (e.key === "Escape") onClose(); }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -70,27 +96,21 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
 
   const getCategoryConfig = (category) => {
     const configs = {
-      Decoration: { border: "border-primary/30", bg: "bg-primary/10", text: "text-primary" },
-      Food: { border: "border-secondary/30", bg: "bg-secondary/10", text: "text-secondary" },
-      Equipment: { border: "border-accent/30", bg: "bg-accent/10", text: "text-accent" },
-      Media: { border: "border-info/30", bg: "bg-info/10", text: "text-info" },
-      Transport: { border: "border-success/30", bg: "bg-success/10", text: "text-success" },
-      Entertainment: { border: "border-warning/30", bg: "bg-warning/10", text: "text-warning" },
-      Other: { border: "border-base-300", bg: "bg-base-200", text: "text-base-content/70" },
+      Decoration:    { border: "border-primary/30",   bg: "bg-primary/10",   text: "text-primary"         },
+      Food:          { border: "border-secondary/30", bg: "bg-secondary/10", text: "text-secondary"       },
+      Equipment:     { border: "border-accent/30",    bg: "bg-accent/10",    text: "text-accent"          },
+      Media:         { border: "border-info/30",      bg: "bg-info/10",      text: "text-info"            },
+      Transport:     { border: "border-success/30",   bg: "bg-success/10",   text: "text-success"         },
+      Entertainment: { border: "border-warning/30",   bg: "bg-warning/10",   text: "text-warning"         },
+      Other:         { border: "border-base-300",     bg: "bg-base-200",     text: "text-base-content/70" },
     };
     return configs[category] || configs.Other;
   };
 
-  const getStatusConfig = (status) => {
-    const configs = {
-      completed: { bg: "bg-success/20", text: "text-success", border: "border-success/30", icon: <CheckCircleIcon className="h-4 w-4" /> },
-      pending: { bg: "bg-warning/20", text: "text-warning", border: "border-warning/30", icon: <ClockIcon className="h-4 w-4" /> },
-      cancelled: { bg: "bg-error/20", text: "text-error", border: "border-error/30", icon: <XCircleIcon className="h-4 w-4" /> },
-    };
-    return configs[status] || configs.pending;
-  };
-
   if (!open) return null;
+
+  const inputBase =
+    "w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -98,7 +118,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
       <div
         role="dialog"
         aria-modal="true"
-        className="relative z-10 w-full max-w-2xl rounded-3xl bg-base-100 shadow-2xl border border-base-200 transform transition-all duration-300 scale-95 hover:scale-100 max-h-[90vh] flex flex-col"
+        className="relative z-10 w-full max-w-2xl rounded-3xl bg-base-100 shadow-2xl border border-base-200 max-h-[90vh] flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-5 border-b border-base-200 bg-gradient-to-r from-base-200 to-primary/10 rounded-t-3xl flex-shrink-0">
@@ -117,37 +137,33 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-6 overflow-y-auto flex-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-            {/* Description */}
+            {/* Title — required */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
-                <span>Description</span>
-                <span className="text-error">*</span>
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-1">
+                Title <span className="text-error">*</span>
               </label>
               <input
                 type="text"
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 ${
-                  errors.description ? "border-error bg-error/5" : "border-base-300 hover:border-base-400"
-                }`}
-                placeholder="Enter spend description..."
+                value={form.title}
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                className={`${inputBase} ${errors.title ? "border-error bg-error/5" : "border-base-300 hover:border-base-400"}`}
+                placeholder="e.g. Venue Decoration"
               />
-              {errors.description && (
-                <p className="mt-2 text-sm text-error flex items-center gap-1">
-                  <XCircleIcon className="h-4 w-4" />{errors.description}
+              {errors.title && (
+                <p className="mt-1.5 text-sm text-error flex items-center gap-1">
+                  <XCircleIcon className="h-4 w-4" />{errors.title}
                 </p>
               )}
             </div>
 
-            {/* Amount */}
+            {/* Amount — required */}
             <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-1">
                 <CurrencyRupeeIcon className="h-4 w-4 text-success" />
-                <span>Amount (₹)</span>
-                <span className="text-error">*</span>
+                Amount (₹) <span className="text-error">*</span>
               </label>
               <input
                 type="number"
@@ -155,52 +171,46 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
                 step="1"
                 value={form.amount}
                 onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 ${
-                  errors.amount ? "border-error bg-error/5" : "border-base-300 hover:border-base-400"
-                }`}
+                className={`${inputBase} ${errors.amount ? "border-error bg-error/5" : "border-base-300 hover:border-base-400"}`}
                 placeholder="0"
               />
               {errors.amount && (
-                <p className="mt-2 text-sm text-error flex items-center gap-1">
+                <p className="mt-1.5 text-sm text-error flex items-center gap-1">
                   <XCircleIcon className="h-4 w-4" />{errors.amount}
                 </p>
               )}
             </div>
 
-            {/* Date */}
+            {/* Paid By — required */}
             <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 text-primary" />
-                <span>Date</span>
-                <span className="text-error">*</span>
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-1">
+                Paid By <span className="text-error">*</span>
               </label>
               <input
-                type="date"
-                value={form.date}
-                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content ${
-                  errors.date ? "border-error bg-error/5" : "border-base-300 hover:border-base-400"
-                }`}
+                type="text"
+                value={form.paidBy}
+                onChange={(e) => setForm((f) => ({ ...f, paidBy: e.target.value }))}
+                className={`${inputBase} ${errors.paidBy ? "border-error bg-error/5" : "border-base-300 hover:border-base-400"}`}
+                placeholder="Who paid?"
               />
-              {errors.date && (
-                <p className="mt-2 text-sm text-error flex items-center gap-1">
-                  <XCircleIcon className="h-4 w-4" />{errors.date}
+              {errors.paidBy && (
+                <p className="mt-1.5 text-sm text-error flex items-center gap-1">
+                  <XCircleIcon className="h-4 w-4" />{errors.paidBy}
                 </p>
               )}
             </div>
 
-            {/* Category */}
+            {/* Category — optional */}
             <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-2">
-                Category <span className="text-error">*</span>
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                Category
+                <span className="text-xs font-normal text-base-content/40 bg-base-200 px-2 py-0.5 rounded-full">Optional</span>
               </label>
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none cursor-pointer bg-base-100 text-base-content ${
-                  errors.category
-                    ? "border-error bg-error/5"
-                    : form.category
+                className={`${inputBase} appearance-none cursor-pointer ${
+                  form.category
                     ? `${getCategoryConfig(form.category).border} ${getCategoryConfig(form.category).bg} ${getCategoryConfig(form.category).text} border-2 font-semibold`
                     : "border-base-300 hover:border-base-400"
                 }`}
@@ -214,40 +224,39 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
                 <option value="Entertainment">Entertainment</option>
                 <option value="Other">Other</option>
               </select>
-              {errors.category && (
-                <p className="mt-2 text-sm text-error flex items-center gap-1">
-                  <XCircleIcon className="h-4 w-4" />{errors.category}
-                </p>
-              )}
             </div>
 
-            {/* Status */}
+            {/* Spend Date — optional */}
             <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-2">Status</label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 appearance-none cursor-pointer bg-base-100 ${getStatusConfig(form.status).bg} ${getStatusConfig(form.status).text} ${getStatusConfig(form.status).border} border-2 font-semibold`}
-              >
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-primary" />
+                Date
+                <span className="text-xs font-normal text-base-content/40 bg-base-200 px-2 py-0.5 rounded-full">Optional</span>
+              </label>
+              <input
+                type="date"
+                value={form.spendDate}
+                onChange={(e) => setForm((f) => ({ ...f, spendDate: e.target.value }))}
+                className={`${inputBase} border-base-300 hover:border-base-400`}
+              />
             </div>
 
-            {/* Paid To */}
+            {/* Paid To — optional */}
             <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-2">Paid To (Vendor)</label>
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                Paid To (Vendor)
+                <span className="text-xs font-normal text-base-content/40 bg-base-200 px-2 py-0.5 rounded-full">Optional</span>
+              </label>
               <input
                 type="text"
                 value={form.paidTo}
                 onChange={(e) => setForm((f) => ({ ...f, paidTo: e.target.value }))}
-                className="w-full px-4 py-3 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 hover:border-base-400"
-                placeholder="Vendor name"
+                className={`${inputBase} border-base-300 hover:border-base-400`}
+                placeholder="Vendor / payee name"
               />
             </div>
 
-            {/* Receipt Number - Optional */}
+            {/* Receipt Number — optional */}
             <div>
               <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
                 Receipt Number
@@ -257,22 +266,22 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
                 type="text"
                 value={form.receiptNumber}
                 onChange={(e) => setForm((f) => ({ ...f, receiptNumber: e.target.value }))}
-                className="w-full px-4 py-3 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 hover:border-base-400"
+                className={`${inputBase} border-base-300 hover:border-base-400`}
                 placeholder="e.g. REC001"
               />
             </div>
 
-            {/* Receipt Image - Optional */}
+            {/* Receipt Image — optional */}
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
                 Receipt Image
                 <span className="text-xs font-normal text-base-content/40 bg-base-200 px-2 py-0.5 rounded-full">Optional</span>
               </label>
               <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-base-300 hover:border-primary/50 rounded-2xl cursor-pointer transition-all duration-200 bg-base-100 hover:bg-primary/5 overflow-hidden">
-                {form.receiptImage ? (
+                {form.receiptImagePreview ? (
                   <div className="relative w-full">
                     <img
-                      src={form.receiptImage}
+                      src={form.receiptImagePreview}
                       alt="Receipt preview"
                       className="w-full max-h-48 object-contain p-3"
                     />
@@ -280,14 +289,16 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
-                        setForm((f) => ({ ...f, receiptImage: "" }));
+                        setForm((f) => ({ ...f, receiptImage: null, receiptImagePreview: "" }));
                       }}
-                      className="absolute top-2 right-2 p-1.5 bg-error text-error-content rounded-full hover:scale-110 transition-all duration-200 shadow-md"
+                      className="absolute top-2 right-2 p-1.5 bg-error text-error-content rounded-full hover:scale-110 transition-all shadow-md"
                       title="Remove image"
                     >
                       <XCircleIcon className="h-4 w-4" />
                     </button>
-                    <p className="text-center text-xs text-base-content/40 pb-2">Click ✕ to remove or click to replace</p>
+                    <p className="text-center text-xs text-base-content/40 pb-2">
+                      Click ✕ to remove · click image to replace
+                    </p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
@@ -295,7 +306,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
                     <p className="text-sm text-base-content/50">
                       <span className="text-primary font-semibold">Click to upload</span> a receipt image
                     </p>
-                    <p className="text-xs text-base-content/30 mt-1">PNG, JPG, WEBP up to 5MB</p>
+                    <p className="text-xs text-base-content/30 mt-1">PNG, JPG, WEBP · max 5 MB</p>
                   </div>
                 )}
                 <input
@@ -306,7 +317,12 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
                     const file = e.target.files[0];
                     if (!file) return;
                     const reader = new FileReader();
-                    reader.onload = () => setForm((f) => ({ ...f, receiptImage: reader.result }));
+                    reader.onload = () =>
+                      setForm((f) => ({
+                        ...f,
+                        receiptImage: file,
+                        receiptImagePreview: reader.result,
+                      }));
                     reader.readAsDataURL(file);
                     e.target.value = "";
                   }}
@@ -314,15 +330,18 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial }) => {
               </label>
             </div>
 
-            {/* Notes */}
+            {/* Notes — optional */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-base-content/80 mb-2">Additional Notes</label>
+              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                Notes
+                <span className="text-xs font-normal text-base-content/40 bg-base-200 px-2 py-0.5 rounded-full">Optional</span>
+              </label>
               <textarea
                 rows="3"
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                className="w-full px-4 py-3 border border-base-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-base-100 text-base-content placeholder:text-base-content/50 hover:border-base-400 resize-none"
-                placeholder="Any additional notes about this spend..."
+                className={`${inputBase} border-base-300 hover:border-base-400 resize-none`}
+                placeholder="Any additional notes..."
               />
             </div>
           </div>
@@ -357,13 +376,13 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
 
   const getCategoryConfig = (category) => {
     const configs = {
-      Decoration: { gradient: "from-primary to-secondary", bg: "bg-primary/10", text: "text-primary", border: "border-primary/20" },
-      Food: { gradient: "from-secondary to-accent", bg: "bg-secondary/10", text: "text-secondary", border: "border-secondary/20" },
-      Equipment: { gradient: "from-accent to-info", bg: "bg-accent/10", text: "text-accent", border: "border-accent/20" },
-      Media: { gradient: "from-info to-primary", bg: "bg-info/10", text: "text-info", border: "border-info/20" },
-      Transport: { gradient: "from-success to-emerald-600", bg: "bg-success/10", text: "text-success", border: "border-success/20" },
-      Entertainment: { gradient: "from-warning to-orange-500", bg: "bg-warning/10", text: "text-warning", border: "border-warning/20" },
-      Other: { gradient: "from-base-300 to-base-400", bg: "bg-base-200", text: "text-base-content/70", border: "border-base-300" },
+      Decoration:    { gradient: "from-primary to-secondary",   bg: "bg-primary/10",   text: "text-primary",         border: "border-primary/20"   },
+      Food:          { gradient: "from-secondary to-accent",    bg: "bg-secondary/10", text: "text-secondary",       border: "border-secondary/20" },
+      Equipment:     { gradient: "from-accent to-info",         bg: "bg-accent/10",    text: "text-accent",          border: "border-accent/20"    },
+      Media:         { gradient: "from-info to-primary",        bg: "bg-info/10",      text: "text-info",            border: "border-info/20"      },
+      Transport:     { gradient: "from-success to-emerald-600", bg: "bg-success/10",   text: "text-success",         border: "border-success/20"   },
+      Entertainment: { gradient: "from-warning to-orange-500",  bg: "bg-warning/10",   text: "text-warning",         border: "border-warning/20"   },
+      Other:         { gradient: "from-base-300 to-base-400",   bg: "bg-base-200",     text: "text-base-content/70", border: "border-base-300"     },
     };
     return configs[category] || configs.Other;
   };
@@ -371,8 +390,8 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
   const getStatusConfig = (status) => {
     const configs = {
       completed: { bg: "bg-success/20", text: "text-success", border: "border-success/30", icon: "✅", label: "Completed" },
-      pending: { bg: "bg-warning/20", text: "text-warning", border: "border-warning/30", icon: "⏳", label: "Pending" },
-      cancelled: { bg: "bg-error/20", text: "text-error", border: "border-error/30", icon: "❌", label: "Cancelled" },
+      pending:   { bg: "bg-warning/20", text: "text-warning", border: "border-warning/30", icon: "⏳", label: "Pending"   },
+      cancelled: { bg: "bg-error/20",   text: "text-error",   border: "border-error/30",   icon: "❌", label: "Cancelled" },
     };
     return configs[status] || configs.pending;
   };
@@ -380,12 +399,13 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
   if (!spend) return null;
 
   const categoryConfig = getCategoryConfig(spend.category);
-  const statusConfig = getStatusConfig(spend.status);
+  const statusConfig   = getStatusConfig(spend.status);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <Backdrop onClose={onClose} />
-      <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-base-100 shadow-2xl border border-base-200 transform transition-all duration-300 scale-95 hover:scale-100 max-h-[90vh] flex flex-col">
+      <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-base-100 shadow-2xl border border-base-200 max-h-[90vh] flex flex-col">
+
         {/* Header */}
         <div className="px-6 py-5 border-b border-base-200 bg-gradient-to-r from-base-200 to-primary/10 rounded-t-3xl flex-shrink-0">
           <div className="flex justify-between items-start">
@@ -398,7 +418,7 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
                 <p className="text-sm text-base-content/70">Complete information about this expense</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 text-base-content/50 hover:text-base-content hover:bg-base-200 rounded-xl transition-all duration-200">
+            <button onClick={onClose} className="p-2 text-base-content/50 hover:text-base-content hover:bg-base-200 rounded-xl transition-all">
               <XCircleIcon className="h-5 w-5" />
             </button>
           </div>
@@ -407,11 +427,11 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
         <div className="p-6 space-y-6 overflow-y-auto flex-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            {/* Description */}
+            {/* Title */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-base-content/70 mb-2">Description</label>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Title</label>
               <div className="p-4 bg-base-200 rounded-2xl border border-base-300">
-                <p className="text-lg font-semibold text-base-content">{spend.description}</p>
+                <p className="text-lg font-semibold text-base-content">{spend.title}</p>
               </div>
             </div>
 
@@ -428,7 +448,9 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
               <label className="block text-sm font-semibold text-base-content/70 mb-2">Date</label>
               <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 flex items-center gap-3">
                 <CalendarIcon className="h-5 w-5 text-primary" />
-                <p className="text-lg font-semibold text-base-content">{spend.date}</p>
+                <p className="text-lg font-semibold text-base-content">
+                  {spend.spendDate ? new Date(spend.spendDate).toLocaleDateString("en-IN") : "N/A"}
+                </p>
               </div>
             </div>
 
@@ -437,7 +459,7 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
               <label className="block text-sm font-semibold text-base-content/70 mb-2">Category</label>
               <div className={`p-4 ${categoryConfig.bg} rounded-2xl border ${categoryConfig.border}`}>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold text-primary-content bg-gradient-to-r ${categoryConfig.gradient}`}>
-                  {spend.category}
+                  {spend.category || "N/A"}
                 </span>
               </div>
             </div>
@@ -453,6 +475,14 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
               </div>
             </div>
 
+            {/* Paid By */}
+            <div>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Paid By</label>
+              <div className="p-4 bg-base-200 rounded-2xl border border-base-300">
+                <p className="text-lg font-semibold text-base-content">{spend.paidBy || "N/A"}</p>
+              </div>
+            </div>
+
             {/* Paid To */}
             <div>
               <label className="block text-sm font-semibold text-base-content/70 mb-2">Paid To</label>
@@ -462,18 +492,22 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
             </div>
 
             {/* Receipt Number */}
-            <div>
-              <label className="block text-sm font-semibold text-base-content/70 mb-2">Receipt Number</label>
-              <div className="p-4 bg-info/10 rounded-2xl border border-info/20">
-                <p className="text-lg font-semibold text-info">{spend.receiptNumber || "N/A"}</p>
+            {spend.receiptNumber && (
+              <div>
+                <label className="block text-sm font-semibold text-base-content/70 mb-2">Receipt Number</label>
+                <div className="p-4 bg-info/10 rounded-2xl border border-info/20">
+                  <p className="text-lg font-semibold text-info">{spend.receiptNumber}</p>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Approved By */}
+            {/* Created By */}
             <div>
-              <label className="block text-sm font-semibold text-base-content/70 mb-2">Approved By</label>
+              <label className="block text-sm font-semibold text-base-content/70 mb-2">Created By</label>
               <div className="p-4 bg-accent/10 rounded-2xl border border-accent/20">
-                <p className="text-lg font-semibold text-accent">{spend.approvedBy || "N/A"}</p>
+                <p className="text-lg font-semibold text-accent">
+                  {spend.createdBy?.name || spend.createdBy || "N/A"}
+                </p>
               </div>
             </div>
 
@@ -482,7 +516,11 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-base-content/70 mb-2">Receipt Image</label>
                 <div className="p-3 bg-base-200 rounded-2xl border border-base-300">
-                  <img src={spend.receiptImage} alt="Receipt" className="w-full max-h-56 object-contain rounded-xl" />
+                  <img
+                    src={spend.receiptImage}
+                    alt="Receipt"
+                    className="w-full max-h-56 object-contain rounded-xl"
+                  />
                 </div>
               </div>
             )}
