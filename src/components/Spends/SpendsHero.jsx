@@ -7,7 +7,7 @@ const SpendsHero = ({ event, totalSpent, budgetUsage }) => {
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(
       Number(n || 0)
     );
-
+    
   const isOverBudget = budgetUsage > 100;
   const remainingBudget = event.totalBudget - totalSpent;
 
@@ -49,7 +49,7 @@ const SpendsHero = ({ event, totalSpent, budgetUsage }) => {
           </h1>
 
           <p className="text-primary-content/80 text-sm sm:text-base lg:text-lg mb-4 sm:mb-6 max-w-2xl leading-relaxed">
-            Comprehensive expense tracking with real-time budget monitoring, detailed analytics, and actionable insights for better financial management.
+           {event.description}
           </p>
 
           {/* Quick Stats */}

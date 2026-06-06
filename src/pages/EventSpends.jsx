@@ -95,6 +95,7 @@ const EventSpends = () => {
     () => [...new Set(spends.map((s) => s.category).filter(Boolean))],
     [spends]
   );
+ 
 
   // ── Filtered + Sorted ─────────────────────────────────────────────────
   const filteredSpends = useMemo(() => {
