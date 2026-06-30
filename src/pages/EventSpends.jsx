@@ -148,11 +148,9 @@ const EventSpends = () => {
   };
 
   const onSubmitAddEdit = (fd) => {
-    console.log("hlo",1)
     if (editingSpend) {
       updateMutation.mutate({ id: editingSpend._id, fd });
     } else {
-      console.log("hlo",2)
       addMutation.mutate(fd);
     }
   };

@@ -479,7 +479,7 @@ export const ViewModal = ({ spend, onClose, onEdit }) => {
             <div>
               <label className="block text-sm font-semibold text-base-content/70 mb-2">Paid By</label>
               <div className="p-4 bg-base-200 rounded-2xl border border-base-300">
-                <p className="text-lg font-semibold text-base-content">{spend.paidBy || "N/A"}</p>
+                <p className="text-lg font-semibold text-base-content">{spend.paidBy?.name || "N/A"}</p>
               </div>
             </div>
 
