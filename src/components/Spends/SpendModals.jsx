@@ -82,7 +82,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
     if (form.spendDate)     fd.append("spendDate", form.spendDate);
     if (form.receiptNumber) fd.append("receiptNumber", form.receiptNumber);
     if (form.receiptImage)  fd.append("receiptImage", form.receiptImage);
-
+    
     onSubmit(fd);
   };
 

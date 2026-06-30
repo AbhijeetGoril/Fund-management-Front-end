@@ -56,7 +56,8 @@ const EventSpends = () => {
       invalidate();
     },
     onError: (err) =>
-      toast.error(err?.response?.data?.message || "Failed to add spend"),
+      console.log(err)
+      // toast.error(err?.response?.data?.message || "Failed to add spend"),
   });
 
   const updateMutation = useMutation({
@@ -147,9 +148,11 @@ const EventSpends = () => {
   };
 
   const onSubmitAddEdit = (fd) => {
+    console.log("hlo",1)
     if (editingSpend) {
       updateMutation.mutate({ id: editingSpend._id, fd });
     } else {
+      console.log("hlo",2)
       addMutation.mutate(fd);
     }
   };

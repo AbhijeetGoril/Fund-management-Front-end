@@ -9,7 +9,7 @@ export const getEventSpends = async (eventId) => {
 
 // ─── Add a spend (multipart/form-data for receipt image) ───────────────────
 export const addSpend = async (formData) => {
-  const res = await axiosInstance.post("/societies/events/spend/add", formData, {
+  const res = await axiosInstance.post("/societies/events/spends/addSpend", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
