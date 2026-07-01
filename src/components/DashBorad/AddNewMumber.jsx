@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  UserIcon,
-  PlusIcon,
-  XMarkIcon,
-  CurrencyRupeeIcon,
   EnvelopeIcon,
-  PhoneIcon,
+  CurrencyRupeeIcon,
+  ChatBubbleLeftRightIcon,
+  PaperAirplaneIcon,
+  XMarkIcon,
   ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
@@ -19,15 +18,14 @@ const AddNewMember = ({
   isLoading,
 }) => {
   const [form, setForm] = useState({
-    name: "",
     email: "",
-    phone: "",
     amountToPay: "",
+    message: "",
   });
   const [errors, setErrors] = useState({});
 
-  const modalRef     = useRef(null);
-  const nameInputRef = useRef(null);
+  const modalRef      = useRef(null);
+  const emailInputRef = useRef(null);
 
   // ── Suggested amount ──────────────────────────────────────────────
   const suggestedAmount =
@@ -37,7 +35,7 @@ const AddNewMember = ({
 
   // ── Close on outside click / Escape ──────────────────────────────
   useEffect(() => {
-    nameInputRef.current?.focus();
+    emailInputRef.current?.focus();
 
     const handleOutside = (e) => {
       if (modalRef.current && !modalRef.current.contains(e.target))
@@ -59,13 +57,6 @@ const AddNewMember = ({
   const validate = () => {
     const errs = {};
 
-    if (!form.name.trim())
-      errs.name = "Name is required";
-    else if (form.name.trim().length < 2)
-      errs.name = "Name must be at least 2 characters";
-    else if (form.name.trim().length > 50)
-      errs.name = "Name must be less than 50 characters";
-
     if (!form.email.trim())
       errs.email = "Email is required";
     else if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/.test(form.email))
@@ -77,9 +68,6 @@ const AddNewMember = ({
     )
       errs.email = "A participant with this email already exists";
 
-    if (form.phone && !/^[0-9]{10}$/.test(form.phone))
-      errs.phone = "Please enter a valid 10-digit phone number";
-
     if (form.amountToPay !== "") {
       const amt = parseFloat(form.amountToPay);
       if (isNaN(amt) || amt <= 0)
@@ -87,6 +75,9 @@ const AddNewMember = ({
       else if (eventTotalBudget && amt > eventTotalBudget)
         errs.amountToPay = `Amount cannot exceed total budget (₹${eventTotalBudget.toLocaleString()})`;
     }
+
+    if (form.message.length > 300)
+      errs.message = "Message must be less than 300 characters";
 
     return errs;
   };
@@ -98,7 +89,6 @@ const AddNewMember = ({
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      // Show a single toast summarising what's wrong
       toast.error("Please fix the errors in the form before submitting.", {
         position: "top-right",
         autoClose: 3000,
@@ -106,22 +96,21 @@ const AddNewMember = ({
       return;
     }
 
-    const toastId = toast.loading("Adding participant...", {
+    const toastId = toast.loading("Sending invitation...", {
       position: "top-right",
     });
 
     try {
       await onSubmit({
-        name:        form.name.trim(),
         email:       form.email.trim().toLowerCase(),
-        phone:       form.phone || "",
         amountToPay: form.amountToPay
           ? parseFloat(form.amountToPay)
           : suggestedAmount || 0,
+        message: form.message.trim(),
       });
 
       toast.update(toastId, {
-        render:    `🎉 ${form.name.trim()} added successfully!`,
+        render:    `📨 Invitation sent to ${form.email.trim()}!`,
         type:      "success",
         isLoading: false,
         autoClose: 3000,
@@ -168,9 +157,9 @@ const AddNewMember = ({
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-bold text-base-content flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-primary-content">
-              <UserIcon className="h-5 w-5" />
+              <PaperAirplaneIcon className="h-5 w-5" />
             </div>
-            Add Participant
+            Invite Participant
           </h3>
           <button
             onClick={() => setShowModal(false)}
@@ -182,31 +171,14 @@ const AddNewMember = ({
           </button>
         </div>
 
+        <p className="text-sm text-base-content/60 -mt-2">
+          They'll get an email invite to join this event. If they don't have an
+          account yet, they'll be prompted to create one first.
+        </p>
+
         {/* ── Form ── */}
         <form onSubmit={handleSubmit} noValidate>
           <div className="space-y-4">
-
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-1">
-                Full Name <span className="text-error">*</span>
-              </label>
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
-                <input
-                  ref={nameInputRef}
-                  type="text"
-                  className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
-                    errors.name ? "border-error" : "border-base-300"
-                  } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40`}
-                  placeholder="Enter full name"
-                  value={form.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <FieldError msg={errors.name} />
-            </div>
 
             {/* Email */}
             <div>
@@ -216,6 +188,7 @@ const AddNewMember = ({
               <div className="relative">
                 <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
                 <input
+                  ref={emailInputRef}
                   type="email"
                   className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
                     errors.email ? "border-error" : "border-base-300"
@@ -227,30 +200,6 @@ const AddNewMember = ({
                 />
               </div>
               <FieldError msg={errors.email} />
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-1">
-                Phone Number{" "}
-                <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
-              </label>
-              <div className="relative">
-                <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
-                <input
-                  type="tel"
-                  className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
-                    errors.phone ? "border-error" : "border-base-300"
-                  } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40`}
-                  placeholder="10-digit mobile number"
-                  value={form.phone}
-                  onChange={(e) =>
-                    handleChange("phone", e.target.value.replace(/\D/g, "").slice(0, 10))
-                  }
-                  disabled={isLoading}
-                />
-              </div>
-              <FieldError msg={errors.phone} />
             </div>
 
             {/* Amount */}
@@ -284,6 +233,28 @@ const AddNewMember = ({
               )}
               <FieldError msg={errors.amountToPay} />
             </div>
+
+            {/* Message */}
+            <div>
+              <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                Message{" "}
+                <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
+              </label>
+              <div className="relative">
+                <ChatBubbleLeftRightIcon className="absolute left-3 top-3 h-5 w-5 text-base-content/40" />
+                <textarea
+                  rows={3}
+                  className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
+                    errors.message ? "border-error" : "border-base-300"
+                  } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40 resize-none`}
+                  placeholder="Add a personal note to the invite..."
+                  value={form.message}
+                  onChange={(e) => handleChange("message", e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+              <FieldError msg={errors.message} />
+            </div>
           </div>
 
           {/* ── Footer buttons ── */}
@@ -304,12 +275,12 @@ const AddNewMember = ({
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Adding...
+                  Sending...
                 </>
               ) : (
                 <>
-                  <PlusIcon className="h-4 w-4" />
-                  Add Participant
+                  <PaperAirplaneIcon className="h-4 w-4" />
+                  Send Invite
                 </>
               )}
             </button>

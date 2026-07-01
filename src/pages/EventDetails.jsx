@@ -16,8 +16,10 @@ const fetchEventById = async (eventId) => {
   return data;
 };
 
-const addParticipantApi = async (payload) => {
-  const { data } = await axiosInstance.post("/societies/events/addParticipant", payload);
+// Hits the invitation endpoint: POST /api/invitations/invite
+// Body: { email, type, event, amountToPay, message }
+const inviteParticipantApi = async (payload) => {
+  const { data } = await axiosInstance.post("/invitations/invite", payload);
   return data;
 };
 
@@ -37,27 +39,32 @@ const EventDetails = () => {
     retry: 2,
   });
 
-  const { mutate: addParticipant, isPending: isAdding } = useMutation({
-    mutationFn: addParticipantApi,
-    onSuccess: () => {
+  const { mutate: inviteParticipant, isPending: isInviting } = useMutation({
+    mutationFn: inviteParticipantApi,
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["event", eventId] });
       setShowModal(false);
+      toast.success(data?.message || "Invitation sent successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     },
     onError: (err) => {
       toast.error(
-        err?.response?.data?.message || "Could not add participant. Please try again.",
+        err?.response?.data?.message || "Could not send invitation. Please try again.",
         { position: "top-right", autoClose: 5000 }
       );
     },
   });
 
+  // participantData: { email, amountToPay, message }
   const handleAddParticipant = (participantData) => {
-    addParticipant({
-      eventId,
-      name:        participantData.name,
+    inviteParticipant({
       email:       participantData.email,
-      phone:       participantData.phone ?? "",
+      type:        "event",
+      event:       eventId,
       amountToPay: participantData.amountToPay ?? 0,
+      message:     participantData.message ?? "",
     });
   };
 
@@ -116,12 +123,11 @@ const EventDetails = () => {
       {showModal && (
         <AddNewMember
           members={participants}
-          setMembers={() => {}}
           setShowModal={setShowModal}
           eventTotalBudget={event.budget?.target ?? 0}
           existingMembersCount={totalParticipants}
           onSubmit={handleAddParticipant}
-          isLoading={isAdding}
+          isLoading={isInviting}
         />
       )}
 
