@@ -75,6 +75,18 @@ const AddNewMember = ({
     } else if (mode === "offline") {
       if (!form.name.trim())
         errs.name = "Name is required";
+
+      // Email is optional in offline mode, but if given, validate it
+      if (form.email.trim()) {
+        if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/.test(form.email))
+          errs.email = "Please enter a valid email address";
+        else if (
+          members.some(
+            (m) => (m.email ?? "").toLowerCase() === form.email.toLowerCase()
+          )
+        )
+          errs.email = "A participant with this email already exists";
+      }
     }
 
     if (form.amountToPay !== "") {
@@ -104,7 +116,8 @@ const AddNewMember = ({
       return;
     }
 
-    const label = mode === "invite" ? form.email.trim() : form.name.trim();
+    const label =
+      mode === "invite" ? form.email.trim() : form.name.trim();
     const toastId = toast.loading(
       mode === "invite" ? "Sending invitation..." : "Adding participant...",
       { position: "top-right" }
@@ -114,7 +127,12 @@ const AddNewMember = ({
       await onSubmit({
         mode,
         name:        form.name.trim() || undefined,
-        email:       mode === "invite" ? form.email.trim().toLowerCase() : undefined,
+        email:
+          mode === "invite"
+            ? form.email.trim().toLowerCase()
+            : form.email.trim()
+            ? form.email.trim().toLowerCase()
+            : undefined, // offline: only sent if the admin filled it in
         phone:       form.phone.trim() || undefined,
         amountToPay: form.amountToPay ? parseFloat(form.amountToPay) : suggestedAmount || 0,
         message:     form.message.trim(),
@@ -211,7 +229,7 @@ const AddNewMember = ({
               <div>
                 <p className="font-semibold text-base-content">Add Offline User</p>
                 <p className="text-xs text-base-content/60">
-                  No email needed — just name and phone. You track their payment manually.
+                  No account needed — add directly with name (and email/phone if you have them).
                 </p>
               </div>
             </button>
@@ -233,12 +251,13 @@ const AddNewMember = ({
             <p className="text-sm text-base-content/60 -mt-1">
               {mode === "invite"
                 ? "They'll get an email invite to join this event."
-                : "Add someone who doesn't have an email or account."}
+                : "Add someone directly to the event. Email and phone are optional — useful if they don't have or don't want to use an account."}
             </p>
 
             <form onSubmit={handleSubmit} noValidate>
               <div className="space-y-4">
 
+                {/* Name — required for offline, not used for invite */}
                 {mode === "offline" && (
                   <div>
                     <label className="block text-sm font-semibold text-base-content/80 mb-1">
@@ -262,29 +281,39 @@ const AddNewMember = ({
                   </div>
                 )}
 
-                {mode === "invite" && (
-                  <div>
-                    <label className="block text-sm font-semibold text-base-content/80 mb-1">
-                      Email Address <span className="text-error">*</span>
-                    </label>
-                    <div className="relative">
-                      <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
-                      <input
-                        ref={firstFieldRef}
-                        type="email"
-                        className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
-                          errors.email ? "border-error" : "border-base-300"
-                        } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40`}
-                        placeholder="participant@example.com"
-                        value={form.email}
-                        onChange={(e) => handleChange("email", e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    <FieldError msg={errors.email} />
+                {/* Email — required for invite, optional for offline */}
+                <div>
+                  <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                    Email Address{" "}
+                    {mode === "invite" ? (
+                      <span className="text-error">*</span>
+                    ) : (
+                      <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
+                    )}
+                  </label>
+                  <div className="relative">
+                    <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
+                    <input
+                      ref={mode === "invite" ? firstFieldRef : undefined}
+                      type="email"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
+                        errors.email ? "border-error" : "border-base-300"
+                      } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40`}
+                      placeholder="participant@example.com"
+                      value={form.email}
+                      onChange={(e) => handleChange("email", e.target.value)}
+                      disabled={isLoading}
+                    />
                   </div>
-                )}
+                  {mode === "offline" && (
+                    <p className="text-xs text-base-content/50 mt-1.5">
+                      If they have an existing account with this email, they'll be sent an invite instead of being added directly.
+                    </p>
+                  )}
+                  <FieldError msg={errors.email} />
+                </div>
 
+                {/* Phone — offline only */}
                 {mode === "offline" && (
                   <div>
                     <label className="block text-sm font-semibold text-base-content/80 mb-1">
@@ -305,6 +334,7 @@ const AddNewMember = ({
                   </div>
                 )}
 
+                {/* Amount — shared */}
                 <div>
                   <label className="block text-sm font-semibold text-base-content/80 mb-1">
                     Amount to Pay{" "}
@@ -336,6 +366,7 @@ const AddNewMember = ({
                   <FieldError msg={errors.amountToPay} />
                 </div>
 
+                {/* Message — invite only */}
                 {mode === "invite" && (
                   <div>
                     <label className="block text-sm font-semibold text-base-content/80 mb-1">

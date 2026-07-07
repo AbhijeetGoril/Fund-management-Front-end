@@ -24,9 +24,9 @@ const inviteParticipantApi = async (payload) => {
   return data;
 };
 
-// Offline flow — adds a participant with no account/email
+// Offline flow — adds a participant directly (email optional)
 // POST /api/events/addParticipant
-// Body: { eventId, name, phone, amountToPay, message }
+// Body: { eventId, name, email?, phone, amountToPay, message }
 const addOfflineParticipantApi = async (payload) => {
   const { data } = await axiosInstance.post("/events/addParticipant", payload);
   return data;
@@ -92,6 +92,7 @@ const EventDetails = () => {
       addOfflineParticipant({
         eventId,
         name:        participantData.name,
+        email:       participantData.email || undefined, // optional now
         phone:       participantData.phone || undefined,
         amountToPay: participantData.amountToPay ?? 0,
         message:     participantData.message ?? "",
