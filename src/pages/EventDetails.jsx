@@ -18,17 +18,19 @@ const fetchEventById = async (eventId) => {
 
 // Online flow — sends an email invitation
 // POST /api/invitations/invite
-// Body: { email, type: "event", event, amountToPay, message }
 const inviteParticipantApi = async (payload) => {
+  console.log("🔵 [API CALL] inviteParticipantApi ->", payload);
   const { data } = await axiosInstance.post("/invitations/invite", payload);
+  console.log("🟢 [API RESPONSE] invite ->", data);
   return data;
 };
 
 // Offline flow — adds a participant directly (email optional)
 // POST /api/events/addParticipant
-// Body: { eventId, name, email?, phone, amountToPay, message }
 const addOfflineParticipantApi = async (payload) => {
+  console.log("🔵 [API CALL] addOfflineParticipantApi ->", payload);
   const { data } = await axiosInstance.post("/events/addParticipant", payload);
+  console.log("🟢 [API RESPONSE] offline ->", data);
   return data;
 };
 
@@ -58,19 +60,23 @@ const EventDetails = () => {
   };
 
   const onAddError = (err) => {
+    console.log("🔴 [MUTATION ERROR]", err); // DEBUG
     toast.error(
       err?.response?.data?.message || "Something went wrong. Please try again.",
       { position: "top-right", autoClose: 5000 }
     );
   };
 
-  const { mutate: inviteParticipant, isPending: isInviting } = useMutation({
+  // IMPORTANT: mutateAsync (not mutate) — mutate() does NOT return a
+  // promise, so `await onSubmit(...)` in AddNewMember would resolve
+  // instantly without ever waiting for the real network call.
+  const { mutateAsync: inviteParticipant, isPending: isInviting } = useMutation({
     mutationFn: inviteParticipantApi,
     onSuccess: (data) => onAddSuccess(data, "Invitation sent successfully!"),
     onError: onAddError,
   });
 
-  const { mutate: addOfflineParticipant, isPending: isAddingOffline } = useMutation({
+  const { mutateAsync: addOfflineParticipant, isPending: isAddingOffline } = useMutation({
     mutationFn: addOfflineParticipantApi,
     onSuccess: (data) => onAddSuccess(data, "Participant added successfully!"),
     onError: onAddError,
@@ -79,24 +85,33 @@ const EventDetails = () => {
   const isSubmitting = isInviting || isAddingOffline;
 
   // participantData: { mode: "invite" | "offline", name, email, phone, amountToPay, message }
-  const handleAddParticipant = (participantData) => {
-    if (participantData.mode === "invite") {
-      inviteParticipant({
-        email:       participantData.email,
-        type:        "event",
-        event:       eventId,
-        amountToPay: participantData.amountToPay ?? 0,
-        message:     participantData.message ?? "",
-      });
-    } else {
-      addOfflineParticipant({
+  const handleAddParticipant = async (participantData) => {
+    console.log("🟡 [handleAddParticipant] received ->", participantData);
+
+    try {
+      if (participantData.mode === "invite") {
+        console.log("🟡 Routing to INVITE flow");
+        return await inviteParticipant({
+          email:       participantData.email,
+          type:        "event",
+          event:       eventId,
+          amountToPay: participantData.amountToPay ?? 0,
+          message:     participantData.message ?? "",
+        });
+      }
+
+      console.log("🟡 Routing to OFFLINE flow");
+      return await addOfflineParticipant({
         eventId,
         name:        participantData.name,
-        email:       participantData.email || undefined, // optional now
+        email:       participantData.email || undefined,
         phone:       participantData.phone || undefined,
         amountToPay: participantData.amountToPay ?? 0,
         message:     participantData.message ?? "",
       });
+    } catch (err) {
+      console.log("🔴 [handleAddParticipant] threw ->", err);
+      throw err; // re-throw so AddNewMember's catch block still runs
     }
   };
 

@@ -20,7 +20,6 @@ const AddNewMember = ({
   onSubmit,
   isLoading,
 }) => {
-  // step 1: choose how to add. step 2: fill the matching form.
   const [mode, setMode] = useState(null); // null | "invite" | "offline"
   const [form, setForm] = useState({
     name: "",
@@ -59,6 +58,7 @@ const AddNewMember = ({
   }, [setShowModal, mode]);
 
   const validate = () => {
+    console.log("🟣 [validate] running for mode:", mode, "form:", form); // DEBUG
     const errs = {};
 
     if (mode === "invite") {
@@ -76,7 +76,6 @@ const AddNewMember = ({
       if (!form.name.trim())
         errs.name = "Name is required";
 
-      // Email is optional in offline mode, but if given, validate it
       if (form.email.trim()) {
         if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/.test(form.email))
           errs.email = "Please enter a valid email address";
@@ -100,14 +99,17 @@ const AddNewMember = ({
     if (form.message.length > 300)
       errs.message = "Message must be less than 300 characters";
 
+    console.log("🟣 [validate] result errors:", errs); // DEBUG
     return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("🔴 [handleSubmit] FORM SUBMITTED — mode:", mode); // DEBUG
 
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
+      console.log("🔴 [handleSubmit] blocked by validation:", validationErrors); // DEBUG
       setErrors(validationErrors);
       toast.error("Please fix the errors in the form before submitting.", {
         position: "top-right",
@@ -116,27 +118,32 @@ const AddNewMember = ({
       return;
     }
 
-    const label =
-      mode === "invite" ? form.email.trim() : form.name.trim();
+    const label = mode === "invite" ? form.email.trim() : form.name.trim();
     const toastId = toast.loading(
       mode === "invite" ? "Sending invitation..." : "Adding participant...",
       { position: "top-right" }
     );
 
+    const payload = {
+      mode,
+      name:        form.name.trim() || undefined,
+      email:
+        mode === "invite"
+          ? form.email.trim().toLowerCase()
+          : form.email.trim()
+          ? form.email.trim().toLowerCase()
+          : undefined,
+      phone:       form.phone.trim() || undefined,
+      amountToPay: form.amountToPay ? parseFloat(form.amountToPay) : suggestedAmount || 0,
+      message:     form.message.trim(),
+    };
+
+    console.log("🔴 [handleSubmit] calling onSubmit with:", payload); // DEBUG
+
     try {
-      await onSubmit({
-        mode,
-        name:        form.name.trim() || undefined,
-        email:
-          mode === "invite"
-            ? form.email.trim().toLowerCase()
-            : form.email.trim()
-            ? form.email.trim().toLowerCase()
-            : undefined, // offline: only sent if the admin filled it in
-        phone:       form.phone.trim() || undefined,
-        amountToPay: form.amountToPay ? parseFloat(form.amountToPay) : suggestedAmount || 0,
-        message:     form.message.trim(),
-      });
+      await onSubmit(payload);
+
+      console.log("🟢 [handleSubmit] onSubmit resolved successfully"); // DEBUG
 
       toast.update(toastId, {
         render:    mode === "invite" ? `📨 Invitation sent to ${label}!` : `✅ ${label} added!`,
@@ -145,6 +152,8 @@ const AddNewMember = ({
         autoClose: 3000,
       });
     } catch (err) {
+      console.log("🔴 [handleSubmit] onSubmit threw:", err); // DEBUG
+
       const msg =
         err?.response?.data?.message ||
         err?.message ||
