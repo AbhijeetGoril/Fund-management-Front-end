@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   EnvelopeIcon,
+  UserIcon,
+  PhoneIcon,
   CurrencyRupeeIcon,
   ChatBubbleLeftRightIcon,
   PaperAirplaneIcon,
+  UserPlusIcon,
   XMarkIcon,
   ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -17,25 +20,27 @@ const AddNewMember = ({
   onSubmit,
   isLoading,
 }) => {
+  // step 1: choose how to add. step 2: fill the matching form.
+  const [mode, setMode] = useState(null); // null | "invite" | "offline"
   const [form, setForm] = useState({
+    name: "",
     email: "",
+    phone: "",
     amountToPay: "",
     message: "",
   });
   const [errors, setErrors] = useState({});
 
   const modalRef      = useRef(null);
-  const emailInputRef = useRef(null);
+  const firstFieldRef = useRef(null);
 
-  // ── Suggested amount ──────────────────────────────────────────────
   const suggestedAmount =
     eventTotalBudget && existingMembersCount !== undefined
       ? Math.floor(eventTotalBudget / (existingMembersCount + 1))
       : 0;
 
-  // ── Close on outside click / Escape ──────────────────────────────
   useEffect(() => {
-    emailInputRef.current?.focus();
+    if (mode) firstFieldRef.current?.focus();
 
     const handleOutside = (e) => {
       if (modalRef.current && !modalRef.current.contains(e.target))
@@ -51,22 +56,26 @@ const AddNewMember = ({
       document.removeEventListener("mousedown", handleOutside);
       document.removeEventListener("keydown", handleKey);
     };
-  }, [setShowModal]);
+  }, [setShowModal, mode]);
 
-  // ── Client-side validation ────────────────────────────────────────
   const validate = () => {
     const errs = {};
 
-    if (!form.email.trim())
-      errs.email = "Email is required";
-    else if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/.test(form.email))
-      errs.email = "Please enter a valid email address";
-    else if (
-      members.some(
-        (m) => (m.email ?? "").toLowerCase() === form.email.toLowerCase()
+    if (mode === "invite") {
+      if (!form.email.trim())
+        errs.email = "Email is required";
+      else if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/.test(form.email))
+        errs.email = "Please enter a valid email address";
+      else if (
+        members.some(
+          (m) => (m.email ?? "").toLowerCase() === form.email.toLowerCase()
+        )
       )
-    )
-      errs.email = "A participant with this email already exists";
+        errs.email = "A participant with this email already exists";
+    } else if (mode === "offline") {
+      if (!form.name.trim())
+        errs.name = "Name is required";
+    }
 
     if (form.amountToPay !== "") {
       const amt = parseFloat(form.amountToPay);
@@ -82,7 +91,6 @@ const AddNewMember = ({
     return errs;
   };
 
-  // ── Submit ────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -96,27 +104,28 @@ const AddNewMember = ({
       return;
     }
 
-    const toastId = toast.loading("Sending invitation...", {
-      position: "top-right",
-    });
+    const label = mode === "invite" ? form.email.trim() : form.name.trim();
+    const toastId = toast.loading(
+      mode === "invite" ? "Sending invitation..." : "Adding participant...",
+      { position: "top-right" }
+    );
 
     try {
       await onSubmit({
-        email:       form.email.trim().toLowerCase(),
-        amountToPay: form.amountToPay
-          ? parseFloat(form.amountToPay)
-          : suggestedAmount || 0,
-        message: form.message.trim(),
+        mode,
+        name:        form.name.trim() || undefined,
+        email:       mode === "invite" ? form.email.trim().toLowerCase() : undefined,
+        phone:       form.phone.trim() || undefined,
+        amountToPay: form.amountToPay ? parseFloat(form.amountToPay) : suggestedAmount || 0,
+        message:     form.message.trim(),
       });
 
       toast.update(toastId, {
-        render:    `📨 Invitation sent to ${form.email.trim()}!`,
+        render:    mode === "invite" ? `📨 Invitation sent to ${label}!` : `✅ ${label} added!`,
         type:      "success",
         isLoading: false,
         autoClose: 3000,
       });
-
-      // Modal is closed by EventDetails mutation onSuccess
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -132,13 +141,11 @@ const AddNewMember = ({
     }
   };
 
-  // ── Field change helper ───────────────────────────────────────────
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
-  // ── Reusable inline field error ───────────────────────────────────
   const FieldError = ({ msg }) =>
     msg ? (
       <p className="text-xs text-error mt-1.5 flex items-center gap-1">
@@ -153,13 +160,12 @@ const AddNewMember = ({
         ref={modalRef}
         className="bg-base-100 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4"
       >
-        {/* ── Header ── */}
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-bold text-base-content flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-primary-content">
-              <PaperAirplaneIcon className="h-5 w-5" />
+              <UserPlusIcon className="h-5 w-5" />
             </div>
-            Invite Participant
+            Add Participant
           </h3>
           <button
             onClick={() => setShowModal(false)}
@@ -171,121 +177,219 @@ const AddNewMember = ({
           </button>
         </div>
 
-        <p className="text-sm text-base-content/60 -mt-2">
-          They'll get an email invite to join this event. If they don't have an
-          account yet, they'll be prompted to create one first.
-        </p>
+        {/* ── Step 1: ask which way to add ── */}
+        {!mode && (
+          <div className="space-y-3 pt-2">
+            <p className="text-sm text-base-content/60">
+              How would you like to add this participant?
+            </p>
 
-        {/* ── Form ── */}
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="space-y-4">
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-1">
-                Email Address <span className="text-error">*</span>
-              </label>
-              <div className="relative">
-                <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
-                <input
-                  ref={emailInputRef}
-                  type="email"
-                  className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
-                    errors.email ? "border-error" : "border-base-300"
-                  } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40`}
-                  placeholder="participant@example.com"
-                  value={form.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <FieldError msg={errors.email} />
-            </div>
-
-            {/* Amount */}
-            <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-1">
-                Amount to Pay{" "}
-                <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
-              </label>
-              <div className="relative">
-                <CurrencyRupeeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
-                <input
-                  type="number"
-                  min="1"
-                  className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
-                    errors.amountToPay ? "border-error" : "border-base-300"
-                  } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40`}
-                  placeholder={
-                    suggestedAmount
-                      ? `Suggested: ₹${suggestedAmount.toLocaleString()}`
-                      : "Enter amount"
-                  }
-                  value={form.amountToPay}
-                  onChange={(e) => handleChange("amountToPay", e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              {suggestedAmount > 0 && !form.amountToPay && !errors.amountToPay && (
-                <p className="text-xs text-info mt-1.5 flex items-center gap-1">
-                  💡 Equal split suggestion: ₹{suggestedAmount.toLocaleString()} per person
-                </p>
-              )}
-              <FieldError msg={errors.amountToPay} />
-            </div>
-
-            {/* Message */}
-            <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-1">
-                Message{" "}
-                <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
-              </label>
-              <div className="relative">
-                <ChatBubbleLeftRightIcon className="absolute left-3 top-3 h-5 w-5 text-base-content/40" />
-                <textarea
-                  rows={3}
-                  className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
-                    errors.message ? "border-error" : "border-base-300"
-                  } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40 resize-none`}
-                  placeholder="Add a personal note to the invite..."
-                  value={form.message}
-                  onChange={(e) => handleChange("message", e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <FieldError msg={errors.message} />
-            </div>
-          </div>
-
-          {/* ── Footer buttons ── */}
-          <div className="flex justify-end gap-3 pt-5 mt-4 border-t border-base-200">
             <button
               type="button"
-              onClick={() => setShowModal(false)}
-              disabled={isLoading}
-              className="px-5 py-2.5 text-sm font-medium text-base-content bg-base-200 rounded-xl hover:bg-base-300 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setMode("invite")}
+              className="w-full flex items-start gap-3 p-4 rounded-xl border border-base-300 hover:border-primary hover:bg-primary/5 transition-all duration-200 text-left"
             >
-              Cancel
+              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+                <PaperAirplaneIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-base-content">Send Invitation</p>
+                <p className="text-xs text-base-content/60">
+                  They'll get an email to join and accept. Requires an email address.
+                </p>
+              </div>
             </button>
+
             <button
-              type="submit"
-              disabled={isLoading}
-              className="px-5 py-2.5 text-sm font-medium text-primary-content bg-gradient-to-r from-primary to-secondary rounded-xl hover:shadow-lg transition-all duration-200 flex items-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+              type="button"
+              onClick={() => setMode("offline")}
+              className="w-full flex items-start gap-3 p-4 rounded-xl border border-base-300 hover:border-primary hover:bg-primary/5 transition-all duration-200 text-left"
             >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <PaperAirplaneIcon className="h-4 w-4" />
-                  Send Invite
-                </>
-              )}
+              <div className="p-2 rounded-lg bg-secondary/10 text-secondary shrink-0">
+                <UserIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-base-content">Add Offline User</p>
+                <p className="text-xs text-base-content/60">
+                  No email needed — just name and phone. You track their payment manually.
+                </p>
+              </div>
             </button>
           </div>
-        </form>
+        )}
+
+        {/* ── Step 2: form ── */}
+        {mode && (
+          <>
+            <button
+              type="button"
+              onClick={() => { setMode(null); setErrors({}); }}
+              disabled={isLoading}
+              className="text-xs text-base-content/50 hover:text-base-content flex items-center gap-1 -mt-1"
+            >
+              ← Choose a different method
+            </button>
+
+            <p className="text-sm text-base-content/60 -mt-1">
+              {mode === "invite"
+                ? "They'll get an email invite to join this event."
+                : "Add someone who doesn't have an email or account."}
+            </p>
+
+            <form onSubmit={handleSubmit} noValidate>
+              <div className="space-y-4">
+
+                {mode === "offline" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                      Name <span className="text-error">*</span>
+                    </label>
+                    <div className="relative">
+                      <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
+                      <input
+                        ref={firstFieldRef}
+                        type="text"
+                        className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
+                          errors.name ? "border-error" : "border-base-300"
+                        } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40`}
+                        placeholder="Participant's full name"
+                        value={form.name}
+                        onChange={(e) => handleChange("name", e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <FieldError msg={errors.name} />
+                  </div>
+                )}
+
+                {mode === "invite" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                      Email Address <span className="text-error">*</span>
+                    </label>
+                    <div className="relative">
+                      <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
+                      <input
+                        ref={firstFieldRef}
+                        type="email"
+                        className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
+                          errors.email ? "border-error" : "border-base-300"
+                        } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40`}
+                        placeholder="participant@example.com"
+                        value={form.email}
+                        onChange={(e) => handleChange("email", e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <FieldError msg={errors.email} />
+                  </div>
+                )}
+
+                {mode === "offline" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                      Phone{" "}
+                      <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
+                    </label>
+                    <div className="relative">
+                      <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
+                      <input
+                        type="tel"
+                        className="w-full pl-10 pr-4 py-2.5 bg-base-100 border border-base-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40"
+                        placeholder="Phone number"
+                        value={form.phone}
+                        onChange={(e) => handleChange("phone", e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                    Amount to Pay{" "}
+                    <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
+                  </label>
+                  <div className="relative">
+                    <CurrencyRupeeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
+                    <input
+                      type="number"
+                      min="1"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
+                        errors.amountToPay ? "border-error" : "border-base-300"
+                      } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40`}
+                      placeholder={
+                        suggestedAmount
+                          ? `Suggested: ₹${suggestedAmount.toLocaleString()}`
+                          : "Enter amount"
+                      }
+                      value={form.amountToPay}
+                      onChange={(e) => handleChange("amountToPay", e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  {suggestedAmount > 0 && !form.amountToPay && !errors.amountToPay && (
+                    <p className="text-xs text-info mt-1.5 flex items-center gap-1">
+                      💡 Equal split suggestion: ₹{suggestedAmount.toLocaleString()} per person
+                    </p>
+                  )}
+                  <FieldError msg={errors.amountToPay} />
+                </div>
+
+                {mode === "invite" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                      Message{" "}
+                      <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
+                    </label>
+                    <div className="relative">
+                      <ChatBubbleLeftRightIcon className="absolute left-3 top-3 h-5 w-5 text-base-content/40" />
+                      <textarea
+                        rows={3}
+                        className={`w-full pl-10 pr-4 py-2.5 bg-base-100 border ${
+                          errors.message ? "border-error" : "border-base-300"
+                        } rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content placeholder:text-base-content/40 resize-none`}
+                        placeholder="Add a personal note to the invite..."
+                        value={form.message}
+                        onChange={(e) => handleChange("message", e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <FieldError msg={errors.message} />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-5 mt-4 border-t border-base-200">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  disabled={isLoading}
+                  className="px-5 py-2.5 text-sm font-medium text-base-content bg-base-200 rounded-xl hover:bg-base-300 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-5 py-2.5 text-sm font-medium text-primary-content bg-gradient-to-r from-primary to-secondary rounded-xl hover:shadow-lg transition-all duration-200 flex items-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      {mode === "invite" ? "Sending..." : "Adding..."}
+                    </>
+                  ) : (
+                    <>
+                      <PaperAirplaneIcon className="h-4 w-4" />
+                      {mode === "invite" ? "Send Invite" : "Add Participant"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

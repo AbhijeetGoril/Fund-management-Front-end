@@ -16,10 +16,19 @@ const fetchEventById = async (eventId) => {
   return data;
 };
 
-// Hits the invitation endpoint: POST /api/invitations/invite
-// Body: { email, type, event, amountToPay, message }
+// Online flow — sends an email invitation
+// POST /api/invitations/invite
+// Body: { email, type: "event", event, amountToPay, message }
 const inviteParticipantApi = async (payload) => {
   const { data } = await axiosInstance.post("/invitations/invite", payload);
+  return data;
+};
+
+// Offline flow — adds a participant with no account/email
+// POST /api/events/addParticipant
+// Body: { eventId, name, phone, amountToPay, message }
+const addOfflineParticipantApi = async (payload) => {
+  const { data } = await axiosInstance.post("/events/addParticipant", payload);
   return data;
 };
 
@@ -39,33 +48,55 @@ const EventDetails = () => {
     retry: 2,
   });
 
+  const onAddSuccess = (data, defaultMsg) => {
+    queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+    setShowModal(false);
+    toast.success(data?.message || defaultMsg, {
+      position: "top-right",
+      autoClose: 3000,
+    });
+  };
+
+  const onAddError = (err) => {
+    toast.error(
+      err?.response?.data?.message || "Something went wrong. Please try again.",
+      { position: "top-right", autoClose: 5000 }
+    );
+  };
+
   const { mutate: inviteParticipant, isPending: isInviting } = useMutation({
     mutationFn: inviteParticipantApi,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
-      setShowModal(false);
-      toast.success(data?.message || "Invitation sent successfully!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    },
-    onError: (err) => {
-      toast.error(
-        err?.response?.data?.message || "Could not send invitation. Please try again.",
-        { position: "top-right", autoClose: 5000 }
-      );
-    },
+    onSuccess: (data) => onAddSuccess(data, "Invitation sent successfully!"),
+    onError: onAddError,
   });
 
-  // participantData: { email, amountToPay, message }
+  const { mutate: addOfflineParticipant, isPending: isAddingOffline } = useMutation({
+    mutationFn: addOfflineParticipantApi,
+    onSuccess: (data) => onAddSuccess(data, "Participant added successfully!"),
+    onError: onAddError,
+  });
+
+  const isSubmitting = isInviting || isAddingOffline;
+
+  // participantData: { mode: "invite" | "offline", name, email, phone, amountToPay, message }
   const handleAddParticipant = (participantData) => {
-    inviteParticipant({
-      email:       participantData.email,
-      type:        "event",
-      event:       eventId,
-      amountToPay: participantData.amountToPay ?? 0,
-      message:     participantData.message ?? "",
-    });
+    if (participantData.mode === "invite") {
+      inviteParticipant({
+        email:       participantData.email,
+        type:        "event",
+        event:       eventId,
+        amountToPay: participantData.amountToPay ?? 0,
+        message:     participantData.message ?? "",
+      });
+    } else {
+      addOfflineParticipant({
+        eventId,
+        name:        participantData.name,
+        phone:       participantData.phone || undefined,
+        amountToPay: participantData.amountToPay ?? 0,
+        message:     participantData.message ?? "",
+      });
+    }
   };
 
   if (isLoading) {
@@ -127,7 +158,7 @@ const EventDetails = () => {
           eventTotalBudget={event.budget?.target ?? 0}
           existingMembersCount={totalParticipants}
           onSubmit={handleAddParticipant}
-          isLoading={isInviting}
+          isLoading={isSubmitting}
         />
       )}
 
@@ -145,7 +176,6 @@ const EventDetails = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* ── cover photo passed IN to EventHeader — no separate banner ── */}
         <EventHeader
           event={{
             ...event,
