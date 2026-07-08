@@ -16,21 +16,13 @@ const fetchEventById = async (eventId) => {
   return data;
 };
 
-// Online flow — sends an email invitation
-// POST /api/invitations/invite
 const inviteParticipantApi = async (payload) => {
-  console.log("🔵 [API CALL] inviteParticipantApi ->", payload);
   const { data } = await axiosInstance.post("/invitations/invite", payload);
-  console.log("🟢 [API RESPONSE] invite ->", data);
   return data;
 };
 
-// Offline flow — adds a participant directly (email optional)
-// POST /api/events/addParticipant
 const addOfflineParticipantApi = async (payload) => {
-  console.log("🔵 [API CALL] addOfflineParticipantApi ->", payload);
   const { data } = await axiosInstance.post("/events/addParticipant", payload);
-  console.log("🟢 [API RESPONSE] offline ->", data);
   return data;
 };
 
@@ -60,16 +52,12 @@ const EventDetails = () => {
   };
 
   const onAddError = (err) => {
-    console.log("🔴 [MUTATION ERROR]", err); // DEBUG
     toast.error(
       err?.response?.data?.message || "Something went wrong. Please try again.",
       { position: "top-right", autoClose: 5000 }
     );
   };
 
-  // IMPORTANT: mutateAsync (not mutate) — mutate() does NOT return a
-  // promise, so `await onSubmit(...)` in AddNewMember would resolve
-  // instantly without ever waiting for the real network call.
   const { mutateAsync: inviteParticipant, isPending: isInviting } = useMutation({
     mutationFn: inviteParticipantApi,
     onSuccess: (data) => onAddSuccess(data, "Invitation sent successfully!"),
@@ -84,35 +72,25 @@ const EventDetails = () => {
 
   const isSubmitting = isInviting || isAddingOffline;
 
-  // participantData: { mode: "invite" | "offline", name, email, phone, amountToPay, message }
   const handleAddParticipant = async (participantData) => {
-    console.log("🟡 [handleAddParticipant] received ->", participantData);
-
-    try {
-      if (participantData.mode === "invite") {
-        console.log("🟡 Routing to INVITE flow");
-        return await inviteParticipant({
-          email:       participantData.email,
-          type:        "event",
-          event:       eventId,
-          amountToPay: participantData.amountToPay ?? 0,
-          message:     participantData.message ?? "",
-        });
-      }
-
-      console.log("🟡 Routing to OFFLINE flow");
-      return await addOfflineParticipant({
-        eventId,
-        name:        participantData.name,
-        email:       participantData.email || undefined,
-        phone:       participantData.phone || undefined,
+    if (participantData.mode === "invite") {
+      return await inviteParticipant({
+        email:       participantData.email,
+        type:        "event",
+        event:       eventId,
         amountToPay: participantData.amountToPay ?? 0,
         message:     participantData.message ?? "",
       });
-    } catch (err) {
-      console.log("🔴 [handleAddParticipant] threw ->", err);
-      throw err; // re-throw so AddNewMember's catch block still runs
     }
+
+    return await addOfflineParticipant({
+      eventId,
+      name:        participantData.name,
+      email:       participantData.email || undefined,
+      phone:       participantData.phone || undefined,
+      amountToPay: participantData.amountToPay ?? 0,
+      message:     participantData.message ?? "",
+    });
   };
 
   if (isLoading) {
@@ -154,14 +132,17 @@ const EventDetails = () => {
     );
   }
 
-  const { event, participants, summary } = data;
+  // NOTE: backend now returns BOTH `members` (everyone, all roles) and
+  // `participants` (role === "participant" only). Use `members` for the
+  // filterable Members tab, and `participants` for payment-focused stats.
+  const { event, members, participants, summary } = data;
 
   const totalDonations       = summary?.totalAmountPaid    ?? 0;
   const totalRemainingAmount = summary?.totalPendingAmount ?? 0;
   const totalParticipants    = summary?.totalParticipants  ?? 0;
-  const paidParticipants     = participants.filter((p) => p.paymentStatus === "paid").length;
-  const pendingParticipants  = participants.filter((p) => p.paymentStatus === "pending").length;
-  const partialParticipants  = participants.filter((p) => p.paymentStatus === "partial").length;
+  const paidParticipants     = members.filter((m) => m.paymentStatus === "paid").length;
+  const pendingParticipants  = members.filter((m) => m.paymentStatus === "pending").length;
+  const partialParticipants  = members.filter((m) => m.paymentStatus === "partial").length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
@@ -169,10 +150,10 @@ const EventDetails = () => {
 
       {showModal && (
         <AddNewMember
-          members={participants}
+          members={members}
           setShowModal={setShowModal}
           eventTotalBudget={event.budget?.target ?? 0}
-          existingMembersCount={totalParticipants}
+          existingMembersCount={summary?.totalMembers ?? 0}
           onSubmit={handleAddParticipant}
           isLoading={isSubmitting}
         />
@@ -204,7 +185,7 @@ const EventDetails = () => {
         />
 
         <StatsCards
-          members={participants}
+          members={members}
           paidMembers={paidParticipants}
           totalDonations={totalDonations}
           pendingPayments={pendingParticipants}
@@ -236,7 +217,7 @@ const EventDetails = () => {
             {activeTab === "members" && (
               <MembersTab
                 event={event}
-                members={participants}
+                members={members}
                 onAddMember={() => setShowModal(true)}
               />
             )}
