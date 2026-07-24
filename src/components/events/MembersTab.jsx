@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserGroupIcon, UserPlusIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, UserPlusIcon, PhoneIcon } from "@heroicons/react/24/outline";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -62,41 +62,60 @@ const MembersTab = ({ event, members = [], onAddMember }) => {
         </div>
       ) : (
         <div className="space-y-2">
-          {filteredMembers.map((m) => (
-            <div
-              key={m._id}
-              className="flex items-center justify-between p-4 rounded-xl border border-base-200 hover:border-base-300 transition-all duration-200"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-sm font-semibold text-primary shrink-0">
-                  {(m.user?.name || m.name || "?").charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-medium text-base-content">
-                    {m.user?.name || m.name || "Unnamed"}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-base-content/50">
-                    <span className="capitalize">{m.role}</span>
-                    <span>·</span>
-                    <span>{m.user?.email || m.email || "No email"}</span>
+          {filteredMembers.map((m) => {
+            const displayEmail = m.user?.email || m.email;
+            const displayPhone = m.phone; // only ever set for offline/guest members
+
+            return (
+              <div
+                key={m._id}
+                className="flex items-center justify-between p-4 rounded-xl border border-base-200 hover:border-base-300 transition-all duration-200"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-sm font-semibold text-primary shrink-0">
+                    {(m.user?.name || m.name || "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-medium text-base-content">
+                      {m.user?.name || m.name || "Unnamed"}
+                    </p>
+                    <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-base-content/50">
+                      <span className="capitalize">{m.role}</span>
+                      {displayEmail && (
+                        <>
+                          <span>·</span>
+                          <span>{displayEmail}</span>
+                        </>
+                      )}
+                      {displayPhone && (
+                        <>
+                          <span>·</span>
+                          <span className="flex items-center gap-1">
+                            <PhoneIcon className="h-3 w-3" />
+                            {displayPhone}
+                          </span>
+                        </>
+                      )}
+                      {!displayEmail && !displayPhone && <span>No contact info</span>}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="text-right">
-                <p className="text-sm font-semibold text-base-content">
-                  ₹{(m.amountPaid ?? 0).toLocaleString()} / ₹{(m.amountToPay ?? 0).toLocaleString()}
-                </p>
-                <span
-                  className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                    paymentBadgeClass[m.paymentStatus] || "bg-base-200 text-base-content/60"
-                  }`}
-                >
-                  {m.paymentStatus || "pending"}
-                </span>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-base-content">
+                    ₹{(m.amountPaid ?? 0).toLocaleString()} / ₹{(m.amountToPay ?? 0).toLocaleString()}
+                  </p>
+                  <span
+                    className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                      paymentBadgeClass[m.paymentStatus] || "bg-base-200 text-base-content/60"
+                    }`}
+                  >
+                    {m.paymentStatus || "pending"}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
