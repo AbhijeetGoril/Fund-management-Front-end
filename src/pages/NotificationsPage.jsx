@@ -174,7 +174,7 @@ const NotificationsPage = () => {
 
                     <p className="text-sm text-base-content/60 mt-0.5">{n.message}</p>
 
-                    {n.type === "invitation_received" && n.relatedInvitation && (
+                    {n.type === "invitation_received" && n.relatedInvitation.status === "pending" && n.relatedInvitation && (
                       <div className="flex gap-2 mt-3">
                         <button
                           onClick={(e) => {
