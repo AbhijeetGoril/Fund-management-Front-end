@@ -12,6 +12,7 @@ import EventSpends from "./pages/EventSpends";
 import { useSelector } from "react-redux";
 import { getToken } from "./utils/getToken";
 import ForgotPassword from "./pages/auth/ForgotPassword";
+import NotificationsPage from "./pages/NotificationsPage";
 
 function App() {
   const  token=async()=>{
@@ -34,7 +35,7 @@ function App() {
         <Route path="/events/:eventId/spends" element={<EventSpends />} />
         <Route path="/society/:id" element={<SocietyDetails />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
-      
+        <Route path="/notifications" element={<NotificationsPage />} />
       </Routes>
       </div>
      
