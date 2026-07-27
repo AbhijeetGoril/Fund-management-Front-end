@@ -5,9 +5,10 @@ import UserAvatar from "./UserAvatar";
 import ProfileDropdown from "./ProfileDropdown";
 import MobileMenu from "./MobileMenu";
 import ThemeSelector from "./ThemeSeletor";
+import NotificationBell from "../../components/notifications/NotificationBell";
 import { axiosInstance } from "../../lib/axois";
 import { useDispatch } from "react-redux";
-import { logout } from '../../redux/slices/authSlice';
+import { logout } from "../../redux/slices/authSlice";
 
 const Navbar = ({
   title = "Society Manager",
@@ -24,13 +25,11 @@ const Navbar = ({
   const [desktopDropdownOpen, setDesktopDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Refs
   const desktopDropdownRef = useRef(null);
   const desktopButtonRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const mobileButtonRef = useRef(null);
 
-  // Fetch current user from backend
   const fetchCurrentUser = useCallback(async () => {
     try {
       const response = await axiosInstance.get("/auth/me");
@@ -38,7 +37,6 @@ const Navbar = ({
         setUser(response.data.user);
       }
     } catch (error) {
-      // If 401 (not logged in), user stays null
       if (error.response?.status !== 401) {
         console.error("Error fetching user:", error);
       }
@@ -47,7 +45,6 @@ const Navbar = ({
     }
   }, []);
 
-  // Auth listener - check on mount
   useEffect(() => {
     fetchCurrentUser();
   }, [fetchCurrentUser]);
@@ -63,25 +60,28 @@ const Navbar = ({
       setUser(null);
       dispatch(logout());
       closeAll();
-      // Optional: Redirect to login page after logout
-      // window.location.href = "/login";
     } catch (error) {
       console.error("Logout failed:", error);
     }
-  }, [closeAll]);
+  }, [dispatch, closeAll]);
 
-  // Outside click + Escape
   useEffect(() => {
     const onPointerDown = (e) => {
       const t = e.target;
 
       const clickDeskBtn = desktopButtonRef.current?.contains(t);
       const clickDeskMenu = desktopDropdownRef.current?.contains(t);
-      if (!clickDeskBtn && !clickDeskMenu) setDesktopDropdownOpen(false);
+
+      if (!clickDeskBtn && !clickDeskMenu) {
+        setDesktopDropdownOpen(false);
+      }
 
       const clickMobBtn = mobileButtonRef.current?.contains(t);
       const clickMobMenu = mobileMenuRef.current?.contains(t);
-      if (!clickMobBtn && !clickMobMenu) setMobileMenuOpen(false);
+
+      if (!clickMobBtn && !clickMobMenu) {
+        setMobileMenuOpen(false);
+      }
     };
 
     const onKeyDown = (e) => {
@@ -91,6 +91,7 @@ const Navbar = ({
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("touchstart", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
+
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("touchstart", onPointerDown);
@@ -98,7 +99,6 @@ const Navbar = ({
     };
   }, [closeAll]);
 
-  // Show loading state
   if (loading) {
     return (
       <nav className="bg-base-100 p-4 border-b border-base-300 shadow-sm sticky top-0 z-50">
@@ -117,12 +117,12 @@ const Navbar = ({
       <div className="flex justify-between items-center">
         <Logo homeTo={homeTo} logo={logo} title={title} onClick={closeAll} />
 
-        {/* Desktop */}
         <div className="hidden md:flex items-center space-x-6">
           <NavLinks links={links} />
 
-          {/* Theme Selector */}
           <ThemeSelector />
+
+          {user && <NotificationBell />}
 
           {user ? (
             <div className="relative">
@@ -137,13 +137,13 @@ const Navbar = ({
                 aria-haspopup="menu"
                 aria-expanded={desktopDropdownOpen}
               >
-                <UserAvatar 
+                <UserAvatar
                   user={{
                     photoURL: user.profilePicture,
                     displayName: user.name || user.email,
                     email: user.email,
-                  }} 
-                  size="md" 
+                  }}
+                  size="md"
                 />
               </button>
 
@@ -167,6 +167,7 @@ const Navbar = ({
               >
                 Login
               </a>
+
               <a
                 href="/signup"
                 className="px-4 py-2 bg-primary text-primary-content rounded-lg hover:bg-primary/90 font-medium transition-colors shadow-sm"
@@ -177,12 +178,16 @@ const Navbar = ({
           )}
         </div>
 
-        {/* Mobile controls */}
         <div className="flex items-center space-x-3 md:hidden">
-          {/* Theme Selector for mobile */}
           <div className="mr-2">
             <ThemeSelector />
           </div>
+
+          {user && (
+            <div className="mr-1">
+              <NotificationBell />
+            </div>
+          )}
 
           {user && (
             <button
@@ -192,15 +197,16 @@ const Navbar = ({
               aria-haspopup="menu"
               aria-expanded={desktopDropdownOpen}
             >
-              <UserAvatar 
+              <UserAvatar
                 user={{
                   photoURL: user.profilePicture,
                   displayName: user.name || user.email,
-                }} 
-                size="sm" 
+                }}
+                size="sm"
               />
             </button>
           )}
+
           <button
             ref={mobileButtonRef}
             onClick={() => setMobileMenuOpen((s) => !s)}
@@ -220,11 +226,15 @@ const Navbar = ({
       <MobileMenu
         ref={mobileMenuRef}
         open={mobileMenuOpen}
-        user={user ? {
-          ...user,
-          displayName: user.name || user.email,
-          photoURL: user.profilePicture,
-        } : null}
+        user={
+          user
+            ? {
+                ...user,
+                displayName: user.name || user.email,
+                photoURL: user.profilePicture,
+              }
+            : null
+        }
         links={links}
         onClose={() => setMobileMenuOpen(false)}
         onLogout={onLogout}
