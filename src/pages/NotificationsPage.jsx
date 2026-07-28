@@ -9,11 +9,22 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   InboxIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import { BellIcon as BellSolid } from "@heroicons/react/24/solid";
 
 const fetchNotifications = async () => {
   const { data } = await axiosInstance.get("/notification");
+  return data;
+};
+
+const markAsReadApi = async (id) => {
+  const { data } = await axiosInstance.patch(`/notification/${id}/read`);
+  return data;
+};
+
+const markAllAsReadApi = async () => {
+  const { data } = await axiosInstance.patch("/notification/read-all");
   return data;
 };
 
@@ -39,7 +50,7 @@ const timeAgo = (dateString) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-const TABS = [
+const TYPE_TABS = [
   { key: "all", label: "All" },
   {
     key: "invitations",
@@ -79,10 +90,12 @@ const SkeletonRow = () => (
 );
 
 const NotificationsPage = () => {
-  const [activeTab, setActiveTab] = useState("all");
+  const [readTab, setReadTab] = useState("unread"); // "unread" | "all"
+  const [typeTab, setTypeTab] = useState("all");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Single fetch — everything else is filtered client-side below
   const { data, isLoading, isError } = useQuery({
     queryKey: ["notifications"],
     queryFn: fetchNotifications,
@@ -92,6 +105,23 @@ const NotificationsPage = () => {
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
     queryClient.invalidateQueries({ queryKey: ["event"] });
   };
+
+  const { mutate: markAsRead } = useMutation({
+    mutationFn: markAsReadApi,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
+  const { mutate: markAllAsRead, isPending: isMarkingAll } = useMutation({
+    mutationFn: markAllAsReadApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success("All notifications marked as read.", { position: "top-right" });
+    },
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || "Could not mark all as read.", {
+        position: "top-right",
+      }),
+  });
 
   const { mutateAsync: acceptInvitation, isPending: isAccepting } = useMutation({
     mutationFn: acceptInvitationApi,
@@ -117,23 +147,26 @@ const NotificationsPage = () => {
       }),
   });
 
-  const notifications = data?.notifications ?? [];
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const allNotifications = data?.notifications ?? [];
+  const unreadCount = allNotifications.filter((n) => !n.isRead).length;
+
+  // Client-side filtering — no extra API calls when switching tabs
+  const readFiltered =
+    readTab === "unread" ? allNotifications.filter((n) => !n.isRead) : allNotifications;
 
   const filteredNotifications =
-    activeTab === "all"
-      ? notifications
-      : notifications.filter((n) =>
-          TABS.find((t) => t.key === activeTab)?.types?.includes(n.type)
+    typeTab === "all"
+      ? readFiltered
+      : readFiltered.filter((n) =>
+          TYPE_TABS.find((t) => t.key === typeTab)?.types?.includes(n.type)
         );
 
   const countFor = (tab) =>
-    tab.key === "all"
-      ? notifications.length
-      : notifications.filter((n) => tab.types?.includes(n.type)).length;
+    tab.key === "all" ? readFiltered.length : readFiltered.filter((n) => tab.types?.includes(n.type)).length;
 
-  const handleClick = (n) => {
-    if (n.type === "invitation_received") return;
+  const handleRowClick = (n) => {
+    if (!n.isRead) markAsRead(n._id);
+    if (n.type === "invitation_received") return; // stays for its own buttons
     if (n.link) navigate(n.link);
   };
 
@@ -157,25 +190,55 @@ const NotificationsPage = () => {
             </span>
           )}
         </div>
-        <p className="text-sm text-base-content/50 mb-6">
+        <p className="text-sm text-base-content/50 mb-5">
           Stay up to date on invitations, events, and payments.
         </p>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          {TABS.map((tab) => (
+        {/* Unread / All toggle */}
+        <div className="flex gap-2 mb-3">
+          {["unread", "all"].map((key) => (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                activeTab === tab.key
+              key={key}
+              onClick={() => setReadTab(key)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all duration-200 ${
+                readTab === key
                   ? "bg-primary text-primary-content shadow-sm"
                   : "bg-base-200 text-base-content/60 hover:bg-base-300"
               }`}
             >
-              {tab.label} <span className="opacity-70">({countFor(tab)})</span>
+              {key}
             </button>
           ))}
+        </div>
+
+        {/* Type tabs + Mark all as read */}
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
+            {TYPE_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setTypeTab(tab.key)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                  typeTab === tab.key
+                    ? "bg-base-300 text-base-content font-semibold"
+                    : "bg-base-200 text-base-content/50 hover:bg-base-300"
+                }`}
+              >
+                {tab.label} <span className="opacity-70">({countFor(tab)})</span>
+              </button>
+            ))}
+          </div>
+
+          {unreadCount > 0 && (
+            <button
+              onClick={() => markAllAsRead()}
+              disabled={isMarkingAll}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium bg-base-200 text-base-content rounded-lg hover:bg-base-300 disabled:opacity-50 transition-all"
+            >
+              <CheckIcon className="h-4 w-4" />
+              Mark all as read
+            </button>
+          )}
         </div>
 
         {/* List */}
@@ -193,12 +256,13 @@ const NotificationsPage = () => {
             </div>
           ) : filteredNotifications.length === 0 ? (
             <div className="text-center py-20">
-              <InboxIcon className="h-12 w-12 mx-auto text-base-content/15 mb-3" />
-              <p className="text-base-content/50 font-medium">Nothing here yet</p>
-              <p className="text-xs text-base-content/35 mt-1">
-                {activeTab === "all"
-                  ? "You're all caught up."
-                  : `No ${activeTab} notifications right now.`}
+              {readTab === "unread" ? (
+                <CheckIcon className="h-12 w-12 mx-auto text-base-content/15 mb-3" />
+              ) : (
+                <InboxIcon className="h-12 w-12 mx-auto text-base-content/15 mb-3" />
+              )}
+              <p className="text-base-content/50 font-medium">
+                {readTab === "unread" ? "You're all caught up" : "Nothing here yet"}
               </p>
             </div>
           ) : (
@@ -217,10 +281,10 @@ const NotificationsPage = () => {
                 return (
                   <div
                     key={n._id}
-                    onClick={() => handleClick(n)}
-                    className={`p-4 flex gap-3 transition-colors relative ${
-                      !n.isRead ? "bg-primary/[0.04]" : ""
-                    } ${n.type !== "invitation_received" && n.link ? "cursor-pointer hover:bg-base-200/50" : ""}`}
+                    onClick={() => handleRowClick(n)}
+                    className={`p-4 flex gap-3 transition-colors relative cursor-pointer ${
+                      !n.isRead ? "bg-primary/[0.04] hover:bg-primary/[0.07]" : "hover:bg-base-200/40"
+                    }`}
                   >
                     {!n.isRead && (
                       <span className="absolute left-1.5 top-6 h-1.5 w-1.5 rounded-full bg-primary" />
@@ -252,8 +316,40 @@ const NotificationsPage = () => {
                         {n.message}
                       </p>
 
+                      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                        {!n.isRead && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(n._id);
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-base-200 text-base-content/70 rounded-lg hover:bg-base-300 transition-all"
+                          >
+                            <CheckIcon className="h-3 w-3" />
+                            Mark read
+                          </button>
+                        )}
+
+                        {hasResolvedInvite && (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+                              n.relatedInvitation.status === "accepted"
+                                ? "bg-success/10 text-success"
+                                : "bg-error/10 text-error"
+                            }`}
+                          >
+                            {n.relatedInvitation.status === "accepted" ? (
+                              <CheckCircleIcon className="h-3.5 w-3.5" />
+                            ) : (
+                              <XCircleIcon className="h-3.5 w-3.5" />
+                            )}
+                            {n.relatedInvitation.status}
+                          </span>
+                        )}
+                      </div>
+
                       {hasPendingInvite && (
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex gap-2 mt-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -277,23 +373,6 @@ const NotificationsPage = () => {
                             Reject
                           </button>
                         </div>
-                      )}
-
-                      {hasResolvedInvite && (
-                        <span
-                          className={`inline-flex items-center gap-1 mt-2.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
-                            n.relatedInvitation.status === "accepted"
-                              ? "bg-success/10 text-success"
-                              : "bg-error/10 text-error"
-                          }`}
-                        >
-                          {n.relatedInvitation.status === "accepted" ? (
-                            <CheckCircleIcon className="h-3.5 w-3.5" />
-                          ) : (
-                            <XCircleIcon className="h-3.5 w-3.5" />
-                          )}
-                          {n.relatedInvitation.status}
-                        </span>
                       )}
                     </div>
                   </div>
