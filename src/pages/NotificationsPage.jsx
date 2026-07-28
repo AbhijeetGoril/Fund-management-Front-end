@@ -4,7 +4,13 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import { axiosInstance } from "../lib/axois";
 import { toast } from "react-toastify";
-import { BellIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import {
+  BellIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  InboxIcon,
+} from "@heroicons/react/24/outline";
+import { BellIcon as BellSolid } from "@heroicons/react/24/solid";
 
 const fetchNotifications = async () => {
   const { data } = await axiosInstance.get("/notification");
@@ -21,7 +27,6 @@ const rejectInvitationApi = async (invitationId) => {
   return data;
 };
 
-// Simple relative-time formatter — no external package needed
 const timeAgo = (dateString) => {
   const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
   if (seconds < 60) return "just now";
@@ -34,25 +39,44 @@ const timeAgo = (dateString) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-// Group notification types into tabs
 const TABS = [
   { key: "all", label: "All" },
-  { key: "invitations", label: "Invitations", types: ["invitation_received", "invitation_accepted", "invitation_rejected"] },
-  { key: "events", label: "Events", types: ["participant_added", "event_created", "event_updated", "event_reminder"] },
+  {
+    key: "invitations",
+    label: "Invitations",
+    types: ["invitation_received", "invitation_accepted", "invitation_rejected"],
+  },
+  {
+    key: "events",
+    label: "Events",
+    types: ["participant_added", "event_created", "event_updated", "event_reminder"],
+  },
   { key: "payments", label: "Payments", types: ["donation_received", "expense_added"] },
 ];
 
-const typeIcon = {
-  invitation_received: "🔴",
-  invitation_accepted: "🟢",
-  invitation_rejected: "⚪",
-  participant_added: "👤",
-  event_created: "📅",
-  event_updated: "📅",
-  event_reminder: "⏰",
-  donation_received: "💰",
-  expense_added: "💸",
+const typeStyles = {
+  invitation_received: { icon: "✉️", ring: "ring-primary/20", bg: "bg-primary/10" },
+  invitation_accepted: { icon: "✅", ring: "ring-success/20", bg: "bg-success/10" },
+  invitation_rejected: { icon: "❌", ring: "ring-error/20", bg: "bg-error/10" },
+  participant_added: { icon: "👤", ring: "ring-secondary/20", bg: "bg-secondary/10" },
+  event_created: { icon: "📅", ring: "ring-info/20", bg: "bg-info/10" },
+  event_updated: { icon: "📅", ring: "ring-info/20", bg: "bg-info/10" },
+  event_reminder: { icon: "⏰", ring: "ring-warning/20", bg: "bg-warning/10" },
+  donation_received: { icon: "💰", ring: "ring-success/20", bg: "bg-success/10" },
+  expense_added: { icon: "💸", ring: "ring-error/20", bg: "bg-error/10" },
 };
+
+const defaultStyle = { icon: "🔔", ring: "ring-base-300", bg: "bg-base-200" };
+
+const SkeletonRow = () => (
+  <div className="p-4 flex gap-3 animate-pulse">
+    <div className="h-10 w-10 rounded-full bg-base-300 shrink-0" />
+    <div className="flex-1 space-y-2">
+      <div className="h-3.5 w-1/3 bg-base-300 rounded" />
+      <div className="h-3 w-2/3 bg-base-300 rounded" />
+    </div>
+  </div>
+);
 
 const NotificationsPage = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -64,34 +88,37 @@ const NotificationsPage = () => {
     queryFn: fetchNotifications,
   });
 
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["event"] });
+  };
+
   const { mutateAsync: acceptInvitation, isPending: isAccepting } = useMutation({
     mutationFn: acceptInvitationApi,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["event"] });
+      invalidateAll();
       toast.success(data?.message || "Invitation accepted!", { position: "top-right" });
     },
-    onError: (err) => {
+    onError: (err) =>
       toast.error(err?.response?.data?.message || "Could not accept invitation.", {
         position: "top-right",
-      });
-    },
+      }),
   });
 
   const { mutateAsync: rejectInvitation, isPending: isRejecting } = useMutation({
     mutationFn: rejectInvitationApi,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      invalidateAll();
       toast.success(data?.message || "Invitation rejected.", { position: "top-right" });
     },
-    onError: (err) => {
+    onError: (err) =>
       toast.error(err?.response?.data?.message || "Could not reject invitation.", {
         position: "top-right",
-      });
-    },
+      }),
   });
 
   const notifications = data?.notifications ?? [];
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const filteredNotifications =
     activeTab === "all"
@@ -100,13 +127,13 @@ const NotificationsPage = () => {
           TABS.find((t) => t.key === activeTab)?.types?.includes(n.type)
         );
 
-  const countFor = (tab) => {
-    if (tab.key === "all") return notifications.length;
-    return notifications.filter((n) => tab.types?.includes(n.type)).length;
-  };
+  const countFor = (tab) =>
+    tab.key === "all"
+      ? notifications.length
+      : notifications.filter((n) => tab.types?.includes(n.type)).length;
 
   const handleClick = (n) => {
-    if (n.type === "invitation_received") return; // has its own Accept/Reject buttons
+    if (n.type === "invitation_received") return;
     if (n.link) navigate(n.link);
   };
 
@@ -115,12 +142,24 @@ const NotificationsPage = () => {
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-base-content flex items-center gap-2">
-            <BellIcon className="h-6 w-6" />
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-2xl font-bold text-base-content flex items-center gap-2.5">
+            {unreadCount > 0 ? (
+              <BellSolid className="h-6 w-6 text-primary" />
+            ) : (
+              <BellIcon className="h-6 w-6" />
+            )}
             Notifications
           </h1>
+          {unreadCount > 0 && (
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+              {unreadCount} unread
+            </span>
+          )}
         </div>
+        <p className="text-sm text-base-content/50 mb-6">
+          Stay up to date on invitations, events, and payments.
+        </p>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
@@ -130,7 +169,7 @@ const NotificationsPage = () => {
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
                 activeTab === tab.key
-                  ? "bg-primary text-primary-content"
+                  ? "bg-primary text-primary-content shadow-sm"
                   : "bg-base-200 text-base-content/60 hover:bg-base-300"
               }`}
             >
@@ -142,66 +181,124 @@ const NotificationsPage = () => {
         {/* List */}
         <div className="bg-base-100/80 backdrop-blur-sm rounded-2xl shadow-lg border border-base-200/50 overflow-hidden">
           {isLoading ? (
-            <p className="text-center text-base-content/50 py-16">Loading...</p>
+            <div className="divide-y divide-base-200">
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </div>
           ) : isError ? (
-            <p className="text-center text-error py-16">Failed to load notifications.</p>
-          ) : filteredNotifications.length === 0 ? (
             <div className="text-center py-16">
-              <BellIcon className="h-10 w-10 mx-auto text-base-content/20 mb-3" />
-              <p className="text-base-content/50">No notifications here yet.</p>
+              <p className="text-error font-medium">Failed to load notifications.</p>
+              <p className="text-xs text-base-content/40 mt-1">Please try refreshing the page.</p>
+            </div>
+          ) : filteredNotifications.length === 0 ? (
+            <div className="text-center py-20">
+              <InboxIcon className="h-12 w-12 mx-auto text-base-content/15 mb-3" />
+              <p className="text-base-content/50 font-medium">Nothing here yet</p>
+              <p className="text-xs text-base-content/35 mt-1">
+                {activeTab === "all"
+                  ? "You're all caught up."
+                  : `No ${activeTab} notifications right now.`}
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-base-200">
-              {filteredNotifications.map((n) => (
-                <div
-                  key={n._id}
-                  onClick={() => handleClick(n)}
-                  className={`p-4 flex gap-3 transition-colors ${
-                    !n.isRead ? "bg-primary/5" : ""
-                  } ${n.type !== "invitation_received" && n.link ? "cursor-pointer hover:bg-base-200/50" : ""}`}
-                >
-                  <span className="text-xl shrink-0 mt-0.5">{typeIcon[n.type] || "🔔"}</span>
+              {filteredNotifications.map((n) => {
+                const style = typeStyles[n.type] || defaultStyle;
+                const hasPendingInvite =
+                  n.type === "invitation_received" &&
+                  n.relatedInvitation &&
+                  n.relatedInvitation.status === "pending";
+                const hasResolvedInvite =
+                  n.type === "invitation_received" &&
+                  n.relatedInvitation &&
+                  n.relatedInvitation.status !== "pending";
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className={`text-sm ${!n.isRead ? "font-semibold text-base-content" : "text-base-content/80"}`}>
-                        {n.title}
-                      </p>
-                      <span className="text-xs text-base-content/40 shrink-0">
-                        {timeAgo(n.createdAt)}
-                      </span>
+                return (
+                  <div
+                    key={n._id}
+                    onClick={() => handleClick(n)}
+                    className={`p-4 flex gap-3 transition-colors relative ${
+                      !n.isRead ? "bg-primary/[0.04]" : ""
+                    } ${n.type !== "invitation_received" && n.link ? "cursor-pointer hover:bg-base-200/50" : ""}`}
+                  >
+                    {!n.isRead && (
+                      <span className="absolute left-1.5 top-6 h-1.5 w-1.5 rounded-full bg-primary" />
+                    )}
+
+                    <div
+                      className={`h-10 w-10 rounded-full flex items-center justify-center text-lg shrink-0 ring-4 ${style.bg} ${style.ring}`}
+                    >
+                      {style.icon}
                     </div>
 
-                    <p className="text-sm text-base-content/60 mt-0.5">{n.message}</p>
-
-                    {n.type === "invitation_received" && n.relatedInvitation.status === "pending" && n.relatedInvitation && (
-                      <div className="flex gap-2 mt-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            acceptInvitation(n.relatedInvitation);
-                          }}
-                          disabled={isAccepting || isRejecting}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-primary text-primary-content rounded-lg hover:shadow disabled:opacity-50 transition-all"
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p
+                          className={`text-sm leading-snug ${
+                            !n.isRead
+                              ? "font-semibold text-base-content"
+                              : "font-medium text-base-content/80"
+                          }`}
                         >
-                          <CheckCircleIcon className="h-3.5 w-3.5" />
-                          Accept
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            rejectInvitation(n.relatedInvitation);
-                          }}
-                          disabled={isAccepting || isRejecting}
-                          className="px-3 py-1.5 text-xs font-medium bg-base-200 text-base-content rounded-lg hover:bg-base-300 disabled:opacity-50 transition-all"
-                        >
-                          Reject
-                        </button>
+                          {n.title}
+                        </p>
+                        <span className="text-xs text-base-content/40 shrink-0 whitespace-nowrap">
+                          {timeAgo(n.createdAt)}
+                        </span>
                       </div>
-                    )}
+
+                      <p className="text-sm text-base-content/60 mt-0.5 leading-snug">
+                        {n.message}
+                      </p>
+
+                      {hasPendingInvite && (
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              acceptInvitation(n.relatedInvitation._id);
+                            }}
+                            disabled={isAccepting || isRejecting}
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-primary text-primary-content rounded-lg hover:shadow-md active:scale-95 disabled:opacity-50 transition-all duration-150"
+                          >
+                            <CheckCircleIcon className="h-4 w-4" />
+                            Accept
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              rejectInvitation(n.relatedInvitation._id);
+                            }}
+                            disabled={isAccepting || isRejecting}
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-base-200 text-base-content rounded-lg hover:bg-base-300 active:scale-95 disabled:opacity-50 transition-all duration-150"
+                          >
+                            <XCircleIcon className="h-4 w-4" />
+                            Reject
+                          </button>
+                        </div>
+                      )}
+
+                      {hasResolvedInvite && (
+                        <span
+                          className={`inline-flex items-center gap-1 mt-2.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+                            n.relatedInvitation.status === "accepted"
+                              ? "bg-success/10 text-success"
+                              : "bg-error/10 text-error"
+                          }`}
+                        >
+                          {n.relatedInvitation.status === "accepted" ? (
+                            <CheckCircleIcon className="h-3.5 w-3.5" />
+                          ) : (
+                            <XCircleIcon className="h-3.5 w-3.5" />
+                          )}
+                          {n.relatedInvitation.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
