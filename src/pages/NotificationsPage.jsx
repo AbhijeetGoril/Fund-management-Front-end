@@ -383,7 +383,7 @@ const NotificationsPage = () => {
         </div>
       </div>
     </div>
-  );
+    );
 };
 
 export default NotificationsPage;
