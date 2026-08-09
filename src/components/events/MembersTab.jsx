@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { UserGroupIcon, UserPlusIcon, PhoneIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon } from "@heroicons/react/24/outline";
+import RecordPaymentModal from "./RecordPaymentModal";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -16,6 +17,7 @@ const paymentBadgeClass = {
 
 const MembersTab = ({ event, members = [], onAddMember }) => {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [payingMember, setPayingMember] = useState(null); // holds the member being paid, or null
 
   const filteredMembers =
     activeFilter === "all"
@@ -27,6 +29,14 @@ const MembersTab = ({ event, members = [], onAddMember }) => {
 
   return (
     <div>
+      {payingMember && (
+        <RecordPaymentModal
+          eventId={event._id}
+          member={payingMember}
+          onClose={() => setPayingMember(null)}
+        />
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
         <div className="flex gap-2 flex-wrap">
           {FILTERS.map((f) => (
@@ -64,19 +74,21 @@ const MembersTab = ({ event, members = [], onAddMember }) => {
         <div className="space-y-2">
           {filteredMembers.map((m) => {
             const displayEmail = m.user?.email || m.email;
-            const displayPhone = m.phone; // only ever set for offline/guest members
+            const displayPhone = m.phone;
+            const owesMoney = (m.amountToPay ?? 0) > 0;
+            const fullyPaid = m.paymentStatus === "paid";
 
             return (
               <div
                 key={m._id}
                 className="flex items-center justify-between p-4 rounded-xl border border-base-200 hover:border-base-300 transition-all duration-200"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-sm font-semibold text-primary shrink-0">
                     {(m.user?.name || m.name || "?").charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <p className="font-medium text-base-content">
+                  <div className="min-w-0">
+                    <p className="font-medium text-base-content truncate">
                       {m.user?.name || m.name || "Unnamed"}
                     </p>
                     <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-base-content/50">
@@ -84,7 +96,7 @@ const MembersTab = ({ event, members = [], onAddMember }) => {
                       {displayEmail && (
                         <>
                           <span>·</span>
-                          <span>{displayEmail}</span>
+                          <span className="truncate">{displayEmail}</span>
                         </>
                       )}
                       {displayPhone && (
@@ -96,22 +108,33 @@ const MembersTab = ({ event, members = [], onAddMember }) => {
                           </span>
                         </>
                       )}
-                      {!displayEmail && !displayPhone && <span>No contact info</span>}
                     </div>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-base-content">
-                    ₹{(m.amountPaid ?? 0).toLocaleString()} / ₹{(m.amountToPay ?? 0).toLocaleString()}
-                  </p>
-                  <span
-                    className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                      paymentBadgeClass[m.paymentStatus] || "bg-base-200 text-base-content/60"
-                    }`}
-                  >
-                    {m.paymentStatus || "pending"}
-                  </span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-base-content">
+                      ₹{(m.amountPaid ?? 0).toLocaleString()} / ₹{(m.amountToPay ?? 0).toLocaleString()}
+                    </p>
+                    <span
+                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                        paymentBadgeClass[m.paymentStatus] || "bg-base-200 text-base-content/60"
+                      }`}
+                    >
+                      {m.paymentStatus || "pending"}
+                    </span>
+                  </div>
+
+                  {owesMoney && !fullyPaid && (
+                    <button
+                      onClick={() => setPayingMember(m)}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all duration-200"
+                    >
+                      <CurrencyRupeeIcon className="h-3.5 w-3.5" />
+                      Pay
+                    </button>
+                  )}
                 </div>
               </div>
             );
