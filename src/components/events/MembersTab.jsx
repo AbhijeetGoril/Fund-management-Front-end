@@ -15,9 +15,9 @@ const paymentBadgeClass = {
   pending: "bg-error/10 text-error",
 };
 
-const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
+const MembersTab = ({ event, members = [], onAddMember }) => {
   const [activeFilter, setActiveFilter] = useState("all");
-  const [payingMember, setPayingMember] = useState(null);
+  const [payingMember, setPayingMember] = useState(null); // holds the member being paid, or null
 
   const filteredMembers =
     activeFilter === "all"
@@ -54,16 +54,13 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
           ))}
         </div>
 
-        {/* Only show "Add Participant" button for admins */}
-        {isAdmin && (
-          <button
-            onClick={onAddMember}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-xl font-semibold text-sm hover:shadow-lg transition-all duration-200 active:scale-95"
-          >
-            <UserPlusIcon className="h-4 w-4" />
-            Add Participant
-          </button>
-        )}
+        <button
+          onClick={onAddMember}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-xl font-semibold text-sm hover:shadow-lg transition-all duration-200 active:scale-95"
+        >
+          <UserPlusIcon className="h-4 w-4" />
+          Add Participant
+        </button>
       </div>
 
       {filteredMembers.length === 0 ? (
@@ -129,8 +126,7 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
                     </span>
                   </div>
 
-                  {/* Only show Pay button if user is admin AND member owes money AND not fully paid */}
-                  {isAdmin && owesMoney && !fullyPaid && (
+                  {owesMoney && !fullyPaid && (
                     <button
                       onClick={() => setPayingMember(m)}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all duration-200"

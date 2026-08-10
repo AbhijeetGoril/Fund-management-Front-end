@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Navbar from "../components/Navbar/Navbar";
@@ -13,7 +13,7 @@ import { toast } from "react-toastify";
 
 const fetchEventById = async (eventId) => {
   const { data } = await axiosInstance.get(`/societies/events/${eventId}`);
-  console.log(data);
+  console.log(data)
   return data;
 };
 
@@ -32,39 +32,16 @@ const EventDetails = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal]           = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [activeTab, setActiveTab] = useState("members");
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab]           = useState("members");
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["event", eventId],
-    queryFn: () => fetchEventById(eventId),
+    queryFn:  () => fetchEventById(eventId),
     staleTime: 1000 * 60 * 2,
     retry: 2,
   });
-
-  // Check if current user is admin when data loads
-  useEffect(() => {
-    if (data?.members) {
-      // Get current user from localStorage
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      console.log("Current User:", currentUser);
-      console.log("All Members:", data.members);
-      
-      // Check if current user is an admin of this event
-      const isEventAdmin = data.members.some(
-        member => {
-          const userId = member.user?._id || member.user || member._id;
-          const currentUserId = currentUser._id || currentUser.id;
-          return userId === currentUserId && member.role === 'admin';
-        }
-      );
-      
-      console.log("Is Admin:", isEventAdmin);
-      setIsAdmin(isEventAdmin);
-    }
-  }, [data]);
 
   const onAddSuccess = (data, defaultMsg) => {
     queryClient.invalidateQueries({ queryKey: ["event", eventId] });
@@ -99,21 +76,21 @@ const EventDetails = () => {
   const handleAddParticipant = async (participantData) => {
     if (participantData.mode === "invite") {
       return await inviteParticipant({
-        email: participantData.email,
-        type: "event",
-        event: eventId,
+        email:       participantData.email,
+        type:        "event",
+        event:       eventId,
         amountToPay: participantData.amountToPay ?? 0,
-        message: participantData.message ?? "",
+        message:     participantData.message ?? "",
       });
     }
 
     return await addOfflineParticipant({
       eventId,
-      name: participantData.name,
-      email: participantData.email || undefined,
-      phone: participantData.phone || undefined,
+      name:        participantData.name,
+      email:       participantData.email || undefined,
+      phone:       participantData.phone || undefined,
       amountToPay: participantData.amountToPay ?? 0,
-      message: participantData.message ?? "",
+      message:     participantData.message ?? "",
     });
   };
 
@@ -161,12 +138,12 @@ const EventDetails = () => {
   // filterable Members tab, and `participants` for payment-focused stats.
   const { event, members, participants, summary } = data;
 
-  const totalDonations = summary?.totalAmountPaid ?? 0;
+  const totalDonations       = summary?.totalAmountPaid    ?? 0;
   const totalRemainingAmount = summary?.totalPendingAmount ?? 0;
-  const totalParticipants = summary?.totalParticipants ?? 0;
-  const paidParticipants = members.filter((m) => m.paymentStatus === "paid").length;
-  const pendingParticipants = members.filter((m) => m.paymentStatus === "pending").length;
-  const partialParticipants = members.filter((m) => m.paymentStatus === "partial").length;
+  const totalParticipants    = summary?.totalParticipants  ?? 0;
+  const paidParticipants     = members.filter((m) => m.paymentStatus === "paid").length;
+  const pendingParticipants  = members.filter((m) => m.paymentStatus === "pending").length;
+  const partialParticipants  = members.filter((m) => m.paymentStatus === "partial").length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
@@ -200,9 +177,9 @@ const EventDetails = () => {
         <EventHeader
           event={{
             ...event,
-            name: event.title,
+            name:            event.title,
             collectedAmount: totalDonations,
-            totalBudget: event.budget?.target ?? 0,
+            totalBudget:     event.budget?.target ?? 0,
           }}
           onBack={() => navigate("/dashboard")}
           onShare={() => setShowShareModal(true)}
@@ -243,7 +220,6 @@ const EventDetails = () => {
                 event={event}
                 members={members}
                 onAddMember={() => setShowModal(true)}
-                isAdmin={isAdmin}
               />
             )}
             {activeTab === "analytics" && (
