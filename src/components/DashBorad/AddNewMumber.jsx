@@ -9,6 +9,8 @@ import {
   UserPlusIcon,
   XMarkIcon,
   ExclamationCircleIcon,
+  ArrowLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 
@@ -58,7 +60,6 @@ const AddNewMember = ({
   }, [setShowModal, mode]);
 
   const validate = () => {
-    console.log("🟣 [validate] running for mode:", mode, "form:", form); // DEBUG
     const errs = {};
 
     if (mode === "invite") {
@@ -99,17 +100,14 @@ const AddNewMember = ({
     if (form.message.length > 300)
       errs.message = "Message must be less than 300 characters";
 
-    console.log("🟣 [validate] result errors:", errs); // DEBUG
     return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("🔴 [handleSubmit] FORM SUBMITTED — mode:", mode); // DEBUG
 
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
-      console.log("🔴 [handleSubmit] blocked by validation:", validationErrors); // DEBUG
       setErrors(validationErrors);
       toast.error("Please fix the errors in the form before submitting.", {
         position: "top-right",
@@ -138,12 +136,8 @@ const AddNewMember = ({
       message:     form.message.trim(),
     };
 
-    console.log("🔴 [handleSubmit] calling onSubmit with:", payload); // DEBUG
-
     try {
       await onSubmit(payload);
-
-      console.log("🟢 [handleSubmit] onSubmit resolved successfully"); // DEBUG
 
       toast.update(toastId, {
         render:    mode === "invite" ? `📨 Invitation sent to ${label}!` : `✅ ${label} added!`,
@@ -152,8 +146,6 @@ const AddNewMember = ({
         autoClose: 3000,
       });
     } catch (err) {
-      console.log("🔴 [handleSubmit] onSubmit threw:", err); // DEBUG
-
       const msg =
         err?.response?.data?.message ||
         err?.message ||
@@ -185,7 +177,7 @@ const AddNewMember = ({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
         ref={modalRef}
-        className="bg-base-100 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4"
+        className="bg-base-100 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto"
       >
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-bold text-base-content flex items-center gap-2">
@@ -204,43 +196,51 @@ const AddNewMember = ({
           </button>
         </div>
 
+        {/* Step indicator */}
+        <div className="flex items-center gap-1.5 -mt-1">
+          <div className={`h-1 rounded-full transition-all duration-300 ${!mode ? "w-8 bg-primary" : "w-4 bg-primary/30"}`} />
+          <div className={`h-1 rounded-full transition-all duration-300 ${mode ? "w-8 bg-primary" : "w-4 bg-base-300"}`} />
+        </div>
+
         {/* ── Step 1: ask which way to add ── */}
         {!mode && (
-          <div className="space-y-3 pt-2">
-            <p className="text-sm text-base-content/60">
+          <div className="space-y-2.5 pt-1">
+            <p className="text-sm text-base-content/60 mb-1">
               How would you like to add this participant?
             </p>
 
             <button
               type="button"
               onClick={() => setMode("invite")}
-              className="w-full flex items-start gap-3 p-4 rounded-xl border border-base-300 hover:border-primary hover:bg-primary/5 transition-all duration-200 text-left"
+              className="group w-full flex items-center gap-3 p-4 rounded-xl border border-base-300 hover:border-primary hover:bg-primary/5 hover:shadow-sm transition-all duration-200 text-left"
             >
-              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0 group-hover:scale-105 transition-transform duration-200">
                 <PaperAirplaneIcon className="h-5 w-5" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold text-base-content">Send Invitation</p>
-                <p className="text-xs text-base-content/60">
-                  They'll get an email to join and accept. Requires an email address.
+                <p className="text-xs text-base-content/60 mt-0.5">
+                  They'll get an email to join and accept.
                 </p>
               </div>
+              <ChevronRightIcon className="h-4 w-4 text-base-content/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
             </button>
 
             <button
               type="button"
               onClick={() => setMode("offline")}
-              className="w-full flex items-start gap-3 p-4 rounded-xl border border-base-300 hover:border-primary hover:bg-primary/5 transition-all duration-200 text-left"
+              className="group w-full flex items-center gap-3 p-4 rounded-xl border border-base-300 hover:border-secondary hover:bg-secondary/5 hover:shadow-sm transition-all duration-200 text-left"
             >
-              <div className="p-2 rounded-lg bg-secondary/10 text-secondary shrink-0">
+              <div className="p-2.5 rounded-xl bg-secondary/10 text-secondary shrink-0 group-hover:scale-105 transition-transform duration-200">
                 <UserIcon className="h-5 w-5" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold text-base-content">Add Offline User</p>
-                <p className="text-xs text-base-content/60">
-                  No account needed — add directly with name (and email/phone if you have them).
+                <p className="text-xs text-base-content/60 mt-0.5">
+                  No account needed — just their name.
                 </p>
               </div>
+              <ChevronRightIcon className="h-4 w-4 text-base-content/30 group-hover:text-secondary group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
             </button>
           </div>
         )}
@@ -252,16 +252,26 @@ const AddNewMember = ({
               type="button"
               onClick={() => { setMode(null); setErrors({}); }}
               disabled={isLoading}
-              className="text-xs text-base-content/50 hover:text-base-content flex items-center gap-1 -mt-1"
+              className="text-xs font-medium text-base-content/50 hover:text-base-content flex items-center gap-1 -mt-1 transition-colors"
             >
-              ← Choose a different method
+              <ArrowLeftIcon className="h-3 w-3" />
+              Choose a different method
             </button>
 
-            <p className="text-sm text-base-content/60 -mt-1">
-              {mode === "invite"
-                ? "They'll get an email invite to join this event."
-                : "Add someone directly to the event. Email and phone are optional — useful if they don't have or don't want to use an account."}
-            </p>
+            <div className={`flex items-center gap-2 p-3 rounded-xl text-xs ${
+              mode === "invite" ? "bg-primary/5 text-primary" : "bg-secondary/5 text-secondary"
+            }`}>
+              {mode === "invite" ? (
+                <PaperAirplaneIcon className="h-4 w-4 shrink-0" />
+              ) : (
+                <UserIcon className="h-4 w-4 shrink-0" />
+              )}
+              <span className="text-base-content/70">
+                {mode === "invite"
+                  ? "They'll get an email invite to join this event."
+                  : "Add someone directly — email and phone are optional."}
+              </span>
+            </div>
 
             <form onSubmit={handleSubmit} noValidate>
               <div className="space-y-4">
@@ -315,8 +325,8 @@ const AddNewMember = ({
                     />
                   </div>
                   {mode === "offline" && (
-                    <p className="text-xs text-base-content/50 mt-1.5">
-                      If they have an existing account with this email, they'll be sent an invite instead of being added directly.
+                    <p className="text-xs text-base-content/45 mt-1.5">
+                      If they have an existing account with this email, they'll be sent an invite instead.
                     </p>
                   )}
                   <FieldError msg={errors.email} />
@@ -368,9 +378,13 @@ const AddNewMember = ({
                     />
                   </div>
                   {suggestedAmount > 0 && !form.amountToPay && !errors.amountToPay && (
-                    <p className="text-xs text-info mt-1.5 flex items-center gap-1">
-                      💡 Equal split suggestion: ₹{suggestedAmount.toLocaleString()} per person
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleChange("amountToPay", String(suggestedAmount))}
+                      className="text-xs text-info mt-1.5 flex items-center gap-1 hover:underline"
+                    >
+                      💡 Use equal split: ₹{suggestedAmount.toLocaleString()} per person
+                    </button>
                   )}
                   <FieldError msg={errors.amountToPay} />
                 </div>
@@ -378,10 +392,15 @@ const AddNewMember = ({
                 {/* Message — invite only */}
                 {mode === "invite" && (
                   <div>
-                    <label className="block text-sm font-semibold text-base-content/80 mb-1">
-                      Message{" "}
-                      <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
-                    </label>
+                    <div className="flex justify-between items-baseline mb-1">
+                      <label className="block text-sm font-semibold text-base-content/80">
+                        Message{" "}
+                        <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
+                      </label>
+                      <span className={`text-[11px] ${form.message.length > 300 ? "text-error" : "text-base-content/35"}`}>
+                        {form.message.length}/300
+                      </span>
+                    </div>
                     <div className="relative">
                       <ChatBubbleLeftRightIcon className="absolute left-3 top-3 h-5 w-5 text-base-content/40" />
                       <textarea
