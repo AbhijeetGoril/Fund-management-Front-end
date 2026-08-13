@@ -43,6 +43,7 @@ const EventSpends = () => {
   const spends    = data?.data?.spends  ?? [];
   const summary   = data?.data?.summary ?? null;
   const eventInfo = data?.data?.event   ?? null;
+  const payers    = data?.data?.payers  ?? []; // NEW: event/society members selectable as "Paid By"
 
   // ── Mutations ─────────────────────────────────────────────────────────
   const invalidate = () =>
@@ -314,6 +315,7 @@ const EventSpends = () => {
         onSubmit={onSubmitAddEdit}
         initial={editingSpend}
         eventId={eventId}
+        payers={payers} // NEW: list of { _id, name, email } for the Paid By dropdown
       />
 
       <ViewModal

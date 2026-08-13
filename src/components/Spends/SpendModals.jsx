@@ -9,6 +9,7 @@ import {
   ClockIcon,
 } from "@heroicons/react/20/solid";
 import { PencilIcon } from "lucide-react";
+import PaidBySelect from "./PaidBySelect"; // NEW: extracted "Paid By" dropdown
 
 const Backdrop = ({ onClose }) => (
   <div
@@ -18,7 +19,14 @@ const Backdrop = ({ onClose }) => (
   />
 );
 
-export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) => {
+export const AddOrEditModal = ({
+  open,
+  onClose,
+  onSubmit,
+  initial,
+  eventId,
+  payers = [], // NEW: list of { _id, name, email } this event/society's members who can be "Paid By"
+}) => {
   const emptyForm = {
     title: "",
     amount: "",
@@ -34,6 +42,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
 
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false); // NEW: guards double-submit + drives spinner
 
   useEffect(() => {
     if (initial) {
@@ -44,7 +53,8 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
           ? initial.spendDate.split("T")[0]
           : new Date().toISOString().split("T")[0],
         category: initial.category || "",
-        paidBy: initial.paidBy || "",
+        // FIX: paidBy can arrive populated ({ _id, name }) or as a raw id string — unwrap safely
+        paidBy: initial.paidBy?._id || initial.paidBy || "",
         paidTo: initial.paidTo || "",
         receiptNumber: initial.receiptNumber || "",
         receiptImage: null,
@@ -62,28 +72,37 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
     if (!form.title.trim()) e.title = "Title is required";
     const amt = Number(form.amount);
     if (!form.amount || Number.isNaN(amt) || amt <= 0) e.amount = "Enter a valid amount";
-    if (!form.paidBy.trim()) e.paidBy = "Paid By is required";
+    if (!form.paidBy) e.paidBy = "Paid By is required"; // now a select value (ObjectId string), no .trim() needed
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return; // FIX: guard against double-submit while a request is in flight
     if (!validate()) return;
 
     const fd = new FormData();
     fd.append("event", eventId);
     fd.append("title", form.title.trim());
     fd.append("amount", Number(form.amount));
-    fd.append("paidBy", form.paidBy.trim());
+    fd.append("paidBy", form.paidBy); // FIX: this is now a User ObjectId string, not free text
     if (form.category)      fd.append("category", form.category);
     if (form.paidTo)        fd.append("paidTo", form.paidTo);
     if (form.notes)         fd.append("notes", form.notes);
     if (form.spendDate)     fd.append("spendDate", form.spendDate);
     if (form.receiptNumber) fd.append("receiptNumber", form.receiptNumber);
     if (form.receiptImage)  fd.append("receiptImage", form.receiptImage);
-    
-    onSubmit(fd);
+
+    setSubmitting(true);
+    try {
+      await onSubmit(fd); // FIX: actually awaited now, so submitting state reflects the real request
+    } catch {
+      // parent's mutation onError already shows a toast — swallow here
+      // so this doesn't surface as an unhandled promise rejection.
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const onEsc = useCallback((e) => { if (e.key === "Escape") onClose(); }, [onClose]);
@@ -114,7 +133,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <Backdrop onClose={onClose} />
+      <Backdrop onClose={submitting ? () => {} : onClose} />
       <div
         role="dialog"
         aria-modal="true"
@@ -151,6 +170,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 className={`${inputBase} ${errors.title ? "border-error bg-error/5" : "border-base-300 hover:border-base-400"}`}
                 placeholder="e.g. Venue Decoration"
+                disabled={submitting}
               />
               {errors.title && (
                 <p className="mt-1.5 text-sm text-error flex items-center gap-1">
@@ -173,6 +193,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
                 onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
                 className={`${inputBase} ${errors.amount ? "border-error bg-error/5" : "border-base-300 hover:border-base-400"}`}
                 placeholder="0"
+                disabled={submitting}
               />
               {errors.amount && (
                 <p className="mt-1.5 text-sm text-error flex items-center gap-1">
@@ -181,24 +202,15 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
               )}
             </div>
 
-            {/* Paid By — required */}
-            <div>
-              <label className="block text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-1">
-                Paid By <span className="text-error">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.paidBy}
-                onChange={(e) => setForm((f) => ({ ...f, paidBy: e.target.value }))}
-                className={`${inputBase} ${errors.paidBy ? "border-error bg-error/5" : "border-base-300 hover:border-base-400"}`}
-                placeholder="Who paid?"
-              />
-              {errors.paidBy && (
-                <p className="mt-1.5 text-sm text-error flex items-center gap-1">
-                  <XCircleIcon className="h-4 w-4" />{errors.paidBy}
-                </p>
-              )}
-            </div>
+            {/* Paid By — required, extracted into its own component */}
+            <PaidBySelect
+              value={form.paidBy}
+              onChange={(val) => setForm((f) => ({ ...f, paidBy: val }))}
+              payers={payers}
+              error={errors.paidBy}
+              disabled={submitting}
+              inputBase={inputBase}
+            />
 
             {/* Category — optional */}
             <div>
@@ -214,6 +226,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
                     ? `${getCategoryConfig(form.category).border} ${getCategoryConfig(form.category).bg} ${getCategoryConfig(form.category).text} border-2 font-semibold`
                     : "border-base-300 hover:border-base-400"
                 }`}
+                disabled={submitting}
               >
                 <option value="">Select Category</option>
                 <option value="Decoration">Decoration</option>
@@ -238,6 +251,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
                 value={form.spendDate}
                 onChange={(e) => setForm((f) => ({ ...f, spendDate: e.target.value }))}
                 className={`${inputBase} border-base-300 hover:border-base-400`}
+                disabled={submitting}
               />
             </div>
 
@@ -253,6 +267,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
                 onChange={(e) => setForm((f) => ({ ...f, paidTo: e.target.value }))}
                 className={`${inputBase} border-base-300 hover:border-base-400`}
                 placeholder="Vendor / payee name"
+                disabled={submitting}
               />
             </div>
 
@@ -268,6 +283,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
                 onChange={(e) => setForm((f) => ({ ...f, receiptNumber: e.target.value }))}
                 className={`${inputBase} border-base-300 hover:border-base-400`}
                 placeholder="e.g. REC001"
+                disabled={submitting}
               />
             </div>
 
@@ -293,6 +309,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
                       }}
                       className="absolute top-2 right-2 p-1.5 bg-error text-error-content rounded-full hover:scale-110 transition-all shadow-md"
                       title="Remove image"
+                      disabled={submitting}
                     >
                       <XCircleIcon className="h-4 w-4" />
                     </button>
@@ -313,6 +330,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
                   type="file"
                   accept="image/*"
                   className="hidden"
+                  disabled={submitting}
                   onChange={(e) => {
                     const file = e.target.files[0];
                     if (!file) return;
@@ -342,6 +360,7 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 className={`${inputBase} border-base-300 hover:border-base-400 resize-none`}
                 placeholder="Any additional notes..."
+                disabled={submitting}
               />
             </div>
           </div>
@@ -350,15 +369,17 @@ export const AddOrEditModal = ({ open, onClose, onSubmit, initial, eventId }) =>
           <div className="flex gap-3 pt-4 border-t border-base-200">
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 justify-center"
+              disabled={submitting}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 justify-center disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <CheckCircleIcon className="h-5 w-5" />
-              {initial ? "Update Spend" : "Add Spend"}
+              {submitting ? "Saving..." : initial ? "Update Spend" : "Add Spend"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 bg-base-200 text-base-content rounded-2xl font-semibold hover:bg-base-300 transition-all duration-300 hover:scale-105 flex items-center gap-2"
+              disabled={submitting}
+              className="px-6 py-3 bg-base-200 text-base-content rounded-2xl font-semibold hover:bg-base-300 transition-all duration-300 hover:scale-105 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <XCircleIcon className="h-5 w-5" />
               Cancel
