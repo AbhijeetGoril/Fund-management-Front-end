@@ -48,19 +48,23 @@ const EventSpends = () => {
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["eventSpends", eventId] });
 
-  const addMutation = useMutation({
+  // FIX: mutateAsync (not mutate) — AddOrEditModal does `await onSubmit(fd)`
+  // internally to control its own loading spinner. mutate() does NOT return
+  // a promise, so that await would resolve instantly and hide the spinner
+  // before the real request finished — same bug we hit with invitations.
+  const { mutateAsync: addMutationAsync, isPending: isAdding } = useMutation({
     mutationFn: (fd) => addSpend(fd),
     onSuccess: () => {
       toast.success("Spend added successfully");
       setAddEditOpen(false);
       invalidate();
     },
-    onError: (err) =>
-      console.log(err)
-      // toast.error(err?.response?.data?.message || "Failed to add spend"),
+    onError: (err) => {
+      toast.error(err?.response?.data?.message || "Failed to add spend");
+    },
   });
 
-  const updateMutation = useMutation({
+  const { mutateAsync: updateMutationAsync, isPending: isUpdating } = useMutation({
     mutationFn: ({ id, fd }) => updateSpend(id, fd),
     onSuccess: () => {
       toast.success("Spend updated successfully");
@@ -68,8 +72,9 @@ const EventSpends = () => {
       setEditingSpend(null);
       invalidate();
     },
-    onError: (err) =>
-      toast.error(err?.response?.data?.message || "Failed to update spend"),
+    onError: (err) => {
+      toast.error(err?.response?.data?.message || "Failed to update spend");
+    },
   });
 
   const deleteMutation = useMutation({
@@ -96,7 +101,6 @@ const EventSpends = () => {
     () => [...new Set(spends.map((s) => s.category).filter(Boolean))],
     [spends]
   );
- 
 
   // ── Filtered + Sorted ─────────────────────────────────────────────────
   const filteredSpends = useMemo(() => {
@@ -147,12 +151,13 @@ const EventSpends = () => {
     setAddEditOpen(true);
   };
 
-  const onSubmitAddEdit = (fd) => {
+  // FIX: now async, returns/awaits the real mutation promise so the
+  // modal's own `await onSubmit(fd)` actually waits for completion.
+  const onSubmitAddEdit = async (fd) => {
     if (editingSpend) {
-      updateMutation.mutate({ id: editingSpend._id, fd });
-    } else {
-      addMutation.mutate(fd);
+      return await updateMutationAsync({ id: editingSpend._id, fd });
     }
+    return await addMutationAsync(fd);
   };
 
   const handleDeleteSpend = (id) => {
@@ -160,7 +165,7 @@ const EventSpends = () => {
     deleteMutation.mutate(id);
   };
 
-  const isSubmitting = addMutation.isPending || updateMutation.isPending;
+  const isSubmitting = isAdding || isUpdating;
 
   // ── eventForHero (safe — works even if eventInfo is null) ─────────────
   const eventForHero = {
