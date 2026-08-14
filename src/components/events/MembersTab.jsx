@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon, ShieldCheckIcon, PencilIcon } from "@heroicons/react/24/outline";
 import RecordPaymentModal from "./RecordPaymentModal";
+import EditMemberModal from "./EditMemberModal";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -30,6 +31,7 @@ const roleRingClass = {
 const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [payingMember, setPayingMember] = useState(null);
+  const [editingMember, setEditingMember] = useState(null);
 
   const filteredMembers =
     activeFilter === "all"
@@ -49,7 +51,14 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
         />
       )}
 
-      {/* Header row */}
+      {editingMember && (
+        <EditMemberModal
+          eventId={event._id}
+          member={editingMember}
+          onClose={() => setEditingMember(null)}
+        />
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex gap-2 flex-wrap">
           {FILTERS.map((f) => (
@@ -78,7 +87,6 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
         )}
       </div>
 
-      {/* List */}
       {filteredMembers.length === 0 ? (
         <div className="text-center py-20">
           <div className="h-14 w-14 rounded-full bg-base-200 flex items-center justify-center mx-auto mb-3">
@@ -150,7 +158,7 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-3 shrink-0">
                   {owesMoney && (
                     <div className="w-32 hidden sm:block">
                       <div className="flex justify-between items-baseline mb-1">
@@ -179,6 +187,16 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
                   >
                     {owesMoney ? m.paymentStatus || "pending" : "—"}
                   </span>
+
+                  {isAdmin && (
+                    <button
+                      onClick={() => setEditingMember(m)}
+                      className="p-1.5 rounded-lg text-base-content/40 hover:text-base-content hover:bg-base-200 transition-all duration-200"
+                      aria-label="Edit member"
+                    >
+                      <PencilIcon className="h-3.5 w-3.5" />
+                    </button>
+                  )}
 
                   {isAdmin && owesMoney && !fullyPaid && (
                     <button
