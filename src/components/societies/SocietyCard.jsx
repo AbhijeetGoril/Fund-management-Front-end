@@ -1,85 +1,140 @@
-import { ChevronRightIcon } from "@heroicons/react/24/outline";
+// components/societies/SocietyGrid.jsx
+import { BuildingLibraryIcon, ChevronRightIcon, UsersIcon, CalendarIcon } from "@heroicons/react/24/outline";
 
-export default function SocietyCard({ society = {}, onClick }) {
-  const {
-    id,
-    name = '',
-    address = '',
-    totalMembers = 0,
-    status = 'active',
-    totalCollected = 0,
-    events: rawEvents
-  } = society || {};
+const statusConfig = {
+  active: { pill: "bg-white/20 text-white", dot: "bg-success" },
+  inactive: { pill: "bg-white/15 text-white/70", dot: "bg-base-content/30" },
+};
 
-  const events = Array.isArray(rawEvents) ? rawEvents : [];
-  const latest = events.slice(0, 3);
-  const activeEvents = events.filter(e => (e?.status || '').toLowerCase() === 'active').length;
-  const collectedNumber = Number.isFinite(Number(totalCollected)) ? Number(totalCollected) : 0;
+const SocietyCard = ({ society, onClick }) => {
+  const status = (society.status || "active").toLowerCase();
+  const statusStyle = statusConfig[status] || statusConfig.active;
+
+  const totalMembers = society.totalMembers ?? 0;
+  const activeEvents = society.activeEvents ?? 0;
+  const totalCollected = society.totalCollected ?? 0;
+  const events = society.events ?? [];
+
+  const formatCollected = (amount) => {
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+    if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}k`;
+    return `₹${amount}`;
+  };
 
   return (
-    <div
-      className="group bg-base-100 rounded-2xl shadow-lg border border-base-200 hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer overflow-hidden"
-      onClick={() => id && onClick?.(id)}
+    <button
+      onClick={() => onClick(society._id || society.id)}
+      className="group w-full text-left bg-base-100 rounded-2xl border border-base-200 hover:border-primary/30 hover:shadow-xl transition-all duration-300 overflow-hidden"
     >
-      {/* Header – uses primary color and its content variant */}
-      <div className="bg-primary text-primary-content p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-sm">
-              {(status || 'active').toUpperCase()}
-            </span>
-            <h3 className="text-xl font-bold mt-3 line-clamp-1">{name}</h3>
-            <p className="text-primary-content/80 text-sm mt-1">{address}</p>
+      {/* Header — gradient banner */}
+      <div className="relative bg-gradient-to-br from-primary via-primary to-secondary p-5 pb-6">
+        <div className="flex items-start justify-between">
+          <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1.5 ${statusStyle.pill}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
+            {status}
+          </span>
+          <ChevronRightIcon className="h-5 w-5 text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200" />
+        </div>
+
+        <div className="flex items-center gap-3 mt-4">
+          {society.logo ? (
+            <img
+              src={society.logo}
+              alt={society.name}
+              className="h-11 w-11 rounded-xl object-cover ring-2 ring-white/30 shrink-0"
+            />
+          ) : (
+            <div className="h-11 w-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <BuildingLibraryIcon className="h-6 w-6 text-white" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <h3 className="text-xl font-bold text-white truncate">{society.name}</h3>
+            {society.location && (
+              <p className="text-xs text-white/70 truncate mt-0.5">{society.location}</p>
+            )}
           </div>
-          <ChevronRightIcon className="h-5 w-5 text-primary-content/80 group-hover:translate-x-1 transition-transform duration-200" />
         </div>
       </div>
 
-      {/* Body */}
-      <div className="p-5">
-        <div className="grid grid-cols-3 gap-4 text-center mb-4">
-          <div>
-            <div className="text-lg font-bold text-base-content">{Number(totalMembers) || 0}</div>
-            <div className="text-xs text-base-content/70">Members</div>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-info">{activeEvents}</div>
-            <div className="text-xs text-base-content/70">Active Events</div>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-success">₹{(collectedNumber / 1000).toFixed(0)}k</div>
-            <div className="text-xs text-base-content/70">Collected</div>
-          </div>
+      {/* Stats row */}
+      <div className="grid grid-cols-3 divide-x divide-base-200 border-b border-base-200">
+        <div className="text-center py-3.5">
+          <p className="text-xl font-bold text-base-content">{totalMembers}</p>
+          <p className="text-[11px] text-base-content/50 mt-0.5">Members</p>
+        </div>
+        <div className="text-center py-3.5">
+          <p className="text-xl font-bold text-info">{activeEvents}</p>
+          <p className="text-[11px] text-base-content/50 mt-0.5">Active Events</p>
+        </div>
+        <div className="text-center py-3.5">
+          <p className="text-xl font-bold text-success">{formatCollected(totalCollected)}</p>
+          <p className="text-[11px] text-base-content/50 mt-0.5">Collected</p>
+        </div>
+      </div>
+
+      {/* Events preview */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold text-base-content flex items-center gap-1.5">
+            <CalendarIcon className="h-4 w-4 text-base-content/40" />
+            Events
+          </p>
+          <span className="text-xs text-base-content/40">{events.length} total</span>
         </div>
 
-        <div className="mt-2">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold text-base-content">Events</h4>
-            <span className="text-xs text-base-content/60">{events.length} total</span>
-          </div>
-          <ul className="space-y-2">
-            {latest.map(ev => (
-              <li
-                key={ev?.id ?? Math.random()}
-                className="flex items-center justify-between rounded-lg border border-base-200 bg-base-100 px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-base-content truncate">{ev?.title || 'Untitled Event'}</p>
-                  <p className="text-xs text-base-content/60">{ev?.date || '--'} • {ev?.status || '--'}</p>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full border ${
-                  (ev?.status || '').toLowerCase() === 'active'
-                    ? 'bg-success/20 text-success border-success/30'
-                    : 'bg-info/20 text-info border-info/30'
-                }`}>
-                  {(ev?.type || '') === 'society' ? 'Society' : 'Personal'}
-                </span>
-              </li>
+        {events.length === 0 ? (
+          <p className="text-sm text-base-content/40 py-2">No events yet</p>
+        ) : (
+          <div className="space-y-1.5">
+            {events.slice(0, 2).map((e) => (
+              <div key={e._id} className="flex items-center justify-between text-sm py-1">
+                <span className="text-base-content/70 truncate">{e.title}</span>
+                <span className="text-xs text-base-content/40 shrink-0 ml-2 capitalize">{e.status || "active"}</span>
+              </div>
             ))}
-            {events.length === 0 && <li className="text-xs text-base-content/50">No events yet</li>}
-          </ul>
-        </div>
+            {events.length > 2 && (
+              <p className="text-xs text-primary font-medium pt-1">+{events.length - 2} more</p>
+            )}
+          </div>
+        )}
       </div>
+    </button>
+  );
+};
+
+const SocietyGrid = ({ societies = [], loading, onCardClick, Loader, loaderProps }) => {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        {Loader ? <Loader {...loaderProps} /> : <p className="text-base-content/50">Loading...</p>}
+      </div>
+    );
+  }
+
+  if (societies.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <div className="h-14 w-14 rounded-full bg-base-200 flex items-center justify-center mx-auto mb-3">
+          <BuildingLibraryIcon className="h-7 w-7 text-base-content/25" />
+        </div>
+        <p className="text-base-content/50 font-medium">No societies yet</p>
+        <p className="text-xs text-base-content/35 mt-1">Create one to get started.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-6">
+      {societies.map((society) => (
+        <SocietyCard
+          key={society._id || society.id}
+          society={society}
+          onClick={onCardClick}
+        />
+      ))}
     </div>
   );
-}
+};
+
+export default SocietyGrid;
