@@ -30,6 +30,7 @@ const EditMemberModal = ({ eventId, member, onClose }) => {
     name: member.user?.name || member.name || "",
     phone: member.phone || "",
     amountToPay: member.amountToPay ?? 0,
+    amountPaid: member.amountPaid ?? 0,
     role: member.role || "participant",
   });
   const [error, setError] = useState("");
@@ -83,9 +84,15 @@ const EditMemberModal = ({ eventId, member, onClose }) => {
       return;
     }
 
-    const amt = Number(form.amountToPay);
-    if (isNaN(amt) || amt < 0) {
+    const toPay = Number(form.amountToPay);
+    if (isNaN(toPay) || toPay < 0) {
       setError("Amount to pay must be a valid non-negative number.");
+      return;
+    }
+
+    const paid = Number(form.amountPaid);
+    if (isNaN(paid) || paid < 0) {
+      setError("Amount paid must be a valid non-negative number.");
       return;
     }
 
@@ -95,7 +102,8 @@ const EditMemberModal = ({ eventId, member, onClose }) => {
       payload: {
         name: form.name.trim(),
         phone: form.phone.trim() || undefined,
-        amountToPay: amt,
+        amountToPay: toPay,
+        amountPaid: paid,
         role: form.role,
       },
     });
@@ -156,25 +164,45 @@ const EditMemberModal = ({ eventId, member, onClose }) => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-base-content/80 mb-1">Amount to Pay</label>
-            <div className="relative">
-              <CurrencyRupeeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
-              <input
-                type="number"
-                min="0"
-                value={form.amountToPay}
-                onChange={(e) => handleChange("amountToPay", e.target.value)}
-                disabled={isPending}
-                className="w-full pl-10 pr-4 py-2.5 bg-base-100 border border-base-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
-              />
+          <div className="grid grid-cols-2 gap-3">
+
+            <div>
+              <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                Amount Paid
+              </label>
+              <div className="relative">
+                <CurrencyRupeeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
+                <input
+                  type="number"
+                  min="0"
+                  value={form.amountPaid}
+                  onChange={(e) => handleChange("amountPaid", e.target.value)}
+                  disabled={isPending}
+                  className="w-full pl-9 pr-3 py-2.5 bg-base-100 border border-base-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+                />
+              </div>
             </div>
-            {(member.amountPaid ?? 0) > 0 && (
-              <p className="text-xs text-base-content/45 mt-1.5">
-                Already paid: ₹{member.amountPaid.toLocaleString()}. Setting a lower target is fine — they'll just show as fully paid.
-              </p>
-            )}
+            <div>
+              <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                Amount to Pay
+              </label>
+              <div className="relative">
+                <CurrencyRupeeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
+                <input
+                  type="number"
+                  min="0"
+                  value={form.amountToPay}
+                  onChange={(e) => handleChange("amountToPay", e.target.value)}
+                  disabled={isPending}
+                  className="w-full pl-9 pr-3 py-2.5 bg-base-100 border border-base-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+                />
+              </div>
+            </div>
           </div>
+
+          <p className="text-xs text-base-content/45 -mt-2">
+            Editing "Amount Paid" here directly corrects the record — for a normal new payment, use the "Pay" button instead.
+          </p>
 
           <div>
             <label className="block text-sm font-semibold text-base-content/80 mb-1">Role</label>
