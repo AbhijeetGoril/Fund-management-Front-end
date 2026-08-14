@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -15,6 +15,7 @@ import {
 import Navbar from "../components/Navbar/Navbar";
 import { Loader } from "../components/Loader";
 import CreateEventForm from "../components/Addmin-Panel/CreateEventForm";
+import CreateSocietyModal from "../components/Addmin-Panel/CreateSocietyModal";
 import PageHeader from "../components/layout/PageHeader";
 import StatCard from "../components/common/StatCard";
 import SectionHeader from "../components/common/SectionHeader";
@@ -23,39 +24,40 @@ import EventFilters from "../components/events/EventFilters";
 import SocietyGrid from "../components/societies/SocietyGrid";
 
 import { axiosInstance } from "../lib/axois";
-import { societies as seedSocieties } from "../data/dummy";
 
-// ── Fetcher ───────────────────────────────────────────────────────────────────
+// ── Fetchers ──────────────────────────────────────────────────────────────────
 const fetchMyEvents = async () => {
   const { data } = await axiosInstance.get("/societies/events/allMyRelatedEvents");
   return data.events;
 };
 
+const fetchMySocieties = async () => {
+  const { data } = await axiosInstance.get("/societies/allMySocieties");
+  return data.societies;
+};
+
 // ── Normalizers ───────────────────────────────────────────────────────────────
 function normalizeSocieties(list) {
   const societies = Array.isArray(list) ? list : [];
-  const toNumber = (v, d = 0) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : d;
-  };
-  const toNumberFromCommaString = (v) =>
-    typeof v === "string" ? toNumber(v.replace(/,/g, "")) : toNumber(v);
-
   return societies.map((s) => ({
     ...s,
-    totalMembers: toNumber(s.totalMembers),
-    totalCollected: toNumberFromCommaString(s.totalCollected),
+    id: s._id,
+    totalMembers: s.totalMembers ?? 0,
+    totalCollected: s.totalCollected ?? 0,
     status: (s.status || "active").toLowerCase(),
     events: Array.isArray(s.events)
       ? s.events.map((e) => ({
           ...e,
-          totalMembers: toNumber(e.totalMembers),
-          paidMembers: toNumber(e.paidMembers),
-          pendingPayments: toNumber(e.pendingPayments),
-          totalCollected: toNumber(e.totalCollected),
-          progress: toNumber(e.progress),
+          id: e._id,
+          totalMembers: e.totalMembers ?? 0,
+          paidMembers: e.paidMembers ?? 0,
+          pendingPayments: e.pendingPayments ?? 0,
+          totalCollected: e.budget?.collected ?? 0,
+          progress: e.budget?.target
+            ? Math.round(((e.budget.collected ?? 0) / e.budget.target) * 100)
+            : 0,
           status: (e.status || "active").toLowerCase(),
-          type: e.type || "society",
+          type: "society",
         }))
       : [],
   }));
@@ -71,7 +73,7 @@ function normalizeApiEvents(list) {
     category:        e.category,
     date:            e.date,
     location:        e.location ?? "",
-    coverPhoto:      e.coverPhoto ?? "",        // ← new
+    coverPhoto:      e.coverPhoto ?? "",
     status:          (e.status || "active").toLowerCase(),
     type:            "individual",
     isAdmin:         e.isAdmin ?? false,
@@ -89,21 +91,17 @@ function normalizeApiEvents(list) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [societies, setSocieties] = useState([]);
-  const [showModal, setShowModal] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showSocietyModal, setShowSocietyModal] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [activeTab, setActiveTab]       = useState("events");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setSocieties(normalizeSocieties(seedSocieties));
-  }, []);
-
   const {
     data: rawEvents,
-    isLoading,
-    isError,
-    error,
+    isLoading: isLoadingEvents,
+    isError: isErrorEvents,
+    error: errorEvents,
     refetch: refetchMyEvents,
   } = useQuery({
     queryKey: ["myEvents"],
@@ -112,7 +110,21 @@ export default function Dashboard() {
     retry: 1,
   });
 
+  const {
+    data: rawSocieties,
+    isLoading: isLoadingSocieties,
+    isError: isErrorSocieties,
+    error: errorSocieties,
+    refetch: refetchMySocieties,
+  } = useQuery({
+    queryKey: ["mySocieties"],
+    queryFn:  fetchMySocieties,
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+  });
+
   const events = useMemo(() => normalizeApiEvents(rawEvents), [rawEvents]);
+  const societies = useMemo(() => normalizeSocieties(rawSocieties), [rawSocieties]);
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -146,6 +158,10 @@ export default function Dashboard() {
   const handleEventClick   = (id) => navigate(`/events/${id}`);
   const handleSocietyClick = (id) => navigate(`/society/${id}`);
 
+  const isLoading = isLoadingEvents || isLoadingSocieties;
+  const isError = isErrorEvents || isErrorSocieties;
+  const error = errorEvents || errorSocieties;
+
   // ── Loading ───────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -170,12 +186,12 @@ export default function Dashboard() {
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-center space-y-2">
-            <p className="text-lg font-semibold text-error">Failed to load events</p>
+            <p className="text-lg font-semibold text-error">Failed to load dashboard</p>
             <p className="text-sm text-base-content/60">
               {error?.response?.data?.message || error?.message}
             </p>
             <button
-              onClick={refetchMyEvents}
+              onClick={() => { refetchMyEvents(); refetchMySocieties(); }}
               className="mt-4 px-6 py-2 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-medium hover:shadow-lg transition-all"
             >
               Retry
@@ -191,12 +207,19 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
       <Navbar />
 
-      {showModal && (
+      {showEventModal && (
         <CreateEventForm
           onEventCreated={refetchMyEvents}
-          setShowModal={setShowModal}
+          setShowModal={setShowEventModal}
           societies={societies}
           societyId={null}
+        />
+      )}
+
+      {showSocietyModal && (
+        <CreateSocietyModal
+          setShowModal={setShowSocietyModal}
+          onCreated={() => refetchMySocieties()}
         />
       )}
 
@@ -214,7 +237,7 @@ export default function Dashboard() {
                 <span className="text-sm font-semibold text-base-content">Active</span>
               </div>
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => setShowEventModal(true)}
                 className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
               >
                 <PlusIcon className="h-5 w-5" />
@@ -229,32 +252,24 @@ export default function Dashboard() {
           <StatCard
             label="Total Societies"
             value={stats.totalSocieties}
-            change="+2%"
-            trend="up"
             icon={<BuildingLibraryIcon className="h-6 w-6" />}
             gradient="from-primary to-info"
           />
           <StatCard
             label="Total Events"
             value={stats.totalEvents}
-            change="+12%"
-            trend="up"
             icon={<ChartBarIcon className="h-6 w-6" />}
             gradient="from-secondary to-accent"
           />
           <StatCard
             label="Total Collected"
             value={`₹${stats.totalCollected.toLocaleString()}`}
-            change="+23%"
-            trend="up"
             icon={<CurrencyRupeeIcon className="h-6 w-6" />}
             gradient="from-success to-success"
           />
           <StatCard
             label="Pending Payments"
             value={stats.totalPending}
-            change="-8%"
-            trend="down"
             icon={<ClockIcon className="h-6 w-6" />}
             gradient="from-warning to-warning"
           />
@@ -310,7 +325,7 @@ export default function Dashboard() {
               events={filteredPersonalEvents}
               loading={false}
               onCardClick={handleEventClick}
-              emptyCta={() => setShowModal(true)}
+              emptyCta={() => setShowEventModal(true)}
               Loader={Loader}
               loaderProps={{ size: "lg", color: "primary", variant: "spinner" }}
             />
@@ -327,17 +342,6 @@ export default function Dashboard() {
                   </span>{" "}
                   personal events
                 </p>
-                <div className="flex space-x-2">
-                  <button className="px-4 py-2 text-sm font-medium text-base-content bg-base-100 rounded-xl border border-base-300 shadow-sm hover:bg-base-200 transition-all duration-200">
-                    Previous
-                  </button>
-                  <button className="px-4 py-2 text-sm font-medium text-primary-content bg-gradient-to-r from-primary to-secondary rounded-xl shadow-sm">
-                    1
-                  </button>
-                  <button className="px-4 py-2 text-sm font-medium text-base-content bg-base-100 rounded-xl border border-base-300 shadow-sm hover:bg-base-200 transition-all duration-200">
-                    Next
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -351,7 +355,10 @@ export default function Dashboard() {
               subtitle="Manage and track all society communities"
               leftIcon={<BuildingOfficeIcon className="h-6 w-6 text-secondary" />}
               right={
-                <button className="px-4 py-2 text-sm font-medium text-base-content bg-base-100 rounded-xl hover:bg-base-200 transition-all duration-200 border border-base-300 shadow-sm flex items-center gap-2">
+                <button
+                  onClick={() => setShowSocietyModal(true)}
+                  className="px-4 py-2 text-sm font-medium text-base-content bg-base-100 rounded-xl hover:bg-base-200 transition-all duration-200 border border-base-300 shadow-sm flex items-center gap-2"
+                >
                   <PlusIcon className="h-4 w-4" />
                   Add Society
                 </button>
@@ -369,7 +376,7 @@ export default function Dashboard() {
 
         <div className="mt-8 text-center">
           <p className="text-base-content/40 text-sm">
-            © {new Date().getFullYear()} Community Management System. Crafted with ❤️ for better community living.
+            © {new Date().getFullYear()} Community Management System.
           </p>
         </div>
       </div>
