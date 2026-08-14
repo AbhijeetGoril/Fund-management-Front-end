@@ -16,7 +16,7 @@ import {
   updateSpend,
   deleteSpend,
 } from "../lib/api/spendApi";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify"; // FIX: this project uses react-toastify, not react-hot-toast
 
 const EventSpends = () => {
   const { eventId } = useParams();
