@@ -33,6 +33,7 @@ const fetchMyEvents = async () => {
 
 const fetchMySocieties = async () => {
   const { data } = await axiosInstance.get("/societies/allMySocieties");
+  console.log(data)
   return data.societies;
 };
 
@@ -125,7 +126,7 @@ export default function Dashboard() {
 
   const events = useMemo(() => normalizeApiEvents(rawEvents), [rawEvents]);
   const societies = useMemo(() => normalizeSocieties(rawSocieties), [rawSocieties]);
-
+  console.log(societies)
   // ── Stats ─────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
     const totalCollectedSoc = societies.reduce((s, c) => s + c.totalCollected, 0);

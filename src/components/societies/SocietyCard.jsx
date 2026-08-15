@@ -9,7 +9,7 @@ const statusConfig = {
 const SocietyCard = ({ society, onClick }) => {
   const status = (society.status || "active").toLowerCase();
   const statusStyle = statusConfig[status] || statusConfig.active;
-
+   console.log("SOCIETY CARD RENDERING:", society);
   const totalMembers = society.totalMembers ?? 0;
   const activeEvents = society.activeEvents ?? 0;
   const totalCollected = society.totalCollected ?? 0;
@@ -103,38 +103,6 @@ const SocietyCard = ({ society, onClick }) => {
   );
 };
 
-const SocietyGrid = ({ societies = [], loading, onCardClick, Loader, loaderProps }) => {
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        {Loader ? <Loader {...loaderProps} /> : <p className="text-base-content/50">Loading...</p>}
-      </div>
-    );
-  }
 
-  if (societies.length === 0) {
-    return (
-      <div className="text-center py-20">
-        <div className="h-14 w-14 rounded-full bg-base-200 flex items-center justify-center mx-auto mb-3">
-          <BuildingLibraryIcon className="h-7 w-7 text-base-content/25" />
-        </div>
-        <p className="text-base-content/50 font-medium">No societies yet</p>
-        <p className="text-xs text-base-content/35 mt-1">Create one to get started.</p>
-      </div>
-    );
-  }
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-6">
-      {societies.map((society) => (
-        <SocietyCard
-          key={society._id || society.id}
-          society={society}
-          onClick={onCardClick}
-        />
-      ))}
-    </div>
-  );
-};
-
-export default SocietyGrid;
+export default SocietyCard;
