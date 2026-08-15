@@ -1,5 +1,5 @@
-// components/societies/SocietyGrid.jsx
-import { BuildingLibraryIcon, ChevronRightIcon, UsersIcon, CalendarIcon } from "@heroicons/react/24/outline";
+import { useState } from "react";
+import { BuildingLibraryIcon, ChevronRightIcon, CalendarIcon } from "@heroicons/react/24/outline";
 
 const statusConfig = {
   active: { pill: "bg-white/20 text-white", dot: "bg-success" },
@@ -7,13 +7,16 @@ const statusConfig = {
 };
 
 const SocietyCard = ({ society, onClick }) => {
+  const [imgError, setImgError] = useState(false);
+
   const status = (society.status || "active").toLowerCase();
   const statusStyle = statusConfig[status] || statusConfig.active;
-   console.log("SOCIETY CARD RENDERING:", society);
+
   const totalMembers = society.totalMembers ?? 0;
   const activeEvents = society.activeEvents ?? 0;
   const totalCollected = society.totalCollected ?? 0;
   const events = society.events ?? [];
+  const hasCover = !!society.logo && !imgError;
 
   const formatCollected = (amount) => {
     if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
@@ -26,35 +29,43 @@ const SocietyCard = ({ society, onClick }) => {
       onClick={() => onClick(society._id || society.id)}
       className="group w-full text-left bg-base-100 rounded-2xl border border-base-200 hover:border-primary/30 hover:shadow-xl transition-all duration-300 overflow-hidden"
     >
-      {/* Header — gradient banner */}
-      <div className="relative bg-gradient-to-br from-primary via-primary to-secondary p-5 pb-6">
-        <div className="flex items-start justify-between">
-          <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1.5 ${statusStyle.pill}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
-            {status}
-          </span>
-          <ChevronRightIcon className="h-5 w-5 text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200" />
-        </div>
-
-        <div className="flex items-center gap-3 mt-4">
-          {society.logo ? (
+      {/* Header — cover photo or gradient fallback */}
+      <div className="relative h-32 overflow-hidden">
+        {hasCover ? (
+          <>
             <img
               src={society.logo}
               alt={society.name}
-              className="h-11 w-11 rounded-xl object-cover ring-2 ring-white/30 shrink-0"
+              onError={() => setImgError(true)}
+              className="absolute inset-0 w-full h-full object-cover"
             />
-          ) : (
-            <div className="h-11 w-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-              <BuildingLibraryIcon className="h-6 w-6 text-white" />
-            </div>
-          )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-secondary" />
+        )}
+
+        <div className="relative z-10 h-full flex flex-col justify-between p-5">
+          <div className="flex items-start justify-between">
+            <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1.5 ${statusStyle.pill}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
+              {status}
+            </span>
+            <ChevronRightIcon className="h-5 w-5 text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200" />
+          </div>
+
           <div className="min-w-0">
-            <h3 className="text-xl font-bold text-white truncate">{society.name}</h3>
+            <h3 className="text-xl font-bold text-white truncate drop-shadow-sm">{society.name}</h3>
             {society.location && (
-              <p className="text-xs text-white/70 truncate mt-0.5">{society.location}</p>
+              <p className="text-xs text-white/80 truncate mt-0.5">{society.location}</p>
             )}
           </div>
         </div>
+
+        {/* Fallback icon watermark when no cover photo */}
+        {!hasCover && (
+          <BuildingLibraryIcon className="absolute right-4 top-1/2 -translate-y-1/2 h-16 w-16 text-white/10" />
+        )}
       </div>
 
       {/* Stats row */}
@@ -102,7 +113,5 @@ const SocietyCard = ({ society, onClick }) => {
     </button>
   );
 };
-
-
 
 export default SocietyCard;
