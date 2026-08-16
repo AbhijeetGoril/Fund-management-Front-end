@@ -33,9 +33,10 @@ function App() {
         <Route path="/admin-panel" element={<AdminPanel />} />
         <Route path="/events/:eventId" element={<EventDetails />} />
         <Route path="/events/:eventId/spends" element={<EventSpends />} />
-        <Route path="/society/:id" element={<SocietyDetails />} />
+        {/* <Route path="/society/:id" element={<SocietyDetails />} /> */}
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/society/:societyId" element={<SocietyDetails />} />
       </Routes>
       </div>
      

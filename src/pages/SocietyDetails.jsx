@@ -1,179 +1,277 @@
-import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import Navbar from "../components/Navbar/Navbar";
+import { Loader } from "../components/Loader";
+import { axiosInstance } from "../lib/axois";
+import SocietyMembersTab from "../components/societies/SocietyMembersTab";
+import SocietyEventsTab from "../components/societies/SocietyEventsTab";
 import {
-  CalendarIcon,
-  PlusIcon,
+  ArrowLeftIcon,
   UsersIcon,
+  CalendarIcon,
+  Cog6ToothIcon,
+  ExclamationTriangleIcon,
+  BuildingLibraryIcon,
+  MapPinIcon,
+  LockClosedIcon,
+  GlobeAltIcon,
   ShieldCheckIcon,
-  CurrencyRupeeIcon,
-  ArrowDownTrayIcon
 } from "@heroicons/react/24/outline";
 
-import Navbar from "../components/Navbar/Navbar";
-import EventCard from "../components/events/EventCard";
-import StatCard from "../components/common/StatCard";
-import { societies as seedSocieties } from "../data/dummy";
-import SectionHeader from "../components/common/SectionHeader";
-import EventFilters from "../components/events/EventFilters";
-import PageHeader from "../components/layout/PageHeader";
-import CreateEventForm from "../components/Addmin-Panel/CreateEventForm";
+const fetchSocietyDetail = async (societyId) => {
+  const { data } = await axiosInstance.get(`/societies/${societyId}`);
+  console.log(data)
+  return data;
+};
 
-// Normalize helpers
-function normalizeSocieties(list) {
-  const arr = Array.isArray(list) ? list : [];
-  return arr.map(s => ({
-    ...s,
-    totalMembers: Number(s.totalMembers) || 0,
-    totalCollected: Number(String(s.totalCollected).replace(/,/g, "")) || 0,
-    status: (s.status || "active").toLowerCase(),
-    events: Array.isArray(s.events)
-      ? s.events.map(ev => ({
-          ...ev,
-          totalMembers: Number(ev.totalMembers) || 0,
-          paidMembers: Number(ev.paidMembers) || 0,
-          pendingPayments: Number(ev.pendingPayments) || 0,
-          totalCollected: Number(ev.totalCollected) || 0,
-          progress: Number(ev.progress) || 0,
-          status: (ev.status || "active").toLowerCase(),
-          type: "society"
-        }))
-      : []
-  }));
-}
+const TABS = [
+  { key: "members", label: "Members", icon: UsersIcon },
+  { key: "events", label: "Events", icon: CalendarIcon },
+  { key: "settings", label: "Settings", icon: Cog6ToothIcon },
+];
 
-export default function SocietyDetails() {
-  const { id } = useParams();
+const SocietyDetails = () => {
+  const { societyId } = useParams();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("members");
 
-  const societies = useMemo(() => normalizeSocieties(seedSocieties), []);
-  const society = societies.find(s => String(s.id) === String(id));
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["society", societyId],
+    queryFn: () => fetchSocietyDetail(societyId),
+    staleTime: 1000 * 60 * 2,
+    retry: 2,
+  });
 
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [showModal, setShowModal] = useState(false);
-  const societyEvents = Array.isArray(society.events) ? society.events : [];
-  const activeCount = societyEvents.filter(e => e.status === "active").length;
-  const filtered = useMemo(() => {
-    if (statusFilter === "all") return societyEvents;
-    return societyEvents.filter(e => e.status === statusFilter);
-  }, [societyEvents, statusFilter]);
-
-  if (!society) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
         <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-            <p className="text-slate-700">Society not found.</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
+          <div className="h-40 bg-base-300/60 rounded-3xl mb-6" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-base-300/60 rounded-2xl" />
+            ))}
+          </div>
+          <div className="h-96 bg-base-300/40 rounded-3xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !data?.society) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300">
+        <Navbar />
+        <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+          <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200 p-12">
+            <div className="h-16 w-16 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-5">
+              <ExclamationTriangleIcon className="h-8 w-8 text-error" />
+            </div>
+            <h2 className="text-2xl font-bold text-base-content mb-2">
+              {isError ? "Failed to load society" : "Society not found"}
+            </h2>
+            {isError && (
+              <p className="text-base-content/60 mb-8 text-sm max-w-sm mx-auto">
+                {error?.response?.data?.message || error?.message}
+              </p>
+            )}
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={refetch}
+                className="px-6 py-3 border border-base-300 text-base-content rounded-2xl font-semibold hover:bg-base-200 transition-all duration-300"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-primary-content rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
+              >
+                Back to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  
+  const { society, members, events, isAdmin, summary } = data;
 
-  
+  const formatCollected = (amount) => {
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+    if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}k`;
+    return `₹${amount ?? 0}`;
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with icon + name and right-aligned controls */}
-        
-        <PageHeader
-          title={society.name}
-          subtitle={society.address}
-          right={
-            <div className="flex items-center gap-3">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-green-200/50 flex items-center">
-                <div className="relative mr-2">
-                  <div className="bg-green-500 w-3 h-3 rounded-full animate-ping absolute"></div>
-                  <div className="bg-green-500 w-3 h-3 rounded-full relative"></div>
-                </div>
-                <span className="text-sm font-semibold text-gray-700">Active</span>
-              </div>
-              <button
-                onClick={() => setShowModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
-              >
-                <PlusIcon className="h-5 w-5" />
-                New Event
-              </button>
-            </div>
-          }
-        />
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-32 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-secondary/20 rounded-full blur-3xl" />
+      </div>
 
-        {/* Stat cards with gradients matching dashboard */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-          <StatCard
-            label="Members"
-            value={society.totalMembers}
-            change="+1%"
-            trend="up"
-            icon={<UsersIcon className="h-6 w-6" />}
-            gradient="from-blue-500 to-cyan-500"
-          />
-          <StatCard
-            label="Active Events"
-            value={activeCount}
-            change="+4%"
-            trend="up"
-            icon={<ShieldCheckIcon className="h-6 w-6" />}
-            gradient="from-purple-500 to-pink-500"
-          />
-          <StatCard
-            label="Collected"
-            value={`₹${society.totalCollected.toLocaleString()}`}
-            change="+9%"
-            trend="up"
-            icon={<CurrencyRupeeIcon className="h-6 w-6" />}
-            gradient="from-emerald-500 to-green-500"
-          />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+        {/* Back button */}
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="flex items-center gap-2 text-base-content/70 hover:text-base-content transition-colors bg-base-100/80 backdrop-blur-sm px-4 py-2 rounded-2xl shadow-md border border-base-200 hover:shadow-lg text-sm font-medium w-fit"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          Back to Dashboard
+        </button>
+
+        {/* Hero */}
+        <div className="relative rounded-3xl overflow-hidden shadow-2xl min-h-52 ring-1 ring-black/5">
+          {society.logo ? (
+            <>
+              <img
+                src={society.logo}
+                alt={society.name}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
+            </>
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-secondary" />
+          )}
+
+          <div className="relative z-10 p-6 sm:p-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                {society.category && (
+                  <span className="px-3 py-1 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full text-xs font-semibold text-white">
+                    {society.category}
+                  </span>
+                )}
+                {isAdmin && (
+                  <span className="flex items-center gap-1 px-3 py-1 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full text-xs font-semibold text-white">
+                    <ShieldCheckIcon className="h-3.5 w-3.5" />
+                    Admin
+                  </span>
+                )}
+                <span className="flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full text-xs font-semibold text-white">
+                  {society.privacy === "private" ? (
+                    <LockClosedIcon className="h-3.5 w-3.5" />
+                  ) : (
+                    <GlobeAltIcon className="h-3.5 w-3.5" />
+                  )}
+                  {society.privacy === "private" ? "Private" : "Public"}
+                </span>
+              </div>
+
+              <h1 className="text-3xl lg:text-5xl font-bold text-white mb-3 leading-tight drop-shadow-sm break-words">
+                {society.name}
+              </h1>
+
+              {society.description && (
+                <p className="text-white/75 text-sm lg:text-base mb-4 max-w-xl line-clamp-2 leading-relaxed">
+                  {society.description}
+                </p>
+              )}
+
+              {society.location && (
+                <div className="flex items-center gap-1.5 text-white/80 text-sm">
+                  <MapPinIcon className="h-4 w-4 shrink-0" />
+                  <span className="font-medium">{society.location}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Events container */}
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-          <SectionHeader
-            title="Society Events"
-            subtitle={`${filtered.length} ${statusFilter === "all" ? "total" : statusFilter} events`}
-            leftIcon={<CalendarIcon className="h-6 w-6" />}
-            right={
-              <div className="flex flex-wrap gap-3">
-                <EventFilters activeFilter={statusFilter} setActiveFilter={setStatusFilter} />
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 border border-gray-200 shadow-sm flex items-center gap-2">
-                  <ArrowDownTrayIcon className="h-4 w-4" />
-                  Export
-                </button>
-              </div>
-            }
-          />
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-base-100/80 backdrop-blur-sm rounded-2xl border border-base-200/50 p-4">
+            <div className="flex items-center gap-2 text-base-content/50 mb-1">
+              <UsersIcon className="h-4 w-4" />
+              <p className="text-xs font-medium uppercase tracking-wide">Members</p>
+            </div>
+            <p className="text-2xl font-bold text-base-content">{summary?.totalMembers ?? 0}</p>
+          </div>
+          <div className="bg-base-100/80 backdrop-blur-sm rounded-2xl border border-base-200/50 p-4">
+            <div className="flex items-center gap-2 text-base-content/50 mb-1">
+              <ShieldCheckIcon className="h-4 w-4" />
+              <p className="text-xs font-medium uppercase tracking-wide">Admins</p>
+            </div>
+            <p className="text-2xl font-bold text-base-content">{summary?.totalAdmins ?? 0}</p>
+          </div>
+          <div className="bg-base-100/80 backdrop-blur-sm rounded-2xl border border-base-200/50 p-4">
+            <div className="flex items-center gap-2 text-info/60 mb-1">
+              <CalendarIcon className="h-4 w-4" />
+              <p className="text-xs font-medium uppercase tracking-wide">Active Events</p>
+            </div>
+            <p className="text-2xl font-bold text-info">{summary?.activeEvents ?? 0}</p>
+          </div>
+          <div className="bg-base-100/80 backdrop-blur-sm rounded-2xl border border-base-200/50 p-4">
+            <div className="flex items-center gap-2 text-success/60 mb-1">
+              <BuildingLibraryIcon className="h-4 w-4" />
+              <p className="text-xs font-medium uppercase tracking-wide">Collected</p>
+            </div>
+            <p className="text-2xl font-bold text-success">{formatCollected(summary?.totalCollected)}</p>
+          </div>
+        </div>
 
-          <div className="p-6">
-            {filtered.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filtered.map(ev => (
-                  <EventCard
-                    key={ev.id}
-                    event={{ ...ev, type: "society", societyName: society.name }}
-                    onClick={() => {}}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CalendarIcon className="h-10 w-10 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">No events for this filter</h3>
-                <p className="text-gray-600">Try switching the status filter to see other events</p>
+        {/* Tabs + content */}
+        <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200/50 overflow-hidden">
+          <div className="border-b border-base-200 px-2 sm:px-6">
+            <nav className="flex gap-1 sm:gap-2">
+              {TABS.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={`flex items-center gap-2 py-4 px-3 sm:px-4 border-b-2 font-medium text-sm transition-all duration-200 ${
+                    activeTab === key
+                      ? "border-primary text-primary"
+                      : "border-transparent text-base-content/60 hover:text-base-content hover:border-base-300"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="hidden xs:inline">{label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <div className="p-4 sm:p-6">
+            {activeTab === "members" && (
+              <SocietyMembersTab
+                society={society}
+                members={members}
+                isAdmin={isAdmin}
+              />
+            )}
+            {activeTab === "events" && (
+              <SocietyEventsTab
+                society={society}
+                events={events}
+                isAdmin={isAdmin}
+              />
+            )}
+            {activeTab === "settings" && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <Cog6ToothIcon className="h-10 w-10 text-base-content/15 mb-3" />
+                <p className="text-base-content/50 font-medium">Settings coming soon</p>
+                <p className="text-xs text-base-content/35 mt-1">
+                  Society configuration options will appear here.
+                </p>
               </div>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Optional: modal hook */}
-      {showModal && <CreateEventForm setShowModal={setShowModal} presetSocietyId={society.id} />}
+        <div className="text-center pt-2">
+          <p className="text-base-content/40 text-sm">
+            © {new Date().getFullYear()} Society Management System. All rights reserved.
+          </p>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default SocietyDetails;
