@@ -250,6 +250,7 @@ const SocietyDetails = () => {
                 society={society}
                 events={events}
                 isAdmin={isAdmin}
+                members={members}
               />
             )}
             {activeTab === "settings" && (

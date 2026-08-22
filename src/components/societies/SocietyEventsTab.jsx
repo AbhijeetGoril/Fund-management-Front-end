@@ -6,7 +6,7 @@ import {
   PlusIcon,
   CurrencyRupeeIcon,
 } from "@heroicons/react/24/outline";
-import CreateEventForm from "../Addmin-Panel/CreateEventForm";
+import CreateSocietyEventForm from "../Addmin-Panel/Createsocietyeventform";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -105,7 +105,7 @@ const EventCard = ({ event, onClick }) => {
   );
 };
 
-const SocietyEventsTab = ({ society, events = [], isAdmin }) => {
+const SocietyEventsTab = ({ society, events = [], isAdmin, members = [] }) => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const navigate = useNavigate();
@@ -123,11 +123,11 @@ const SocietyEventsTab = ({ society, events = [], isAdmin }) => {
   return (
     <div>
       {showCreateModal && (
-        <CreateEventForm
+        <CreateSocietyEventForm
           onEventCreated={() => setShowCreateModal(false)}
           setShowModal={setShowCreateModal}
-          societies={[society]}
           societyId={society._id}
+          societyMembers={members}
         />
       )}
 

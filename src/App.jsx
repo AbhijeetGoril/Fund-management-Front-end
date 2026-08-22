@@ -39,7 +39,6 @@ function App() {
         <Route path="/society/:societyId" element={<SocietyDetails />} />
       </Routes>
       </div>
-     
       <ToastContainer />
     </BrowserRouter>
   );

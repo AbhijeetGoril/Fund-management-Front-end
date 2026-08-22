@@ -15,6 +15,7 @@ import { BellIcon as BellSolid } from "@heroicons/react/24/solid";
 
 const fetchNotifications = async () => {
   const { data } = await axiosInstance.get("/notification");
+  console.log(data)
   return data;
 };
 
@@ -124,6 +125,7 @@ const NotificationsPage = () => {
   });
 
   const { mutateAsync: acceptInvitation, isPending: isAccepting } = useMutation({
+
     mutationFn: acceptInvitationApi,
     onSuccess: (data) => {
       invalidateAll();
@@ -353,6 +355,7 @@ const NotificationsPage = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+
                               acceptInvitation(n.relatedInvitation._id);
                             }}
                             disabled={isAccepting || isRejecting}
