@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarIcon,
   BuildingOfficeIcon,
@@ -23,7 +23,7 @@ import EventGrid from "../components/events/EventGrid";
 import EventFilters from "../components/events/EventFilters";
 import SocietyGrid from "../components/societies/SocietyGrid";
 
-import { axiosInstance } from "../lib/axois";
+import { axiosInstance } from "../lib/axois"; ``
 
 // ── Fetchers ──────────────────────────────────────────────────────────────────
 const fetchMyEvents = async () => {
@@ -48,18 +48,18 @@ function normalizeSocieties(list) {
     status: (s.status || "active").toLowerCase(),
     events: Array.isArray(s.events)
       ? s.events.map((e) => ({
-          ...e,
-          id: e._id,
-          totalMembers: e.totalMembers ?? 0,
-          paidMembers: e.paidMembers ?? 0,
-          pendingPayments: e.pendingPayments ?? 0,
-          totalCollected: e.budget?.collected ?? 0,
-          progress: e.budget?.target
-            ? Math.round(((e.budget.collected ?? 0) / e.budget.target) * 100)
-            : 0,
-          status: (e.status || "active").toLowerCase(),
-          type: "society",
-        }))
+        ...e,
+        id: e._id,
+        totalMembers: e.totalMembers ?? 0,
+        paidMembers: e.paidMembers ?? 0,
+        pendingPayments: e.pendingPayments ?? 0,
+        totalCollected: e.budget?.collected ?? 0,
+        progress: e.budget?.target
+          ? Math.round(((e.budget.collected ?? 0) / e.budget.target) * 100)
+          : 0,
+        status: (e.status || "active").toLowerCase(),
+        type: "society",
+      }))
       : [],
   }));
 }
@@ -67,24 +67,24 @@ function normalizeSocieties(list) {
 function normalizeApiEvents(list) {
   if (!Array.isArray(list)) return [];
   return list.map((e) => ({
-    id:              e._id,
-    _id:             e._id,
-    title:           e.title,
-    description:     e.description,
-    category:        e.category,
-    date:            e.date,
-    location:        e.location ?? "",
-    coverPhoto:      e.coverPhoto ?? "",
-    status:          (e.status || "active").toLowerCase(),
-    type:            "individual",
-    isAdmin:         e.isAdmin ?? false,
-    createdBy:       e.createdBy,
-    society:         e.society,
-    totalMembers:    e.members?.length ?? 0,
-    paidMembers:     0,
+    id: e._id,
+    _id: e._id,
+    title: e.title,
+    description: e.description,
+    category: e.category,
+    date: e.date,
+    location: e.location ?? "",
+    coverPhoto: e.coverPhoto ?? "",
+    status: (e.status || "active").toLowerCase(),
+    type: "individual",
+    isAdmin: e.isAdmin ?? false,
+    createdBy: e.createdBy,
+    society: e.society,
+    totalMembers: e.members?.length ?? 0,
+    paidMembers: 0,
     pendingPayments: 0,
-    totalCollected:  e.budget?.collected ?? 0,
-    progress:        e.budget?.target
+    totalCollected: e.budget?.collected ?? 0,
+    progress: e.budget?.target
       ? Math.round(((e.budget.collected ?? 0) / e.budget.target) * 100)
       : 0,
   }));
@@ -95,8 +95,9 @@ export default function Dashboard() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [showSocietyModal, setShowSocietyModal] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [activeTab, setActiveTab]       = useState("events");
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("events");
+  const navigate = useNavigate(); ``
+  const queryClient = useQueryClient();
 
   const {
     data: rawEvents,
@@ -106,7 +107,7 @@ export default function Dashboard() {
     refetch: refetchMyEvents,
   } = useQuery({
     queryKey: ["myEvents"],
-    queryFn:  fetchMyEvents,
+    queryFn: fetchMyEvents,
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });
@@ -119,7 +120,7 @@ export default function Dashboard() {
     refetch: refetchMySocieties,
   } = useQuery({
     queryKey: ["mySocieties"],
-    queryFn:  fetchMySocieties,
+    queryFn: fetchMySocieties,
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });
@@ -130,17 +131,17 @@ export default function Dashboard() {
   // ── Stats ─────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
     const totalCollectedSoc = societies.reduce((s, c) => s + c.totalCollected, 0);
-    const totalPendingSoc   = societies.reduce(
+    const totalPendingSoc = societies.reduce(
       (s, c) => s + c.events.reduce((ps, e) => ps + e.pendingPayments, 0), 0
     );
     const totalCollectedInd = events.reduce((s, e) => s + e.totalCollected, 0);
-    const totalPendingInd   = events.reduce((s, e) => s + e.pendingPayments, 0);
+    const totalPendingInd = events.reduce((s, e) => s + e.pendingPayments, 0);
 
     return {
-      totalSocieties:       societies.length,
-      totalEvents:          events.length + societies.reduce((a, s) => a + s.events.length, 0),
-      totalCollected:       totalCollectedSoc + totalCollectedInd,
-      totalPending:         totalPendingSoc + totalPendingInd,
+      totalSocieties: societies.length,
+      totalEvents: events.length + societies.reduce((a, s) => a + s.events.length, 0),
+      totalCollected: totalCollectedSoc + totalCollectedInd,
+      totalPending: totalPendingSoc + totalPendingInd,
       individualEventCount: events.length,
     };
   }, [societies, events]);
@@ -148,7 +149,7 @@ export default function Dashboard() {
   // ── Filtered events ───────────────────────────────────────────────────────
   const filteredPersonalEvents = useMemo(() => {
     return events.filter((e) => {
-      if (activeFilter === "all")        return true;
+      if (activeFilter === "all") return true;
       if (activeFilter === "individual") return e.type === "individual";
       if (activeFilter === "active" || activeFilter === "completed")
         return e.status === activeFilter;
@@ -156,7 +157,7 @@ export default function Dashboard() {
     });
   }, [events, activeFilter]);
 
-  const handleEventClick   = (id) => navigate(`/events/${id}`);
+  const handleEventClick = (id) => navigate(`/events/${id}`);
   const handleSocietyClick = (id) => navigate(`/society/${id}`);
 
   const isLoading = isLoadingEvents || isLoadingSocieties;
@@ -210,10 +211,12 @@ export default function Dashboard() {
 
       {showEventModal && (
         <CreateEventForm
-          onEventCreated={refetchMyEvents}
-          setShowModal={setShowEventModal}
-          societies={societies}
-          societyId={null}
+          onEventCreated={() => {
+            queryClient.invalidateQueries({ queryKey: ["myEvents"] });
+          }}
+      setShowModal={setShowEventModal}
+      societies={societies}
+      societyId={null}
         />
       )}
 
@@ -280,22 +283,20 @@ export default function Dashboard() {
         <div className="flex space-x-1 mb-6 bg-base-100/80 backdrop-blur-sm rounded-2xl p-1 shadow-lg border border-base-200/50 w-fit">
           <button
             onClick={() => setActiveTab("events")}
-            className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-              activeTab === "events"
+            className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === "events"
                 ? "bg-gradient-to-r from-primary to-secondary text-primary-content shadow-sm"
                 : "text-base-content/60 hover:text-base-content"
-            }`}
+              }`}
           >
             <CalendarIcon className="h-4 w-4 inline mr-2" />
             Events ({stats.individualEventCount})
           </button>
           <button
             onClick={() => setActiveTab("societies")}
-            className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-              activeTab === "societies"
+            className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === "societies"
                 ? "bg-gradient-to-r from-primary to-secondary text-primary-content shadow-sm"
                 : "text-base-content/60 hover:text-base-content"
-            }`}
+              }`}
           >
             <BuildingOfficeIcon className="h-4 w-4 inline mr-2" />
             Societies ({stats.totalSocieties})
