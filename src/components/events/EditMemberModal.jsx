@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import ModalPortal from "../ModalPortal";
 import {
   XMarkIcon,
   UserIcon,
@@ -110,7 +111,8 @@ const EditMemberModal = ({ eventId, member, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <ModalPortal>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div ref={modalRef} className="bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-bold text-base-content">Edit Member</h3>
@@ -248,6 +250,8 @@ const EditMemberModal = ({ eventId, member, onClose }) => {
         </form>
       </div>
     </div>
+    </ModalPortal>
+    
   );
 };
 
