@@ -105,7 +105,7 @@ const EventCard = ({ event, onClick }) => {
   );
 };
 
-const SocietyEventsTab = ({ society, events = [], isAdmin, members = [] }) => {
+const SocietyEventsTab = ({ society, events = [], isAdmin, members = [],onRefresh  }) => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const navigate = useNavigate();
@@ -123,13 +123,16 @@ const SocietyEventsTab = ({ society, events = [], isAdmin, members = [] }) => {
   return (
     <div>
       {showCreateModal && (
-        <CreateSocietyEventForm
-          onEventCreated={() => setShowCreateModal(false)}
-          setShowModal={setShowCreateModal}
-          societyId={society._id}
-          societyMembers={members}
-        />
-      )}
+    <CreateSocietyEventForm
+      onEventCreated={() => {
+        setShowCreateModal(false);
+        onRefresh?.();   // <-- add this
+      }}
+      setShowModal={setShowCreateModal}
+      societyId={society._id}
+      societyMembers={members}
+    />
+  )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex gap-2 flex-wrap">

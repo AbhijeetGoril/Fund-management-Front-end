@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Navbar from "../components/Navbar/Navbar";
 import { Loader } from "../components/Loader";
 import { axiosInstance } from "../lib/axois";
@@ -21,7 +21,6 @@ import {
 
 const fetchSocietyDetail = async (societyId) => {
   const { data } = await axiosInstance.get(`/societies/${societyId}`);
-  console.log(data)
   return data;
 };
 
@@ -34,6 +33,7 @@ const TABS = [
 const SocietyDetails = () => {
   const { societyId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("members");
 
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -42,6 +42,13 @@ const SocietyDetails = () => {
     staleTime: 1000 * 60 * 2,
     retry: 2,
   });
+
+  // Any child mutation (create event, add/edit member, accept invite, etc.)
+  // can call this to immediately refetch this page's data instead of
+  // waiting out staleTime or requiring a manual reload.
+  const refreshSociety = () => {
+    queryClient.invalidateQueries({ queryKey: ["society", societyId] });
+  };
 
   if (isLoading) {
     return (
@@ -243,6 +250,7 @@ const SocietyDetails = () => {
                 society={society}
                 members={members}
                 isAdmin={isAdmin}
+                onRefresh={refreshSociety}
               />
             )}
             {activeTab === "events" && (
@@ -251,6 +259,7 @@ const SocietyDetails = () => {
                 events={events}
                 isAdmin={isAdmin}
                 members={members}
+                onRefresh={refreshSociety}
               />
             )}
             {activeTab === "settings" && (

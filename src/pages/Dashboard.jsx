@@ -223,7 +223,9 @@ export default function Dashboard() {
       {showSocietyModal && (
         <CreateSocietyModal
           setShowModal={setShowSocietyModal}
-          onCreated={() => refetchMySocieties()}
+          onCreated={() => {
+            queryClient.invalidateQueries({ queryKey: ["mySocieties"] });
+          }}
         />
       )}
 
