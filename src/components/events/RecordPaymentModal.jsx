@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { XMarkIcon, CurrencyRupeeIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { axiosInstance } from "../../lib/axois";
 import { toast } from "react-toastify";
-
+import ModalPortal from "../ModalPortal";
 const recordPaymentApi = async ({ eventId, userId, amountPaid }) => {
   const { data } = await axiosInstance.patch(
     `/events/${eventId}/members/${userId}/payment`,
@@ -67,7 +67,8 @@ const RecordPaymentModal = ({ eventId, member, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <ModalPortal>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-bold text-base-content">Record Payment</h3>
@@ -145,6 +146,8 @@ const RecordPaymentModal = ({ eventId, member, onClose }) => {
         )}
       </div>
     </div>
+      </ModalPortal>
+    
   );
 };
 
