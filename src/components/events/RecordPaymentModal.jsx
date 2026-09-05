@@ -4,9 +4,11 @@ import { XMarkIcon, CurrencyRupeeIcon, ExclamationCircleIcon } from "@heroicons/
 import { axiosInstance } from "../../lib/axois";
 import { toast } from "react-toastify";
 import ModalPortal from "../ModalPortal";
-const recordPaymentApi = async ({ eventId, userId, amountPaid }) => {
+
+
+const recordPaymentApi = async ({ eventId, memberId, amountPaid }) => {
   const { data } = await axiosInstance.patch(
-    `/events/${eventId}/members/${userId}/payment`,
+    `/events/${eventId}/members/${memberId}/payment`,
     { amountPaid }
   );
   return data;
@@ -58,12 +60,10 @@ const RecordPaymentModal = ({ eventId, member, onClose }) => {
       return;
     }
 
-    if (!member.user?._id) {
-      setError("This member has no linked account — payment can't be recorded this way yet.");
-      return;
-    }
-
-    recordPayment({ eventId, userId: member.user._id, amountPaid: amt });
+    // Keyed by the EventMember document's own _id — works for both
+    // registered members (member.user set) and offline members
+    // (member.user null), since every EventMember has an _id regardless.
+    recordPayment({ eventId, memberId: member._id, amountPaid: amt });
   };
 
   return (
@@ -93,10 +93,6 @@ const RecordPaymentModal = ({ eventId, member, onClose }) => {
           <p className="text-sm text-success bg-success/10 rounded-lg p-3">
             ✅ This member is already fully paid.
           </p>
-        ) : !member.user?._id ? (
-          <p className="text-sm text-warning bg-warning/10 rounded-lg p-3">
-            This is an offline participant without a linked account. Payment recording for offline members isn't supported yet.
-          </p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
@@ -121,6 +117,11 @@ const RecordPaymentModal = ({ eventId, member, onClose }) => {
                 <p className="text-xs text-error mt-1.5 flex items-center gap-1">
                   <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
                   {error}
+                </p>
+              )}
+              {!member.user?._id && (
+                <p className="text-xs text-base-content/45 mt-1.5">
+                  This is an offline participant — the payment will be recorded, but they won't receive an in-app notification.
                 </p>
               )}
             </div>
