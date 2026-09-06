@@ -11,8 +11,10 @@ import {
   ExclamationCircleIcon,
   ArrowLeftIcon,
   ChevronRightIcon,
+  CalendarIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
+import ModalPortal from '../ModalPortal';
 
 const AddNewMember = ({
   members = [],
@@ -28,6 +30,7 @@ const AddNewMember = ({
     email: "",
     phone: "",
     amountToPay: "",
+    dueDate: "",
     message: "",
   });
   const [errors, setErrors] = useState({});
@@ -133,6 +136,7 @@ const AddNewMember = ({
           : undefined,
       phone:       form.phone.trim() || undefined,
       amountToPay: form.amountToPay ? parseFloat(form.amountToPay) : suggestedAmount || 0,
+      dueDate:     form.dueDate || undefined,
       message:     form.message.trim(),
     };
 
@@ -174,7 +178,8 @@ const AddNewMember = ({
     ) : null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <ModalPortal>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
         ref={modalRef}
         className="bg-base-100 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto"
@@ -389,6 +394,27 @@ const AddNewMember = ({
                   <FieldError msg={errors.amountToPay} />
                 </div>
 
+                {/* Due Date — shared */}
+                <div>
+                  <label className="block text-sm font-semibold text-base-content/80 mb-1">
+                    Due Date{" "}
+                    <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
+                  </label>
+                  <div className="relative">
+                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
+                    <input
+                      type="date"
+                      className="w-full pl-10 pr-4 py-2.5 bg-base-100 border border-base-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base-content"
+                      value={form.dueDate}
+                      onChange={(e) => handleChange("dueDate", e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <p className="text-xs text-base-content/45 mt-1.5">
+                    Last day this participant is expected to pay. Leave blank for no deadline.
+                  </p>
+                </div>
+
                 {/* Message — invite only */}
                 {mode === "invite" && (
                   <div>
@@ -451,6 +477,7 @@ const AddNewMember = ({
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 };
 
