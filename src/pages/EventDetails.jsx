@@ -19,6 +19,7 @@ import {
 
 const fetchEventById = async (eventId) => {
   const { data } = await axiosInstance.get(`/societies/events/${eventId}`);
+  console.log(data)
   return data;
 };
 
@@ -104,6 +105,7 @@ const EventDetails = () => {
         type: "event",
         event: eventId,
         amountToPay: participantData.amountToPay ?? 0,
+        dueDate: participantData.dueDate,
         message: participantData.message ?? "",
       });
     }
@@ -114,6 +116,7 @@ const EventDetails = () => {
       email: participantData.email || undefined,
       phone: participantData.phone || undefined,
       amountToPay: participantData.amountToPay ?? 0,
+      dueDate: participantData.dueDate,
       message: participantData.message ?? "",
     });
   };
