@@ -8,6 +8,7 @@ import {
   CurrencyRupeeIcon,
   ShieldCheckIcon,
   ExclamationCircleIcon,
+  CalendarIcon,
 } from "@heroicons/react/24/outline";
 import { axiosInstance } from "../../lib/axois";
 import { toast } from "react-toastify";
@@ -33,6 +34,7 @@ const EditMemberModal = ({ eventId, member, onClose }) => {
     amountToPay: member.amountToPay ?? 0,
     amountPaid: member.amountPaid ?? 0,
     role: member.role || "participant",
+    dueDate: member.dueDate ? member.dueDate.slice(0, 10) : "", // YYYY-MM-DD for <input type="date">
   });
   const [error, setError] = useState("");
   const modalRef = useRef(null);
@@ -106,6 +108,7 @@ const EditMemberModal = ({ eventId, member, onClose }) => {
         amountToPay: toPay,
         amountPaid: paid,
         role: form.role,
+        dueDate: form.dueDate || null,
       },
     });
   };
@@ -205,6 +208,25 @@ const EditMemberModal = ({ eventId, member, onClose }) => {
           <p className="text-xs text-base-content/45 -mt-2">
             Editing "Amount Paid" here directly corrects the record — for a normal new payment, use the "Pay" button instead.
           </p>
+
+          <div>
+            <label className="block text-sm font-semibold text-base-content/80 mb-1">
+              Due Date <span className="text-base-content/40 text-xs font-normal">(Optional)</span>
+            </label>
+            <div className="relative">
+              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-base-content/40" />
+              <input
+                type="date"
+                value={form.dueDate}
+                onChange={(e) => handleChange("dueDate", e.target.value)}
+                disabled={isPending}
+                className="w-full pl-10 pr-4 py-2.5 bg-base-100 border border-base-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+              />
+            </div>
+            <p className="text-xs text-base-content/45 mt-1">
+              Last day this member is expected to pay. Leave blank for no deadline.
+            </p>
+          </div>
 
           <div>
             <label className="block text-sm font-semibold text-base-content/80 mb-1">Role</label>
