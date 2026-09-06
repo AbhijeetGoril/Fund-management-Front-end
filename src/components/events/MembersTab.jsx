@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon, ShieldCheckIcon, PencilIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon, ShieldCheckIcon, PencilIcon, CalendarIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import RecordPaymentModal from "./RecordPaymentModal";
 import EditMemberModal from "./EditMemberModal";
 
@@ -27,6 +27,52 @@ const roleRingClass = {
   admin: "ring-primary/30 from-primary/20 to-primary/5",
   member: "ring-secondary/30 from-secondary/20 to-secondary/5",
   participant: "ring-info/30 from-info/20 to-info/5",
+};
+
+// Returns a label + color classes based on how close/overdue the due
+// date is relative to today. Thresholds:
+//   overdue        -> red    (dueDate has already passed)
+//   due today/1-3d -> orange (getting close)
+//   due 4-7d       -> blue   (approaching)
+//   due 8d+        -> neutral gray (plenty of time)
+const getDueDateStatus = (dueDate) => {
+  if (!dueDate) return null;
+
+  const due = new Date(dueDate);
+  const today = new Date();
+  // Zero out time portions so "today" comparisons are day-based, not hour-based
+  due.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
+  const formatted = due.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+  if (diffDays < 0) {
+    return {
+      label: `Overdue · ${formatted}`,
+      className: "bg-error/10 text-error border border-error/20",
+      icon: ExclamationTriangleIcon,
+    };
+  }
+  if (diffDays <= 3) {
+    return {
+      label: diffDays === 0 ? "Due today" : `Due in ${diffDays}d · ${formatted}`,
+      className: "bg-warning/10 text-warning border border-warning/20",
+      icon: CalendarIcon,
+    };
+  }
+  if (diffDays <= 7) {
+    return {
+      label: `Due in ${diffDays}d · ${formatted}`,
+      className: "bg-info/10 text-info border border-info/20",
+      icon: CalendarIcon,
+    };
+  }
+  return {
+    label: `Due ${formatted}`,
+    className: "bg-base-200 text-base-content/50 border border-base-300",
+    icon: CalendarIcon,
+  };
 };
 
 const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
@@ -117,6 +163,10 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
             const fullyPaid = m.paymentStatus === "paid";
             const progressPct = toPay > 0 ? Math.min(100, (paid / toPay) * 100) : 0;
             const ringStyle = roleRingClass[m.role] || roleRingClass.participant;
+            // Only show a due-date indicator for members who still owe
+            // money and haven't paid in full — a fully paid member's
+            // deadline is no longer relevant.
+            const dueDateStatus = !fullyPaid ? getDueDateStatus(m.dueDate) : null;
 
             return (
               <div
@@ -158,6 +208,14 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
                         </>
                       )}
                     </div>
+                    {dueDateStatus && (
+                      <span
+                        className={`inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${dueDateStatus.className}`}
+                      >
+                        <dueDateStatus.icon className="h-3 w-3" />
+                        {dueDateStatus.label}
+                      </span>
+                    )}
                   </div>
                 </div>
 
