@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import EventDetails from "./pages/EventDetails";
 import SocietyDetails from "./pages/SocietyDetails";
 import EventSpends from "./pages/EventSpends";
+import MemberDetails from "./pages/Memberdetails";
 import { useSelector } from "react-redux";
 import { getToken } from "./utils/getToken";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -33,6 +34,7 @@ function App() {
         <Route path="/admin-panel" element={<AdminPanel />} />
         <Route path="/events/:eventId" element={<EventDetails />} />
         <Route path="/events/:eventId/spends" element={<EventSpends />} />
+        <Route path="/events/:eventId/members/:memberId" element={<MemberDetails />} />
         {/* <Route path="/society/:id" element={<SocietyDetails />} /> */}
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="/notifications" element={<NotificationsPage />} />

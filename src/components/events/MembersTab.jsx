@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon, ShieldCheckIcon, PencilIcon } from "@heroicons/react/24/outline";
 import RecordPaymentModal from "./RecordPaymentModal";
 import EditMemberModal from "./EditMemberModal";
@@ -32,6 +33,7 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [payingMember, setPayingMember] = useState(null);
   const [editingMember, setEditingMember] = useState(null);
+  const navigate = useNavigate();
 
   const filteredMembers =
     activeFilter === "all"
@@ -119,7 +121,8 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
             return (
               <div
                 key={m._id}
-                className="group flex items-center justify-between gap-4 p-4 rounded-2xl border border-base-200 bg-base-100/60 hover:border-base-300 hover:shadow-sm transition-all duration-200"
+                onClick={() => navigate(`/events/${event._id}/members/${m._id}`)}
+                className="group flex items-center justify-between gap-4 p-4 rounded-2xl border border-base-200 bg-base-100/60 hover:border-base-300 hover:shadow-sm transition-all duration-200 cursor-pointer"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div
@@ -190,7 +193,10 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
 
                   {isAdmin && (
                     <button
-                      onClick={() => setEditingMember(m)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingMember(m);
+                      }}
                       className="p-1.5 rounded-lg text-base-content/40 hover:text-base-content hover:bg-base-200 transition-all duration-200"
                       aria-label="Edit member"
                     >
@@ -200,7 +206,10 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
 
                   {isAdmin && owesMoney && !fullyPaid && (
                     <button
-                      onClick={() => setPayingMember(m)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPayingMember(m);
+                      }}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-primary text-primary-content rounded-lg hover:shadow-md active:scale-95 transition-all duration-200"
                     >
                       <CurrencyRupeeIcon className="h-3.5 w-3.5" />
