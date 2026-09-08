@@ -10,6 +10,7 @@ import {
   XCircleIcon,
   InboxIcon,
   CheckIcon,
+  UserPlusIcon,
 } from "@heroicons/react/24/outline";
 import { BellIcon as BellSolid } from "@heroicons/react/24/solid";
 
@@ -39,6 +40,16 @@ const rejectInvitationApi = async (invitationId) => {
   return data;
 };
 
+const approveJoinRequestApi = async (joinRequestId) => {
+  const { data } = await axiosInstance.patch(`/join-requests/${joinRequestId}/approve`);
+  return data;
+};
+
+const rejectJoinRequestApi = async (joinRequestId) => {
+  const { data } = await axiosInstance.patch(`/join-requests/${joinRequestId}/reject`);
+  return data;
+};
+
 const timeAgo = (dateString) => {
   const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
   if (seconds < 60) return "just now";
@@ -59,6 +70,11 @@ const TYPE_TABS = [
     types: ["invitation_received", "invitation_accepted", "invitation_rejected"],
   },
   {
+    key: "requests",
+    label: "Requests",
+    types: ["join_request_received", "join_request_approved", "join_request_rejected"],
+  },
+  {
     key: "events",
     label: "Events",
     types: ["participant_added", "event_created", "event_updated", "event_reminder"],
@@ -70,6 +86,9 @@ const typeStyles = {
   invitation_received: { icon: "✉️", ring: "ring-primary/20", bg: "bg-primary/10" },
   invitation_accepted: { icon: "✅", ring: "ring-success/20", bg: "bg-success/10" },
   invitation_rejected: { icon: "❌", ring: "ring-error/20", bg: "bg-error/10" },
+  join_request_received: { icon: "🙋", ring: "ring-primary/20", bg: "bg-primary/10" },
+  join_request_approved: { icon: "✅", ring: "ring-success/20", bg: "bg-success/10" },
+  join_request_rejected: { icon: "❌", ring: "ring-error/20", bg: "bg-error/10" },
   participant_added: { icon: "👤", ring: "ring-secondary/20", bg: "bg-secondary/10" },
   event_created: { icon: "📅", ring: "ring-info/20", bg: "bg-info/10" },
   event_updated: { icon: "📅", ring: "ring-info/20", bg: "bg-info/10" },
@@ -105,6 +124,8 @@ const NotificationsPage = () => {
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
     queryClient.invalidateQueries({ queryKey: ["event"] });
+    queryClient.invalidateQueries({ queryKey: ["discoverEvents"] });
+    queryClient.invalidateQueries({ queryKey: ["discoverSocieties"] });
   };
 
   const { mutate: markAsRead } = useMutation({
@@ -149,6 +170,30 @@ const NotificationsPage = () => {
       }),
   });
 
+  const { mutateAsync: approveJoinRequest, isPending: isApprovingRequest } = useMutation({
+    mutationFn: approveJoinRequestApi,
+    onSuccess: (data) => {
+      invalidateAll();
+      toast.success(data?.message || "Join request approved!", { position: "top-right" });
+    },
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || "Could not approve request.", {
+        position: "top-right",
+      }),
+  });
+
+  const { mutateAsync: rejectJoinRequest, isPending: isRejectingRequest } = useMutation({
+    mutationFn: rejectJoinRequestApi,
+    onSuccess: (data) => {
+      invalidateAll();
+      toast.success(data?.message || "Join request rejected.", { position: "top-right" });
+    },
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || "Could not reject request.", {
+        position: "top-right",
+      }),
+  });
+
   const allNotifications = data?.notifications ?? [];
   const unreadCount = allNotifications.filter((n) => !n.isRead).length;
 
@@ -169,6 +214,7 @@ const NotificationsPage = () => {
   const handleRowClick = (n) => {
     if (!n.isRead) markAsRead(n._id);
     if (n.type === "invitation_received") return; // stays for its own buttons
+    if (n.type === "join_request_received") return; // stays for its own buttons
     if (n.link) navigate(n.link);
   };
 
@@ -193,7 +239,7 @@ const NotificationsPage = () => {
           )}
         </div>
         <p className="text-sm text-base-content/50 mb-5">
-          Stay up to date on invitations, events, and payments.
+          Stay up to date on invitations, requests, events, and payments.
         </p>
 
         {/* Unread / All toggle */}
@@ -271,6 +317,7 @@ const NotificationsPage = () => {
             <div className="divide-y divide-base-200">
               {filteredNotifications.map((n) => {
                 const style = typeStyles[n.type] || defaultStyle;
+
                 const hasPendingInvite =
                   n.type === "invitation_received" &&
                   n.relatedInvitation &&
@@ -279,6 +326,15 @@ const NotificationsPage = () => {
                   n.type === "invitation_received" &&
                   n.relatedInvitation &&
                   n.relatedInvitation.status !== "pending";
+
+                const hasPendingJoinRequest =
+                  n.type === "join_request_received" &&
+                  n.relatedJoinRequest &&
+                  n.relatedJoinRequest.status === "pending";
+                const hasResolvedJoinRequest =
+                  n.type === "join_request_received" &&
+                  n.relatedJoinRequest &&
+                  n.relatedJoinRequest.status !== "pending";
 
                 return (
                   <div
@@ -348,6 +404,23 @@ const NotificationsPage = () => {
                             {n.relatedInvitation.status}
                           </span>
                         )}
+
+                        {hasResolvedJoinRequest && (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+                              n.relatedJoinRequest.status === "approved"
+                                ? "bg-success/10 text-success"
+                                : "bg-error/10 text-error"
+                            }`}
+                          >
+                            {n.relatedJoinRequest.status === "approved" ? (
+                              <CheckCircleIcon className="h-3.5 w-3.5" />
+                            ) : (
+                              <XCircleIcon className="h-3.5 w-3.5" />
+                            )}
+                            {n.relatedJoinRequest.status}
+                          </span>
+                        )}
                       </div>
 
                       {hasPendingInvite && (
@@ -370,6 +443,33 @@ const NotificationsPage = () => {
                               rejectInvitation(n.relatedInvitation._id);
                             }}
                             disabled={isAccepting || isRejecting}
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-base-200 text-base-content rounded-lg hover:bg-base-300 active:scale-95 disabled:opacity-50 transition-all duration-150"
+                          >
+                            <XCircleIcon className="h-4 w-4" />
+                            Reject
+                          </button>
+                        </div>
+                      )}
+
+                      {hasPendingJoinRequest && (
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              approveJoinRequest(n.relatedJoinRequest._id);
+                            }}
+                            disabled={isApprovingRequest || isRejectingRequest}
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-primary text-primary-content rounded-lg hover:shadow-md active:scale-95 disabled:opacity-50 transition-all duration-150"
+                          >
+                            <UserPlusIcon className="h-4 w-4" />
+                            Approve
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              rejectJoinRequest(n.relatedJoinRequest._id);
+                            }}
+                            disabled={isApprovingRequest || isRejectingRequest}
                             className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-base-200 text-base-content rounded-lg hover:bg-base-300 active:scale-95 disabled:opacity-50 transition-all duration-150"
                           >
                             <XCircleIcon className="h-4 w-4" />
