@@ -19,7 +19,6 @@ import {
 
 const fetchEventById = async (eventId) => {
   const { data } = await axiosInstance.get(`/societies/events/${eventId}`);
-  console.log(data)
   return data;
 };
 
@@ -70,6 +69,7 @@ const EventDetails = () => {
 
   const onAddSuccess = (data, defaultMsg) => {
     queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+    queryClient.invalidateQueries({ queryKey: ["pendingInvitations", eventId] });
     setShowModal(false);
     toast.success(data?.message || defaultMsg, {
       position: "top-right",
