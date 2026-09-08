@@ -14,7 +14,7 @@ import { useSelector } from "react-redux";
 import { getToken } from "./utils/getToken";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import NotificationsPage from "./pages/NotificationsPage";
-
+import Discover from "./pages/Discover";
 function App() {
   const  token=async()=>{
     const token = await getToken();
@@ -39,6 +39,7 @@ function App() {
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/society/:societyId" element={<SocietyDetails />} />
+        <Route path="/discover" element={<Discover />} />
       </Routes>
       </div>
       <ToastContainer />

@@ -16,7 +16,8 @@ const Navbar = ({
   logo = "🏠",
   links = [
     { to: "/dashboard", label: "Dashboard", icon: "📊" },
-    { to: "/admin-panel", label: "Admin Panel", icon: "⚙️" },
+    { to: "/discover", label: "Discover", icon: "🔍" },
+    { to: "/admin-panel", label: "Admin Panel", icon: "⚙️" }
   ],
 }) => {
   const [user, setUser] = useState(null);
