@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon, ShieldCheckIcon, PencilIcon, CalendarIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon, ShieldCheckIcon, PencilIcon, CalendarIcon, ExclamationTriangleIcon, BellAlertIcon, EnvelopeIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { toast } from "react-toastify";
+import { axiosInstance } from "../../lib/axois";
 import RecordPaymentModal from "./RecordPaymentModal";
 import EditMemberModal from "./EditMemberModal";
 
@@ -80,6 +83,56 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
   const [payingMember, setPayingMember] = useState(null);
   const [editingMember, setEditingMember] = useState(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { mutate: sendReminder, isPending: isSendingReminder } = useMutation({
+    mutationFn: async (memberId) => {
+      const { data } = await axiosInstance.post(
+        `/events/${event._id}/members/${memberId}/remind`
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(data?.message || "Reminder sent!", { position: "top-right" });
+    },
+    onError: (err) => {
+      toast.error(
+        err?.response?.data?.message || "Could not send reminder.",
+        { position: "top-right" }
+      );
+    },
+  });
+
+  const { data: pendingData } = useQuery({
+    queryKey: ["pendingInvitations", event._id],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get(
+        `/invitations/event/${event._id}/pending`
+      );
+      return data;
+    },
+    enabled: isAdmin, // only admins need to see/manage pending invites
+  });
+  const pendingInvitations = pendingData?.invitations ?? [];
+
+  const { mutate: cancelInvitation, isPending: isCancelling } = useMutation({
+    mutationFn: async (invitationId) => {
+      const { data } = await axiosInstance.patch(
+        `/invitations/${invitationId}/cancel`
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["pendingInvitations", event._id] });
+      toast.success(data?.message || "Invitation cancelled.", { position: "top-right" });
+    },
+    onError: (err) => {
+      toast.error(
+        err?.response?.data?.message || "Could not cancel invitation.",
+        { position: "top-right" }
+      );
+    },
+  });
 
   const filteredMembers =
     activeFilter === "all"
@@ -105,6 +158,38 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
           member={editingMember}
           onClose={() => setEditingMember(null)}
         />
+      )}
+
+      {isAdmin && pendingInvitations.length > 0 && (
+        <div className="mb-6 bg-base-200/40 rounded-2xl border border-base-200 p-4">
+          <h3 className="text-sm font-semibold text-base-content/70 mb-3 flex items-center gap-1.5">
+            <EnvelopeIcon className="h-4 w-4" />
+            Pending Invitations ({pendingInvitations.length})
+          </h3>
+          <div className="space-y-2">
+            {pendingInvitations.map((inv) => (
+              <div
+                key={inv._id}
+                className="flex items-center justify-between gap-3 bg-base-100 rounded-xl px-3.5 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-base-content truncate">{inv.email}</p>
+                  <p className="text-xs text-base-content/45">
+                    Invited by {inv.invitedBy?.name || "Unknown"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => cancelInvitation(inv._id)}
+                  disabled={isCancelling}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-error bg-error/10 rounded-lg hover:bg-error/20 transition-all duration-200 disabled:opacity-50 shrink-0"
+                >
+                  <XCircleIcon className="h-3.5 w-3.5" />
+                  Cancel
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -259,6 +344,21 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
                       aria-label="Edit member"
                     >
                       <PencilIcon className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+
+                  {isAdmin && owesMoney && !fullyPaid && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        sendReminder(m._id);
+                      }}
+                      disabled={isSendingReminder}
+                      className="p-1.5 rounded-lg text-base-content/40 hover:text-warning hover:bg-warning/10 transition-all duration-200 disabled:opacity-50"
+                      aria-label="Send payment reminder"
+                      title="Send payment reminder"
+                    >
+                      <BellAlertIcon className="h-3.5 w-3.5" />
                     </button>
                   )}
 
