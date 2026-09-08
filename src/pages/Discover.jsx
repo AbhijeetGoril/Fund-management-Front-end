@@ -25,6 +25,7 @@ const fetchDiscoverSocieties = async () => {
   return data.societies;
 };
 
+// ── Mutations ─────────────────────────────────────────────────────────────
 const requestToJoinEvent = async (eventId) => {
   const { data } = await axiosInstance.post(`/events/${eventId}/join-request`, {});
   return data;
@@ -35,8 +36,13 @@ const requestToJoinSociety = async (societyId) => {
   return data;
 };
 
+const cancelJoinRequestApi = async (joinRequestId) => {
+  const { data } = await axiosInstance.patch(`/join-requests/${joinRequestId}/cancel`);
+  return data;
+};
+
 // ── Card ──────────────────────────────────────────────────────────────────
-function DiscoverCard({ item, type, onRequest, isRequesting, onNavigate }) {
+function DiscoverCard({ item, type, onRequest, onCancel, isRequesting, isCancelling, onNavigate }) {
   const isEvent = type === "event";
   const cover = item.coverPhoto || item.logo;
 
@@ -90,21 +96,31 @@ function DiscoverCard({ item, type, onRequest, isRequesting, onNavigate }) {
           </span>
         </div>
 
-        <button
-          disabled={item.hasPendingRequest || isRequesting}
-          onClick={() => onRequest(item._id)}
-          className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-            item.hasPendingRequest
-              ? "bg-warning/10 text-warning cursor-default"
-              : "bg-gradient-to-r from-primary to-secondary text-primary-content hover:shadow-lg hover:scale-[1.02]"
-          } disabled:opacity-70`}
-        >
-          {item.hasPendingRequest
-            ? "Request Pending"
-            : isRequesting
-            ? "Sending..."
-            : "Request to Join"}
-        </button>
+        {item.hasPendingRequest ? (
+          <div className="flex gap-2">
+            <button
+              disabled
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-warning/10 text-warning cursor-default"
+            >
+              Request Pending
+            </button>
+            <button
+              disabled={isCancelling}
+              onClick={() => onCancel(item.joinRequestId)}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-base-200 text-base-content/70 hover:bg-error/10 hover:text-error transition-all disabled:opacity-50"
+            >
+              {isCancelling ? "..." : "Cancel"}
+            </button>
+          </div>
+        ) : (
+          <button
+            disabled={isRequesting}
+            onClick={() => onRequest(item._id)}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-primary to-secondary text-primary-content hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-70"
+          >
+            {isRequesting ? "Sending..." : "Request to Join"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -165,6 +181,18 @@ export default function Discover() {
     },
     onError: (err) => {
       toast.error(err?.response?.data?.message || "Failed to send request.");
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: cancelJoinRequestApi,
+    onSuccess: () => {
+      toast.success("Join request cancelled.");
+      queryClient.invalidateQueries({ queryKey: ["discoverEvents"] });
+      queryClient.invalidateQueries({ queryKey: ["discoverSocieties"] });
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.message || "Failed to cancel request.");
     },
   });
 
@@ -232,7 +260,9 @@ export default function Discover() {
                   item={event}
                   type="event"
                   isRequesting={eventMutation.isPending && eventMutation.variables === event._id}
+                  isCancelling={cancelMutation.isPending && cancelMutation.variables === event.joinRequestId}
                   onRequest={(id) => eventMutation.mutate(id)}
+                  onCancel={(id) => cancelMutation.mutate(id)}
                   onNavigate={() => navigate(`/events/${event._id}`)}
                 />
               ))
@@ -251,7 +281,9 @@ export default function Discover() {
                   item={society}
                   type="society"
                   isRequesting={societyMutation.isPending && societyMutation.variables === society._id}
+                  isCancelling={cancelMutation.isPending && cancelMutation.variables === society.joinRequestId}
                   onRequest={(id) => societyMutation.mutate(id)}
+                  onCancel={(id) => cancelMutation.mutate(id)}
                   onNavigate={() => navigate(`/society/${society._id}`)}
                 />
               ))
