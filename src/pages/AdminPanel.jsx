@@ -12,6 +12,8 @@ import {
   ShieldCheckIcon,
   EnvelopeIcon,
   XCircleIcon,
+  CheckCircleIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import CreateEventForm from '../components/Addmin-Panel/CreateEventForm';
@@ -25,6 +27,16 @@ const fetchAdminOverview = async () => {
 
 const fetchSentInvitations = async () => {
   const { data } = await axiosInstance.get('/invitations/sent');
+  return data;
+};
+
+const fetchReceivedJoinRequests = async () => {
+  const { data } = await axiosInstance.get('/join-requests/received');
+  return data;
+};
+
+const fetchSentJoinRequests = async () => {
+  const { data } = await axiosInstance.get('/join-requests/sent');
   return data;
 };
 
@@ -60,6 +72,13 @@ const invitationStatusClass = {
   cancelled: "bg-base-200 text-base-content/50",
 };
 
+const joinRequestStatusClass = {
+  pending: "bg-warning/10 text-warning",
+  approved: "bg-success/10 text-success",
+  rejected: "bg-error/10 text-error",
+  cancelled: "bg-base-200 text-base-content/50",
+};
+
 const InvitationRow = ({ invitation, onCancel, isCancelling }) => {
   const targetLabel = invitation.event?.title || invitation.society?.name || "Unknown";
 
@@ -84,6 +103,76 @@ const InvitationRow = ({ invitation, onCancel, isCancelling }) => {
       {invitation.status === "pending" && (
         <button
           onClick={() => onCancel(invitation._id)}
+          disabled={isCancelling}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-error bg-error/10 rounded-lg hover:bg-error/20 transition-all duration-200 disabled:opacity-50 shrink-0"
+        >
+          <XCircleIcon className="h-3.5 w-3.5" />
+          Cancel
+        </button>
+      )}
+    </div>
+  );
+};
+
+const ReceivedJoinRequestRow = ({ request, onApprove, onReject, isActing }) => {
+  const targetLabel = request.event?.title || request.society?.name || "Unknown";
+
+  return (
+    <div className="flex items-center justify-between gap-3 bg-base-100 rounded-xl px-4 py-3 border border-base-200">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-base-content truncate">
+          {request.user?.name || request.user?.email || "Unknown user"}
+        </p>
+        <p className="text-xs text-base-content/45 mt-0.5 truncate">
+          {request.type === "event" ? "Event" : "Society"}: {targetLabel}
+        </p>
+      </div>
+
+      <div className="flex gap-2 shrink-0">
+        <button
+          onClick={() => onApprove(request._id)}
+          disabled={isActing}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-primary-content bg-primary rounded-lg hover:shadow-md active:scale-95 transition-all duration-200 disabled:opacity-50"
+        >
+          <CheckCircleIcon className="h-3.5 w-3.5" />
+          Approve
+        </button>
+        <button
+          onClick={() => onReject(request._id)}
+          disabled={isActing}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-error bg-error/10 rounded-lg hover:bg-error/20 active:scale-95 transition-all duration-200 disabled:opacity-50"
+        >
+          <XCircleIcon className="h-3.5 w-3.5" />
+          Reject
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const SentJoinRequestRow = ({ request, onCancel, isCancelling }) => {
+  const targetLabel = request.event?.title || request.society?.name || "Unknown";
+
+  return (
+    <div className="flex items-center justify-between gap-3 bg-base-100 rounded-xl px-4 py-3 border border-base-200">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-medium text-base-content truncate">
+            {request.type === "event" ? "Event" : "Society"}: {targetLabel}
+          </p>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize shrink-0 ${
+              joinRequestStatusClass[request.status] || "bg-base-200 text-base-content/50"
+            }`}
+          >
+            {request.status}
+          </span>
+        </div>
+      </div>
+
+      {request.status === "pending" && (
+        <button
+          onClick={() => onCancel(request._id)}
           disabled={isCancelling}
           className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-error bg-error/10 rounded-lg hover:bg-error/20 transition-all duration-200 disabled:opacity-50 shrink-0"
         >
@@ -219,6 +308,7 @@ const AdminPanel = () => {
   const [showForm, setShowForm] = useState(false);
   const [invitationFilter, setInvitationFilter] = useState('all');
   const [dueDateFilter, setDueDateFilter] = useState('all');
+  const [sentRequestFilter, setSentRequestFilter] = useState('all');
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['adminOverview'],
@@ -230,6 +320,26 @@ const AdminPanel = () => {
     queryFn: fetchSentInvitations,
   });
   const sentInvitations = sentData?.invitations ?? [];
+
+  const { data: receivedRequestsData, isLoading: isLoadingReceivedRequests } = useQuery({
+    queryKey: ['receivedJoinRequests'],
+    queryFn: fetchReceivedJoinRequests,
+  });
+  const receivedJoinRequests = receivedRequestsData?.requests ?? [];
+
+  const { data: sentRequestsData, isLoading: isLoadingSentRequests } = useQuery({
+    queryKey: ['sentJoinRequests'],
+    queryFn: fetchSentJoinRequests,
+  });
+  const sentJoinRequests = sentRequestsData?.requests ?? [];
+
+  const invalidateJoinRequestQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['receivedJoinRequests'] });
+    queryClient.invalidateQueries({ queryKey: ['sentJoinRequests'] });
+    queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
+    queryClient.invalidateQueries({ queryKey: ['discoverEvents'] });
+    queryClient.invalidateQueries({ queryKey: ['discoverSocieties'] });
+  };
 
   const { mutate: cancelInvitation, isPending: isCancelling } = useMutation({
     mutationFn: async (invitationId) => {
@@ -244,6 +354,57 @@ const AdminPanel = () => {
     onError: (err) => {
       toast.error(
         err?.response?.data?.message || 'Could not cancel invitation.',
+        { position: 'top-right' }
+      );
+    },
+  });
+
+  const { mutate: approveJoinRequest, isPending: isApprovingRequest } = useMutation({
+    mutationFn: async (requestId) => {
+      const { data } = await axiosInstance.patch(`/join-requests/${requestId}/approve`);
+      return data;
+    },
+    onSuccess: (data) => {
+      invalidateJoinRequestQueries();
+      toast.success(data?.message || 'Join request approved!', { position: 'top-right' });
+    },
+    onError: (err) => {
+      toast.error(
+        err?.response?.data?.message || 'Could not approve request.',
+        { position: 'top-right' }
+      );
+    },
+  });
+
+  const { mutate: rejectJoinRequest, isPending: isRejectingRequest } = useMutation({
+    mutationFn: async (requestId) => {
+      const { data } = await axiosInstance.patch(`/join-requests/${requestId}/reject`);
+      return data;
+    },
+    onSuccess: (data) => {
+      invalidateJoinRequestQueries();
+      toast.success(data?.message || 'Join request rejected.', { position: 'top-right' });
+    },
+    onError: (err) => {
+      toast.error(
+        err?.response?.data?.message || 'Could not reject request.',
+        { position: 'top-right' }
+      );
+    },
+  });
+
+  const { mutate: cancelJoinRequest, isPending: isCancellingRequest } = useMutation({
+    mutationFn: async (requestId) => {
+      const { data } = await axiosInstance.patch(`/join-requests/${requestId}/cancel`);
+      return data;
+    },
+    onSuccess: (data) => {
+      invalidateJoinRequestQueries();
+      toast.success(data?.message || 'Join request cancelled.', { position: 'top-right' });
+    },
+    onError: (err) => {
+      toast.error(
+        err?.response?.data?.message || 'Could not cancel request.',
         { position: 'top-right' }
       );
     },
@@ -299,6 +460,24 @@ const AdminPanel = () => {
     dueDateFilter === 'all'
       ? allDueDates
       : allDueDates.filter((d) => d.status === dueDateFilter);
+
+  const SENT_REQUEST_FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'pending', label: 'Pending' },
+    { key: 'approved', label: 'Approved' },
+    { key: 'rejected', label: 'Rejected' },
+    { key: 'cancelled', label: 'Cancelled' },
+  ];
+  const sentRequestCountFor = (key) =>
+    key === 'all'
+      ? sentJoinRequests.length
+      : sentJoinRequests.filter((r) => r.status === key).length;
+  const filteredSentRequests =
+    sentRequestFilter === 'all'
+      ? sentJoinRequests
+      : sentJoinRequests.filter((r) => r.status === sentRequestFilter);
+
+  const isActingOnJoinRequest = isApprovingRequest || isRejectingRequest;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
@@ -516,6 +695,95 @@ const AdminPanel = () => {
                       detail={d}
                       eventTitle={d.eventTitle}
                       onClick={() => navigate(`/events/${d.eventId}/members/${d.memberId}`)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Join requests OTHERS have sent you, awaiting your approval */}
+            <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200/50 p-5 sm:p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-base-content flex items-center gap-2">
+                  <UserGroupIcon className="h-5 w-5" />
+                  Join Requests Received
+                </h2>
+                <span className="text-base-content/60 bg-base-200 px-3 py-1 rounded-full text-sm font-medium">
+                  {receivedJoinRequests.length}
+                </span>
+              </div>
+
+              {isLoadingReceivedRequests ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-14 bg-base-200 rounded-xl" />
+                  <div className="h-14 bg-base-200 rounded-xl" />
+                </div>
+              ) : receivedJoinRequests.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-base-content/50 text-sm font-medium">
+                    No pending join requests right now.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {receivedJoinRequests.map((r) => (
+                    <ReceivedJoinRequestRow
+                      key={r._id}
+                      request={r}
+                      onApprove={approveJoinRequest}
+                      onReject={rejectJoinRequest}
+                      isActing={isActingOnJoinRequest}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Join requests YOU'VE sent, across everything */}
+            <div className="bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-200/50 p-5 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <h2 className="text-lg font-bold text-base-content flex items-center gap-2">
+                  <UserGroupIcon className="h-5 w-5" />
+                  Join Requests You've Sent
+                </h2>
+                <div className="flex gap-2 flex-wrap">
+                  {SENT_REQUEST_FILTERS.map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setSentRequestFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                        sentRequestFilter === f.key
+                          ? "bg-primary text-primary-content shadow-sm"
+                          : "bg-base-200 text-base-content/60 hover:bg-base-300"
+                      }`}
+                    >
+                      {f.label} <span className="opacity-70">({sentRequestCountFor(f.key)})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {isLoadingSentRequests ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-14 bg-base-200 rounded-xl" />
+                  <div className="h-14 bg-base-200 rounded-xl" />
+                </div>
+              ) : filteredSentRequests.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-base-content/50 text-sm font-medium">
+                    {sentRequestFilter === 'all'
+                      ? "You haven't sent any join requests yet."
+                      : `No ${sentRequestFilter} join requests.`}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredSentRequests.map((r) => (
+                    <SentJoinRequestRow
+                      key={r._id}
+                      request={r}
+                      onCancel={cancelJoinRequest}
+                      isCancelling={isCancellingRequest}
                     />
                   ))}
                 </div>
