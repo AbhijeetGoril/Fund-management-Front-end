@@ -3,13 +3,26 @@ import { PaperAirplaneIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/
 import { useSelector } from "react-redux";
 import { useConversationMessages } from "../../hooks/useConversationMessages";
 import { Loader } from "../Loader";
-import { socket } from "../../lib/socket";
+
 
 const timeLabel = (dateString) =>
   new Date(dateString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 export default function ChatWindow({ conversationId, title, subtitle }) {
-  const currentUser = useSelector((state) => state.auth.user);
+  // Redux resets state.auth.user to null on every page refresh since
+  // nothing currently rehydrates it from localStorage on app start.
+  // Falling back here ensures "is this my own message" stays correct
+  // even right after a refresh.
+  const reduxUser = useSelector((state) => state.auth.user);
+  let storedUser = null;
+  try {
+    const raw = localStorage.getItem("user");
+    storedUser = raw && raw !== "undefined" ? JSON.parse(raw) : null;
+  } catch {
+    storedUser = null;
+  }
+  const currentUser = reduxUser || storedUser;
+
   const { messages, isLoading, isSending, sendMessage } = useConversationMessages(conversationId);
   const [text, setText] = useState("");
   const bottomRef = useRef(null);
@@ -20,9 +33,7 @@ export default function ChatWindow({ conversationId, title, subtitle }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("handleSubmit fired, text:", text);
     if (!text.trim()) return;
-    console.log("calling sendMessage");
     sendMessage(text);
     setText("");
   };
@@ -44,10 +55,6 @@ export default function ChatWindow({ conversationId, title, subtitle }) {
           {subtitle && <p className="text-xs text-base-content/50">{subtitle}</p>}
         </div>
       )}
-
-      <div className="px-4 py-1 bg-yellow-100 text-xs font-mono">
-        DEBUG: socket.connected = {String(socket.connected)}
-      </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {isLoading ? (
