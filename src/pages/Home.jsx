@@ -30,6 +30,7 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-100 via-base-200 to-base-300">
+      <p>checking</p>
       <Navbar />
       <HeroSection stats={stats} totalFunds={totalFunds} members={members} />
       <StatsSection stats={stats} />
