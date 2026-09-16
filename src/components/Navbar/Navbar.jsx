@@ -17,6 +17,7 @@ const Navbar = ({
   links = [
     { to: "/dashboard", label: "Dashboard", icon: "📊" },
     { to: "/discover", label: "Discover", icon: "🔍" },
+    { to: "/chat", label: "Messages", icon: "💬" },
     { to: "/admin-panel", label: "Admin Panel", icon: "⚙️" }
   ],
 }) => {

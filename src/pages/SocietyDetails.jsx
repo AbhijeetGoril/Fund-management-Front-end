@@ -6,6 +6,7 @@ import { Loader } from "../components/Loader";
 import { axiosInstance } from "../lib/axois";
 import SocietyMembersTab from "../components/societies/SocietyMembersTab";
 import SocietyEventsTab from "../components/societies/SocietyEventsTab";
+import GroupChatTab from "../components/chat/GroupChatTab";
 import {
   ArrowLeftIcon,
   UsersIcon,
@@ -17,6 +18,7 @@ import {
   LockClosedIcon,
   GlobeAltIcon,
   ShieldCheckIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 
 const fetchSocietyDetail = async (societyId) => {
@@ -27,6 +29,7 @@ const fetchSocietyDetail = async (societyId) => {
 const TABS = [
   { key: "members", label: "Members", icon: UsersIcon },
   { key: "events", label: "Events", icon: CalendarIcon },
+  { key: "chat", label: "Chat", icon: ChatBubbleLeftRightIcon },
   { key: "settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
@@ -261,6 +264,9 @@ const SocietyDetails = () => {
                 members={members}
                 onRefresh={refreshSociety}
               />
+            )}
+            {activeTab === "chat" && (
+              <GroupChatTab kind="society" id={societyId} title={society.name} />
             )}
             {activeTab === "settings" && (
               <div className="flex flex-col items-center justify-center py-20 text-center">

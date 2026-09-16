@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/auth/Login";
-import Dashboard from "./pages/Dashboard"; // You can create this page next
+import Dashboard from "./pages/Dashboard";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Signup from "./pages/auth/SignUp";
@@ -15,7 +15,12 @@ import { getToken } from "./utils/getToken";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import NotificationsPage from "./pages/NotificationsPage";
 import Discover from "./pages/Discover";
+import { useSocketConnection } from "./hooks/useSocketConnection";
+import ChatPage from "./pages/ChatPage";
+
 function App() {
+  useSocketConnection();
+
   const  token=async()=>{
     const token = await getToken();
     console.log("TOKEN:", token);
@@ -40,6 +45,7 @@ function App() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/society/:societyId" element={<SocietyDetails />} />
         <Route path="/discover" element={<Discover />} />
+        <Route path="/chat" element={<ChatPage />} />
       </Routes>
       </div>
       <ToastContainer />

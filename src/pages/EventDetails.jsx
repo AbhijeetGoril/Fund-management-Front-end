@@ -7,6 +7,7 @@ import StatsCards from "../components/events/StatsCards";
 import MembersTab from "../components/events/MembersTab";
 import AddNewMember from "../components/DashBorad/AddNewMumber";
 import ShareEventModal from "../components/events/ShareEventModal";
+import GroupChatTab from "../components/chat/GroupChatTab";
 import { Loader } from "../components/Loader";
 import { axiosInstance } from "../lib/axois";
 import { toast } from "react-toastify";
@@ -15,6 +16,7 @@ import {
   ChartBarIcon,
   Cog6ToothIcon,
   ExclamationTriangleIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 
 const fetchEventById = async (eventId) => {
@@ -34,6 +36,7 @@ const addOfflineParticipantApi = async (payload) => {
 
 const TABS = [
   { key: "members", label: "Members", icon: UsersIcon },
+  { key: "chat", label: "Chat", icon: ChatBubbleLeftRightIcon },
   { key: "analytics", label: "Analytics", icon: ChartBarIcon },
   { key: "settings", label: "Settings", icon: Cog6ToothIcon },
 ];
@@ -265,6 +268,9 @@ const EventDetails = () => {
                 onAddMember={() => setShowModal(true)}
                 isAdmin={isAdmin}
               />
+            )}
+            {activeTab === "chat" && (
+              <GroupChatTab kind="event" id={eventId} title={event.title} />
             )}
             {activeTab === "analytics" && (
               <div className="flex flex-col items-center justify-center py-20 text-center">

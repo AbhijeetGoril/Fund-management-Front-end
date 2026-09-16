@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon, ShieldCheckIcon, PencilIcon, CalendarIcon, ExclamationTriangleIcon, BellAlertIcon, EnvelopeIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, UserPlusIcon, PhoneIcon, CurrencyRupeeIcon, ShieldCheckIcon, PencilIcon, CalendarIcon, ExclamationTriangleIcon, BellAlertIcon, EnvelopeIcon, XCircleIcon, ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
 import { axiosInstance } from "../../lib/axois";
 import RecordPaymentModal from "./RecordPaymentModal";
 import EditMemberModal from "./EditMemberModal";
+import { useStartDirectMessage } from "../../hooks/useStartDirectMessage";
+import { useSelector } from "react-redux";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -32,18 +34,11 @@ const roleRingClass = {
   participant: "ring-info/30 from-info/20 to-info/5",
 };
 
-// Returns a label + color classes based on how close/overdue the due
-// date is relative to today. Thresholds:
-//   overdue        -> red    (dueDate has already passed)
-//   due today/1-3d -> orange (getting close)
-//   due 4-7d       -> blue   (approaching)
-//   due 8d+        -> neutral gray (plenty of time)
 const getDueDateStatus = (dueDate) => {
   if (!dueDate) return null;
 
   const due = new Date(dueDate);
   const today = new Date();
-  // Zero out time portions so "today" comparisons are day-based, not hour-based
   due.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
 
@@ -85,6 +80,22 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Redux resets state.auth.user to null on every page refresh since
+  // nothing currently rehydrates it from localStorage on app start.
+  // Falling back to localStorage here ensures "is this my own row"
+  // checks stay correct even right after a refresh.
+  const reduxUser = useSelector((state) => state.auth.user);
+  let storedUser = null;
+  try {
+    const raw = localStorage.getItem("user");
+    storedUser = raw && raw !== "undefined" ? JSON.parse(raw) : null;
+  } catch {
+    storedUser = null;
+  }
+  const currentUser = reduxUser || storedUser;
+
+  const { startDirectMessage, isPending: isStartingDM } = useStartDirectMessage();
+
   const { mutate: sendReminder, isPending: isSendingReminder } = useMutation({
     mutationFn: async (memberId) => {
       const { data } = await axiosInstance.post(
@@ -111,7 +122,7 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
       );
       return data;
     },
-    enabled: isAdmin, // only admins need to see/manage pending invites
+    enabled: isAdmin,
   });
   const pendingInvitations = pendingData?.invitations ?? [];
 
@@ -248,10 +259,12 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
             const fullyPaid = m.paymentStatus === "paid";
             const progressPct = toPay > 0 ? Math.min(100, (paid / toPay) * 100) : 0;
             const ringStyle = roleRingClass[m.role] || roleRingClass.participant;
-            // Only show a due-date indicator for members who still owe
-            // money and haven't paid in full — a fully paid member's
-            // deadline is no longer relevant.
             const dueDateStatus = !fullyPaid ? getDueDateStatus(m.dueDate) : null;
+
+            // Only members with a real linked account can be messaged —
+            // offline/guest members have no user record to chat with.
+            // Also hide the button on the current user's own row.
+            const canMessage = m.user?._id && m.user._id !== currentUser?._id;
 
             return (
               <div
@@ -333,6 +346,21 @@ const MembersTab = ({ event, members = [], onAddMember, isAdmin = false }) => {
                   >
                     {owesMoney ? m.paymentStatus || "pending" : "—"}
                   </span>
+
+                  {canMessage && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startDirectMessage(m.user._id);
+                      }}
+                      disabled={isStartingDM}
+                      className="p-1.5 rounded-lg text-base-content/40 hover:text-primary hover:bg-primary/10 transition-all duration-200 disabled:opacity-50"
+                      aria-label="Send message"
+                      title="Message"
+                    >
+                      <ChatBubbleLeftIcon className="h-3.5 w-3.5" />
+                    </button>
+                  )}
 
                   {isAdmin && (
                     <button
