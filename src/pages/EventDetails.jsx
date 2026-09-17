@@ -11,6 +11,7 @@ import GroupChatTab from "../components/chat/GroupChatTab";
 import { Loader } from "../components/Loader";
 import { axiosInstance } from "../lib/axois";
 import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
 import {
   UsersIcon,
   ChartBarIcon,
@@ -45,7 +46,9 @@ const EventDetails = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const reduxUser = useSelector((state) => state.auth.user);
 
+  console.log("reduxUser:", reduxUser);
   const [showModal, setShowModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [activeTab, setActiveTab] = useState("members");
@@ -61,10 +64,14 @@ const EventDetails = () => {
   useEffect(() => {
     if (data?.members) {
       const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      console.log("currentUser",currentUser)
       const isEventAdmin = data.members.some((member) => {
         const userId = member.user?._id || member.user || member._id;
         const currentUserId = currentUser._id || currentUser.id;
-        return userId === currentUserId && member.role === "admin";
+
+        return (
+          String(userId) === String(currentUserId) && member.role === "admin"
+        );
       });
       setIsAdmin(isEventAdmin);
     }
@@ -72,7 +79,9 @@ const EventDetails = () => {
 
   const onAddSuccess = (data, defaultMsg) => {
     queryClient.invalidateQueries({ queryKey: ["event", eventId] });
-    queryClient.invalidateQueries({ queryKey: ["pendingInvitations", eventId] });
+    queryClient.invalidateQueries({
+      queryKey: ["pendingInvitations", eventId],
+    });
     setShowModal(false);
     toast.success(data?.message || defaultMsg, {
       position: "top-right",
@@ -83,21 +92,25 @@ const EventDetails = () => {
   const onAddError = (err) => {
     toast.error(
       err?.response?.data?.message || "Something went wrong. Please try again.",
-      { position: "top-right", autoClose: 5000 }
+      { position: "top-right", autoClose: 5000 },
     );
   };
 
-  const { mutateAsync: inviteParticipant, isPending: isInviting } = useMutation({
-    mutationFn: inviteParticipantApi,
-    onSuccess: (data) => onAddSuccess(data, "Invitation sent successfully!"),
-    onError: onAddError,
-  });
+  const { mutateAsync: inviteParticipant, isPending: isInviting } = useMutation(
+    {
+      mutationFn: inviteParticipantApi,
+      onSuccess: (data) => onAddSuccess(data, "Invitation sent successfully!"),
+      onError: onAddError,
+    },
+  );
 
-  const { mutateAsync: addOfflineParticipant, isPending: isAddingOffline } = useMutation({
-    mutationFn: addOfflineParticipantApi,
-    onSuccess: (data) => onAddSuccess(data, "Participant added successfully!"),
-    onError: onAddError,
-  });
+  const { mutateAsync: addOfflineParticipant, isPending: isAddingOffline } =
+    useMutation({
+      mutationFn: addOfflineParticipantApi,
+      onSuccess: (data) =>
+        onAddSuccess(data, "Participant added successfully!"),
+      onError: onAddError,
+    });
 
   const isSubmitting = isInviting || isAddingOffline;
 
@@ -184,9 +197,15 @@ const EventDetails = () => {
 
   const totalDonations = summary?.totalAmountPaid ?? 0;
   const totalRemainingAmount = summary?.totalPendingAmount ?? 0;
-  const paidParticipants = members.filter((m) => m.paymentStatus === "paid").length;
-  const pendingParticipants = members.filter((m) => m.paymentStatus === "pending").length;
-  const partialParticipants = members.filter((m) => m.paymentStatus === "partial").length;
+  const paidParticipants = members.filter(
+    (m) => m.paymentStatus === "paid",
+  ).length;
+  const pendingParticipants = members.filter(
+    (m) => m.paymentStatus === "pending",
+  ).length;
+  const partialParticipants = members.filter(
+    (m) => m.paymentStatus === "partial",
+  ).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-300 font-sans antialiased">
@@ -275,7 +294,9 @@ const EventDetails = () => {
             {activeTab === "analytics" && (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <ChartBarIcon className="h-10 w-10 text-base-content/15 mb-3" />
-                <p className="text-base-content/50 font-medium">Analytics coming soon</p>
+                <p className="text-base-content/50 font-medium">
+                  Analytics coming soon
+                </p>
                 <p className="text-xs text-base-content/35 mt-1">
                   Charts and trends for this event will appear here.
                 </p>
@@ -284,7 +305,9 @@ const EventDetails = () => {
             {activeTab === "settings" && (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <Cog6ToothIcon className="h-10 w-10 text-base-content/15 mb-3" />
-                <p className="text-base-content/50 font-medium">Settings coming soon</p>
+                <p className="text-base-content/50 font-medium">
+                  Settings coming soon
+                </p>
                 <p className="text-xs text-base-content/35 mt-1">
                   Event configuration options will appear here.
                 </p>
@@ -295,7 +318,8 @@ const EventDetails = () => {
 
         <div className="text-center pt-2">
           <p className="text-base-content/40 text-sm">
-            © {new Date().getFullYear()} Society Management System. All rights reserved.
+            © {new Date().getFullYear()} Society Management System. All rights
+            reserved.
           </p>
         </div>
       </div>

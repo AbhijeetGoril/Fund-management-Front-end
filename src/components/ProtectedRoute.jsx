@@ -1,11 +1,13 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { axiosInstance } from "../lib/axois";
+import { useDispatch } from "react-redux";
+import { setUser } from "../redux/slices/authSlice";
 
 const ProtectedRoute = () => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
-
+  const dispatch = useDispatch();
   const location = useLocation();
 
   useEffect(() => {
@@ -15,6 +17,10 @@ const ProtectedRoute = () => {
 
         if (response.data.success && response.data.user) {
           setAuthenticated(true);
+          dispatch(setUser({
+            user: response.data.user,
+            token: null,
+          }));
         } else {
           setAuthenticated(false);
         }

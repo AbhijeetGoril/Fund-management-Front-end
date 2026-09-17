@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
+
 import Navbar from '../components/Navbar/Navbar';
 import HeroSection from '../components/HomePage/HeroSection';
 import StatsSection from '../components/HomePage/StatsSection';
