@@ -1,19 +1,24 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getToken } from "../utils/getToken";
+import { axiosInstance } from "../lib/axois";
 
 const ProtectedRoute = () => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
+  const location = useLocation();
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = await getToken();
+        const response = await axiosInstance.get("/auth/me");
 
-        setAuthenticated(!!token);
+        if (response.data.success && response.data.user) {
+          setAuthenticated(true);
+        } else {
+          setAuthenticated(false);
+        }
       } catch (error) {
-        console.error("Authentication check failed:", error);
         setAuthenticated(false);
       } finally {
         setLoading(false);
@@ -32,7 +37,13 @@ const ProtectedRoute = () => {
   }
 
   if (!authenticated) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location }}
+      />
+    );
   }
 
   return <Outlet />;
