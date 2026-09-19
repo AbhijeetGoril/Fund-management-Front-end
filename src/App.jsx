@@ -26,7 +26,7 @@ import { useSocketConnection } from "./hooks/useSocketConnection";
 
 function App() {
   useSocketConnection();
-
+const user = useSelector((state) => state.auth.user);
   const theme = useSelector(
     (state) => state.theme.theme
   );
@@ -119,7 +119,7 @@ function App() {
 
         </Routes>
 
-        <HelpBotWidget />
+        {user && <HelpBotWidget />}
       </div>
 
       <ToastContainer />
