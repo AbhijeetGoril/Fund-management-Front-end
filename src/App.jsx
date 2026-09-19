@@ -16,6 +16,7 @@ import Discover from "./pages/Discover";
 import ChatPage from "./pages/ChatPage";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import HelpBotWidget from "./components/HelpBot/HelpBotWidget";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -117,6 +118,8 @@ function App() {
           </Route>
 
         </Routes>
+
+        <HelpBotWidget />
       </div>
 
       <ToastContainer />

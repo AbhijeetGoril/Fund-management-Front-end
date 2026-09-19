@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
 import { axiosInstance } from "../../lib/axois";
 import { toast } from "react-toastify";
 import {
@@ -7,8 +8,10 @@ import {
   UserPlusIcon,
   PhoneIcon,
   ShieldCheckIcon,
+  ChatBubbleLeftIcon,
 } from "@heroicons/react/24/outline";
 import AddSocietyMemberModal from "./AddSocietyMemberModal";
+import { useStartDirectMessage } from "../../hooks/useStartDirectMessage";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -20,6 +23,21 @@ const SocietyMembersTab = ({ society, members = [], isAdmin = false }) => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const queryClient = useQueryClient();
+
+  // Redux resets state.auth.user to null on every page refresh since
+  // nothing currently rehydrates it from localStorage on app start.
+  // Falling back here keeps "is this my own row" correct after a refresh.
+  const reduxUser = useSelector((state) => state.auth.user);
+  let storedUser = null;
+  try {
+    const raw = localStorage.getItem("user");
+    storedUser = raw && raw !== "undefined" ? JSON.parse(raw) : null;
+  } catch {
+    storedUser = null;
+  }
+  const currentUser = reduxUser || storedUser;
+
+  const { startDirectMessage, isPending: isStartingDM } = useStartDirectMessage();
 
   const filteredMembers =
     activeFilter === "all"
@@ -92,6 +110,11 @@ const SocietyMembersTab = ({ society, members = [], isAdmin = false }) => {
             const displayEmail = m.user?.email || m.email;
             const displayPhone = m.phone;
 
+            // Only members with a real linked account can be messaged —
+            // offline/guest members have no user record to chat with.
+            // Also hide the button on the current user's own row.
+            const canMessage = m.user?._id && m.user._id !== currentUser?._id;
+
             return (
               <div
                 key={m._id}
@@ -129,6 +152,18 @@ const SocietyMembersTab = ({ society, members = [], isAdmin = false }) => {
                     </div>
                   </div>
                 </div>
+
+                {canMessage && (
+                  <button
+                    onClick={() => startDirectMessage(m.user._id)}
+                    disabled={isStartingDM}
+                    className="p-1.5 rounded-lg text-base-content/40 hover:text-primary hover:bg-primary/10 transition-all duration-200 disabled:opacity-50 shrink-0"
+                    aria-label="Send message"
+                    title="Message"
+                  >
+                    <ChatBubbleLeftIcon className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             );
           })}
